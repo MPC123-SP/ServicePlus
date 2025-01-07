@@ -1,0 +1,126 @@
+﻿/*
+*{
+    border:2px solid red;
+}
+*/
+
+/* Media query for screens with a resolution of 1920x1080 pixels (approximately 96 dpi) */
+@media (min-resolution: 96dpi) and (width: 1920px) and (height: 1080px) {
+    /* Your styles for screens with a resolution of 1920x1080 pixels go here */
+    #showPasswordButton {
+        position: absolute !important;
+        display: flex !important;
+        margin-left: 12% !important;
+        margin-top: -2% !important;
+    }
+    #sidebarMenu{
+        width:15% !important;
+    }
+    .main-wrapper {
+        width: 85% !important;
+        justify-content: space-around !important;
+    }
+    .form-cs {
+        max-height: 600px !important;
+        max-width: 465px !important;
+    }
+    .vertical-chain1 {
+        margin-left: 10rem !important;
+    }
+    .vertical-chain2 {
+        margin-left: 34rem !important;
+    }
+    .vertical-chain3 {
+        margin-left: 58rem !important;
+    }
+    .vertical-chain4 {
+        margin-left: 82.6rem !important;
+    }
+
+    .index-cards{
+        display:flex;
+        justify-content:space-around;
+    }
+}
+/* Media query for screens with a resolution of 1600x900 pixels */
+@media (min-resolution: 96dpi) and (max-width: 1600px) and (max-height: 900px) {
+    /* Your styles for screens with a resolution of 1600x900 pixels go here */
+    #showPasswordButton {
+        position: absolute !important;
+        display: flex !important;
+        margin-left: 14% !important;
+        margin-top: -2.5% !important;
+    }
+    #sidebarMenu {
+        width: 18% !important;
+    }
+
+    .main-wrapper {
+        width: 83% !important;
+        justify-content: space-around !important;
+    }
+    .form-cs {
+        max-height: 581px !important; 
+    }
+    .vertical-chain1 {
+        margin-left: 8rem !important;
+    }
+
+    .vertical-chain2 {
+        margin-left: 28rem !important;
+    }
+
+    .vertical-chain3 {
+        margin-left: 47rem !important;
+    }
+
+    .vertical-chain4 {
+        margin-left: 67rem !important;
+    }
+
+    .index-cards {
+        display: flex;
+        justify-content: space-around;
+    }
+}
+
+@media (min-resolution: 96dpi) and (max-width: 1368px) and (max-height: 728px) {
+    
+    #showPasswordButton {
+        position: absolute !important;
+        display: flex !important;
+        margin-left: 17% !important;
+        margin-top: -3% !important;
+    }
+
+    #sidebarMenu {
+        width: 22% !important;
+    }
+
+    .main-wrapper {
+        width: 79% !important;
+        justify-content: space-around !important;
+    }
+
+    .form-cs {
+        max-height: 581px !important;
+    }
+
+    .vertical-chain1 {
+        margin-left: 6rem !important;
+    }
+
+    .vertical-chain2 {
+        margin-left: 21rem !important;
+    }
+
+    .vertical-chain3 {
+        margin-left: 37rem !important;
+    }
+
+    .vertical-chain4 {
+        margin-left: 52.5rem !important;
+    }
+
+    
+}

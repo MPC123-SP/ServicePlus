@@ -1,0 +1,30 @@
+﻿@{
+    Layout = "_LayoutAdmin";
+}
+ 
+
+<div class="main-wrapper col-md-9 ms-sm-auto py-4 col-lg-9 px-md-4 border-start">
+    <a class="nav-link" href="javascript:void(0);" onclick="updateReport()">
+        <i class="fa-solid fa-arrows-rotate fa-spin fa-lg"></i>
+        Update Pendency Reports
+    </a>
+</div>
+
+
+<script>
+    function updateReport() {
+        // Make an AJAX request to the controller method
+        $.ajax({
+            url: "/Admin/UpdateReport", // URL to your controller method
+            type: "Post", // You can change this to "POST" if needed
+            success: function (data) {
+                // Handle the success response as needed
+                console.log(data);
+            },
+            error: function (xhr, status, error) {
+                // Handle errors here
+                console.error(error);
+            }
+        });
+    }
+</script>

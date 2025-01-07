@@ -1,0 +1,178 @@
+﻿@{
+    Layout = "_LayoutAdmin";
+}
+
+<div class="main-wrapper col-md-9 ms-sm-auto py-4 col-lg-9 px-md-4 border-start">
+    <div class="loader">
+        <!-- Your loader content goes here -->
+    </div>
+    @if (!string.IsNullOrEmpty(ViewBag.response))
+    {
+        <div class="alert alert-info" role="alert">
+            @ViewBag.response
+        </div>
+    }
+    <div class="table-responsive" id="UserDiv">
+        <table id="userTable" class="account-table table-sm">
+            <thead>
+                <tr>
+                    <th scope="col">FirstName</th>
+                    <th scope="col">UserName</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">District</th>
+                    <th scope="col">Department</th>
+                    <th scope="col">ServiceName</th>
+                    <th scope="col">RoleName</th>
+                    <th scope="col">RolePermissions</th>
+                    <th scope="col">UserAccount</th>
+                    <th scope="col">Disable User</th>
+                    <th scope="col">Enable User</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        var dataTable = $('#userTable').DataTable({
+            serverSide: true, // Enable server-side processing
+            searching: false, // Disable search bar
+            ordering: false, // Disable sorting
+            ajax: {
+                url: '/Account/GetUsers',
+                type: 'Post',
+                dataType: 'json',
+                dataSrc: 'data',
+
+            },
+            columns: [
+                { data: 'firstName' },
+                { data: 'userName' },
+                { data: 'email' },
+                {
+                    data: 'district',
+                    render: function (data) {
+                        if (data && data.length > 0) {
+                            return data.join(', '); // Join the districts with a comma
+                        }
+                        return ''; // Return an empty string if the list is empty
+                    }
+                },
+                {
+                    data: 'department',
+                    render: function (data) {
+                        if (data && data.length > 0) {
+                            return data.join(', '); // Join the departments with a comma
+                        }
+                        return ''; // Return an empty string if the list is empty
+                    }
+                },
+                {
+                    data: 'serviceName',
+                    render: function (data) {
+                        if (data && data.length > 0) {
+                            return data.join(', '); // Join the service names with a comma
+                        }
+                        return ''; // Return an empty string if the list is empty
+                    }
+                },
+                {
+                    data: 'roleName',
+                    render: function (data) {
+                        if (data && data.length > 0) {
+                            return data.join(', '); // Join the role names with a comma
+                        }
+                        return ''; // Return an empty string if the list is empty
+                    }
+                },
+                {
+                    data: 'rolePermissions',
+                    render: function (data) {
+                        if (data && data.length > 0) {
+                            return data.join(', '); // Join the role permissions with a comma
+                        }
+                        return ''; // Return an empty string if the list is empty
+                    }
+                },
+                {
+                    data: 'lockoutEnabled',
+                    render: function (data) {
+                        return data ? 'Not Locked' : 'Locked';
+                    },
+                },
+
+                {
+                    data: null,
+                    className: 'dt-center',
+                    render: function (data, type, row) {
+                        var username = data.userName;
+                        return '<a href="/Account/DisableUserAccountByUserName?username=' + username + '" class="btn btn-light disable-btn" role="button"><i class="fa-solid fa-user-lock fa-bounce" style="color:#e63946;"></i></a>';
+
+                    }
+                },
+
+                {
+                    data: null,
+                    className: 'dt-center',
+                    render: function (data, type, row) {
+
+                        var username = data.userName;
+                        return '<a href="/Account/EnableUserAccountByUserName?username=' + username + '" class="btn btn-light enable-btn" role="button"><i class="fa-solid fa-user-plus fa-bounce" style="color:#0fcc93;"></i></a>';
+
+                    }
+                },
+
+
+
+            ],
+            createdRow: function (row, data) {
+                if (!data.lockoutEnabled) {
+                    $(row).addClass('red-row');
+                }
+            },
+            paging: true,
+            pageLength: 10,
+            lengthMenu: [10, 25, 50, 100],
+            info: true,
+            language: {
+                infoEmpty: "No entries to show",
+                infoFiltered: "(filtered from _MAX_ total entries)"
+            },
+            drawCallback: function () {
+                // Update the pagination display
+                var pageInfo = this.api().page.info();
+                var currentPage = pageInfo.page + 1;
+                var start = pageInfo.recordsTotal === 0 ? 0 : (pageInfo.page * pageInfo.length) + 1;
+                var end = pageInfo.page === pageInfo.pages - 1 ? pageInfo.recordsTotal : (pageInfo.page + 1) * pageInfo.length;
+                $('.dataTables_info').html('Showing ' + start + ' to ' + end + ' of ' + pageInfo.recordsTotal + ' entries');
+            }
+        });
+
+        // Update pagination links
+        $('.paginate_button').on('click', function (e) {
+            e.preventDefault();
+            var pageIdx = $(this).data('dt-idx');
+            if (pageIdx === 'next') {
+                dataTable.page('next').draw('page');
+            } else if (pageIdx === 'previous') {
+                dataTable.page('previous').draw('page');
+            } else {
+                dataTable.page(pageIdx).draw('page');
+            }
+        });
+
+        // Delete record
+        $('#userTable').on('click', '.disable-btn', function () {
+            var userName = $(this).data('username');
+            // Implement your delete logic here using userName
+            console.log('disable button clicked for user: ' + userName);
+        });
+        $('#userTable').on('click', '.enable-btn', function () {
+            var userName = $(this).data('username');
+            // Implement your delete logic here using userName
+            console.log('enable button clicked for user: ' + userName);
+        });
+
+    });
+</script>

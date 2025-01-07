@@ -1,0 +1,277 @@
+﻿@inject PermissionService PermissionService
+@model ServicePlusDashBoard.ViewModel.ReportsName
+@{
+
+    Layout = "_LayoutHome";
+}
+
+<div class="main-wrapper col-md-9 ms-sm-auto py-4 col-lg-9 px-md-4 border-start">
+
+    <div class="loader">
+        <!-- Your loader content goes here -->
+    </div>
+
+    <div class="paste-button">
+         
+        <button type="button" class="submit-cs" id="showModalButton">Apply Filter</button>
+
+
+    </div>
+    <div id="permissionMessage" style="display: none;">
+        You don't have permission to view this report.
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade bd-example-modal-lg" id="reportFilter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content custom-modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLongTitle"> </h5>
+                    <button type="button" class="close" data-dismiss="modal" id="closeModalButton" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="flex-cs">
+                        <div class="customDatePicker  flex-cs1">
+                            <div class="flex-cs">
+                                <div class="flex-cs" data-date-format="mm-dd-yyyy">
+                                    <label>
+                                        <input id="fromDate" class="dates-content" type="text" readonly placeholder="Select From Date" />
+                                        <span class="input-group-addon"><i class="glyphicon glyphicon-calendar"></i></span>
+                                    </label>
+                                </div>
+                                <div class="flex-cs" data-date-format="mm-dd-yyyy">
+                                    <label>
+                                        <input id="toDate" class="dates-content" type="text" readonly placeholder="Select To Date" />
+                                        <span class="input-group-addon"><i class="glyphicon glyphicon-calendar"></i></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="flex-cs">
+                               
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="flex-cs customDatePickerfilterButton">
+                        <button id="filterButton" class="submit-cs">Apply Filter</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Sewa Kendra Wise Report *@
+    <div class="table-responsive" id="SewaKendraTableDiv">
+
+        <table id="sewaKendraTable" class="account-table table-sm">
+
+
+            <thead>
+                <tr>
+                    <th scope="col">Zone </th>
+                    <th scope="col">District </th>
+                    <th scope="col">SewakendraType</th>
+                    <th scope="col">SewaKendraName </th>
+                    <th scope="col">SewaKendraCode </th>
+                    <th scope="col">DepartmentName </th>
+                    <th scope="col">ApplicationRefNumber </th>
+                    <th scope="col">ServiceName </th>
+                    <th scope="col">CitizenName</th>
+                    <th scope="col">CitizenContactNumber</th>
+                    <th scope="col">FaciliationCharges  </th>
+                    <th scope="col">PaymentDateTime </th>
+                </tr>
+            </thead>
+
+
+        </table>
+
+
+    </div>
+
+    @* Sewa Kendra Wise Report End Here *@
+
+
+</div>
+
+@* All  *@
+<script>
+
+
+
+
+    $(document).ready(function () {
+
+        $(".loader").show();
+        $(".overlay").show();
+        // When the button is clicked, show the modal
+        $("#showModalButton").click(function () {
+            $("#reportFilter").modal("show");
+        });
+        $("#closeModalButton").click(function () {
+            $("#reportFilter").modal("hide");
+        });
+
+    });
+
+
+  
+
+    $(function () {
+
+
+        $("#fromDate").datepicker({
+            autoclose: true,
+            todayHighlight: true
+        });
+
+        $("#toDate").datepicker({
+            autoclose: true,
+            todayHighlight: true
+        });
+
+    });
+    
+</script>
+@* ALl End *@
+
+@*Sewa Kendra Wise Report *@
+
+<script>
+    $(document).ready(function () {
+    @if (PermissionService.HasPermission("GetSewaKendraWiseReport"))
+    {
+        <text>
+                $('#permissionMessage').hide(); // Display the permission message 
+            var dataTable = $('#sewaKendraTable').DataTable({
+                processing: true,
+                serverSide: true,
+                ordering: true,
+                searching: true,
+                ajax: {
+                    url: '/Home/GetSewaKendraWiseReport',
+                    type: 'GET',
+                    dataType: 'json',
+                    data: function (params) {
+                        var currentPageSize = params.length; // Get the current page size
+                        var currentPageNumber = params.start / currentPageSize + 1; // Calculate the current page number
+
+                        return {
+                            draw: params.draw,
+                            start: currentPageNumber,
+                            length: params.length,
+                            searchValue: params.search.value,
+                            sortColumn: params.order[0].column,
+                            sortDirection: params.order[0].dir,
+                            fromDate: $('#fromDate').val(),
+                            toDate: $('#toDate').val()
+                        };
+                    },
+                    dataSrc: 'data',
+                    error: function (xhr, error, thrown) {
+                        // Handle error
+                        console.log("Error: " + thrown);
+                    }
+                },// Add preXhr callback to show the loader before making the AJAX request
+                preXhr: function () {
+                    debugger;
+                    $('.loader').show();
+                    $(".overlay").show();
+                },
+
+                // Add xhr callback to hide the loader after the AJAX request is complete
+                xhr: function () {
+                    var xhr = $.ajaxSettings.xhr();
+                    xhr.onload = function () {
+                        debugger;
+                        $('.loader').hide();
+                        $(".overlay").hide();
+                    };
+                    return xhr;
+                },
+                columns: [
+                    { data: 'zone' },
+                    { data: 'district' },
+                    { data: 'sewakendraType' },
+                    { data: 'sewaKendraName' },
+                    { data: 'sewaKendraCode' },
+                    { data: 'departmentName' },
+                    { data: 'applicationRefNumber' },
+                    { data: 'serviceName' },
+                    { data: 'citizenName' },
+                    { data: 'citizenContactNumber' },
+                    { data: 'faciliationCharges' },
+                    { data: 'paymentDateTime' }
+                ],
+                paging: true,
+                pageLength: 10,
+                lengthMenu: [10, 25, 50, 100],
+                info: true,
+                language: {
+                    infoEmpty: "No entries to show",
+                    infoFiltered: "(filtered from _MAX_ total entries)"
+                },
+                'preDrawCallback': function (settings) {
+                    $('.loader').show();
+                    $(".overlay").show();
+                },
+                drawCallback: function (settings) {
+                    $('.loader').hide();
+                    $(".overlay").hide();
+                    // Update the pagination display
+                    var pageInfo = this.api().page.info();
+                    var currentPage = pageInfo.page + 1;
+                    var start = pageInfo.recordsTotal === 0 ? 0 : (pageInfo.page * pageInfo.length) + 1;
+                    var end = pageInfo.page === pageInfo.pages - 1 ? pageInfo.recordsTotal : (pageInfo.page + 1) * pageInfo.length;
+                    $('#sewaKendraTable_info').html('Showing ' + start + ' to ' + end + ' of ' + pageInfo.recordsTotal + ' entries');
+                }
+            });
+
+            // Apply filter button click event
+            $('#filterButton').on('click', function () {
+
+                $('.loader').show();
+                $(".overlay").show();
+                dataTable.ajax.reload(function (json) {
+                    if (json) {
+                        // Data loaded successfully, hide the loader
+                        $('.loader').hide();
+                        $(".overlay").hide();
+                    }
+                });
+            });
+
+            // Update pagination links
+            $('.paginate_button').on('click', function (e) {
+
+                e.preventDefault();
+                var pageIdx = $(this).data('dt-idx');
+                if (pageIdx === 'next') {
+                    dataTable.page('next').draw('page');
+                } else if (pageIdx === 'previous') {
+                    dataTable.page('previous').draw('page');
+                } else {
+                    dataTable.page(pageIdx).draw('page');
+                }
+            });
+        </text>
+    }
+
+    else
+    {
+        <text>
+                $("#SewaKendraTableDiv").hide();
+            $('#permissionMessage').show(); // Display the permission message
+        </text>
+    }
+            });
+</script>
+
+@* Sewa Kendra Wise Report End here *@
+
+
+

@@ -1,0 +1,63 @@
+﻿@model ServicePlusDashBoard.ViewModel.ApiDescriptions
+@{
+    Layout = "_LayoutAdmin";
+}
+
+
+<div class="main-wrapper col-md-9 ms-sm-auto py-4 col-lg-9 px-md-4 border-start" style="display:flex;">
+    <div class="form-cs">
+        
+            <label class="submit-cs">
+                <a href="@Url.Action("UpdateApiName", "Account")" class="nav-link" role="button">
+                    <i class="bi-person me-2 fa-lg"></i> Refresh API Names
+                </a>
+            </label>
+             
+        <p class="title-cs" style="font-size:25px !important;">Important Note For Developer</p>
+        <p>This is for developers. Whenever they create a new report, it is necessary to include "Report" in the method name. For example:</p>
+
+        <ol>
+            <li>GetDograReport</li>
+            <li>GetOtherReport</li>
+        </ol>
+
+        <p>This is important because when an admin creates a dynamic role, they should know what the API name is for the report.</p>
+
+
+    </div>
+    @using (Html.BeginForm("AddApiDescription", "Account", FormMethod.Post, new { @class = "form-cs" }))
+    {
+        <p class="title-cs">Please Explain API Description Which is Recently Created  </p>
+     
+
+        @if (!string.IsNullOrEmpty(ViewBag.response))
+        {
+            <div class="alert alert-info" role="alert">
+                @ViewBag.response
+            </div>
+        }
+
+       
+
+        <div class="flex-cs">
+            <label>
+                @Html.DropDownListFor(d => d.ApiName, ViewBag.apiSelectList as SelectList, new { @class = "input", id = "ServiceName", placeholder = "Select Service", style = "font-size: 0.9rem; padding: 0.9rem; color: #116e78 !important;", name = "ApiName" })
+                <span>API Name</span>
+                @Html.ValidationMessageFor(d => d.ApiName, "", new { @class = "text-danger" }) <!-- Display validation error for Email field -->
+
+            </label>
+            <label>
+                @Html.TextAreaFor(d => d.ApiDescription, new { @class = "input", name = "ApiDescription" })
+                <span>API-Description</span>
+                @Html.ValidationMessageFor(d => d.ApiDescription, "", new { @class = "text-danger" }) <!-- Display validation error for Email field -->
+
+            </label>
+        </div>
+      
+
+        <button class="submit-cs">Submit</button>
+
+
+    }
+     
+</div>

@@ -1,0 +1,219 @@
+﻿@inject PermissionService PermissionService
+@model ServicePlusDashBoard.ViewModel.ReportsName
+@{
+
+    Layout = "_LayoutHome";
+}
+
+<div class="main-wrapper col-md-9 ms-sm-auto py-4 col-lg-9 px-md-4 border-start">
+
+    <div class="loader">
+        <!-- Your loader content goes here -->
+    </div>
+
+  
+    <div id="permissionMessage" style="display: none;">
+        You don't have permission to view this report.
+    </div>
+    
+    @* Pendency Report *@
+    <div class="table-responsive" id="PendencyTableDiv">
+        <table id="pendencyTable" class="account-table table-sm">
+            <div class="pendency-tool">
+                <button style="border:none;cursor: pointer;">
+                    <a href="/Home/PendencyExcel">
+                        <i class="fa-solid fa-file-excel fa-bounce fa-xl" style="color: #068932;"></i>
+                    </a>
+                </button>
+                <button style="border:none;cursor: pointer;">
+                    <a href="/Home/PendencyPDF">
+                        <i class="fa-solid fa-file-pdf fa-bounce fa-xl" style="color: #fa0505;"></i>
+                    </a>
+                </button>
+            </div>
+
+
+            <thead>
+                <tr>
+                    <th scope="col"> District Name                                      </th>
+                    <th scope="col">Total Application Received                          </th>
+                    <th scope="col">Total Application Deliverd                          </th>
+                    <th scope="col">Total Application Rejected                          </th>
+                    <th scope="col">Total Application in Process                        </th>
+                    <th scope="col">Pending beyond stipulated Timeline 1 to 5 Days      </th>
+                    <th scope="col">Pending beyond stipulated Timeline 6 to 30 Days     </th>
+                    <th scope="col">Pending beyond stipulated Timeline 31 to 60 Days    </th>
+                    <th scope="col">Pending beyond stipulated Timeline 61 to 90 Days    </th>
+                    <th scope="col">Pending beyond stipulated Timeline 91 and above Days</th>
+                    <th scope="col">Pending beyond stipulated Timeline Total VII to XI  </th>
+                    <th scope="col">Send Back                                           </th>
+                    <th scope="col">% Pendency of total applications received           </th>
+                </tr>
+            </thead>
+
+
+        </table>
+
+
+    </div>
+    @* end Pendency Report *@
+
+   
+
+</div>
+
+
+@* All  *@
+<script>
+
+
+
+
+    $(document).ready(function () {
+        // When the button is clicked, show the modal
+        $("#showModalButton").click(function () {
+            $("#reportFilter").modal("show");
+        });
+        $("#closeModalButton").click(function () {
+            $("#reportFilter").modal("hide");
+        });
+
+    });
+
+
+    $(document).ready(function () {
+
+        
+        $("#PendencyTableDiv").show();
+        $("#SewaKendraTableDiv").hide();
+        $("#SewaKendraZoneTableDiv").hide();
+        $(".customDatePicker").hide();
+        $("#ZoneType").hide();
+
+        $(".overlay").hide();
+        $('.loader').hide();
+    });
+
+    $(function () {
+
+
+        $("#fromDate").datepicker({
+            autoclose: true,
+            todayHighlight: true
+        });
+
+        $("#toDate").datepicker({
+            autoclose: true,
+            todayHighlight: true
+        });
+
+    });
+    function handleDropDownChange(selectElement) {
+        var selectedValue = selectElement.value;
+        if (selectedValue == 1) {
+            $("#PendencyTableDiv").show();
+            $("#SewaKendraTableDiv").hide();
+            $("#SewaKendraZoneTableDiv").hide();
+            $(".customDatePicker").hide();
+            $("#ZoneType").hide();
+
+
+        }
+        else if (selectedValue == 2) {
+            $(".customDatePicker").show();
+            $("#SewaKendraTableDiv").show();
+            $("#PendencyTableDiv").hide();
+            $("#SewaKendraZoneTableDiv").hide();
+            $("#ZoneType").hide();
+
+        }
+        else if (selectedValue == 3) {
+            $(".customDatePicker").show();
+            $("#SewaKendraTableDiv").hide();
+            $("#PendencyTableDiv").hide();
+            $("#SewaKendraZoneTableDiv").show();
+            $("#ZoneType").show();
+
+        }
+
+        
+    }
+
+</script>
+@* ALl End *@
+
+
+@* Pendency Report *@
+<script>
+
+
+    $(document).ready(function () {
+    @if (PermissionService.HasPermission("PendencyReport"))
+    {
+        <text>
+                $('#permissionMessage').hide(); // Display the permission message
+            $('#pendencyTable').DataTable({
+                processing: true, // Enable processing indicator
+
+                ajax: {
+                    url: '/Home/PendencyReport',
+                    dataSrc: function (data) {
+                        // Check if the response data is empty or contains an error
+                        if (data.length === 0 || data.error) {
+                            // Display "You don't have permission" message
+                            $('#pendencyTable').html('You don\'t have permission');
+                            return [];
+                        }
+                        return data; // Return the actual data
+                    }
+                },
+                // Add preXhr callback to show the loader before making the AJAX request
+                preXhr: function () {
+                    $('.loader').show();
+                    $(".overlay").show();
+                },
+
+                // Add xhr callback to hide the loader after the AJAX request is complete
+                xhr: function () {
+                    var xhr = $.ajaxSettings.xhr();
+                    xhr.onload = function () {
+                        $('.loader').hide();
+                        $(".overlay").hide();
+
+                    };
+                    return xhr;
+                },
+
+                columns: [
+                    { data: 'districtName' },
+                    { data: 'applicationRecieved' },
+                    { data: 'deliverd' },
+                    { data: 'rejected' },
+                    { data: 'inProcess' },
+                    { data: 'day1to5' },
+                    { data: 'day6to30' },
+                    { data: 'day31to60' },
+                    { data: 'day61to90' },
+                    { data: 'day91toAbove' },
+                    { data: 'totalPendingDays' },
+                    { data: 'sendBack' },
+                    { data: 'pendencyPercentage' }
+                ]
+            });
+        </text>
+    }
+    else
+    {
+        <text>
+                $("#PendencyTableDiv").hide();
+            $('#permissionMessage').show(); // Display the permission message
+        </text>
+    }
+        });
+
+
+</script>
+@* end Pendency Report *@
+
+
+

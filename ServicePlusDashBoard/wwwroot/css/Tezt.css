@@ -1,0 +1,75 @@
+﻿/* Navigation Bar Styling */
+.navbar {
+    margin-bottom: 20px;
+}
+
+/* Rope Styling */
+.rope {
+    width: 2px;
+    height: 200px; /* Adjust the height as needed */
+    background-color: silver;
+    position: absolute;
+    top: 60px; /* Adjust the top position based on the navbar's height */
+    left: 50%; /* Center the rope */
+    transform: translateX(-50%);
+}
+
+/* Cards Styling */
+.cards {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    margin-top: 10px; /* Adjust the margin as needed */
+    animation: sway 4s infinite alternate; /* Apply CSS animation */
+}
+/* ... your other styles ... */
+
+/* Cards Styling */
+.cards {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    margin-top: 10px; /* Adjust the margin as needed */
+    animation: sway 4s infinite alternate; /* Apply CSS animation */
+}
+
+.card {
+    width: 200px;
+    border: 1px solid #ddd;
+    margin: 10px;
+}
+
+@keyframes sway {
+    from {
+        transform: translateX(-5px); /* Move cards slightly left */
+    }
+
+    to {
+        transform: translateX(5px); /* Move cards slightly right */
+    }
+}
+
+/* ... your other styles ... */
+
+/* Rope Styling */
+.rope {
+    width: 2px;
+    height: 200px; /* Adjust the height as needed */
+    background-color: silver;
+    position: absolute;
+    top: 60px; /* Adjust the top position based on the navbar's height */
+    left: 50%; /* Center the rope */
+    transform: translateX(-50%);
+    /* Apply swinging animation */
+    animation: swing 3s infinite ease-in-out;
+}
+
+@keyframes swing {
+    from {
+        transform: translateX(-5px); /* Move cards slightly left */
+    }
+
+    to {
+        transform: translateX(5px); /* Move cards slightly right */
+    }
+}

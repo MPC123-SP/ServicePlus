@@ -1,0 +1,75 @@
+﻿@model ServicePlusDashBoard.ViewModel.LoginViewModel
+@{
+    Layout = "_LayoutAccount";
+}
+<div class="login-page">
+  <div class="container">
+        <div class="heading">We have the services</div>
+        <br>
+        <div class="scrollable-div" style="max-height: 300px; overflow-y: auto;">
+            <table class="table">
+                <tbody class="scrollable-td">
+                    @{
+                        foreach (var serviceName in @ViewBag.ServiceNames)
+                        {
+                            <tr>
+                                <td>
+                                    <div>
+                                        @serviceName
+                                        <span class="badge rounded-pill badge-success" style="background-color: green;">Active</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+    <div class="container">
+        <div class="heading">Sign In</div>
+        @if (TempData.ContainsKey("AuthenticationError"))
+        {
+            <div class="alert alert-danger">
+                @TempData["AuthenticationError"]
+            </div>
+        }
+
+        @using (Html.BeginForm("login", "Account", FormMethod.Post, new { @class = "form" }))
+        {
+            @Html.TextBoxFor(d => d.UserName, new { @class = "input", name = "UserName", id = "UserName", placeholder = "UserName" })
+            ;
+            @Html.ValidationMessageFor(d => d.UserName, "", new { @class = "text-danger" }) <!-- Display validation error for Email field -->
+            @Html.TextBoxFor(d => d.Password, new { @class = "input", type = "password", name = "password", id = "password", placeholder = "Password" })
+            ;
+            <button id="showPasswordButton" type="button" class="icon-buttonShowHide">
+
+                <i class="fa-solid fa-eye"></i>
+            </button>
+
+            @Html.ValidationMessageFor(d => d.Password, "", new { @class = "text-danger" }) <!-- Display validation error for Password field -->
+
+
+
+            <input class="login-button" type="submit" value="Sign In">
+        }
+    </div>
+</div>
+<script>
+    $(document).ready(function () {
+        $("#showPasswordButton").click(function () {
+            var passwordField = $("#password");
+            var passwordFieldType = passwordField.attr("type");
+
+            if (passwordFieldType === "password") {
+                passwordField.attr("type", "text");
+            } else {
+                passwordField.attr("type", "password");
+            }
+        });
+
+
+    });
+</script>

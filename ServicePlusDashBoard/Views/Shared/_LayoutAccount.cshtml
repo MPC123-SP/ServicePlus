@@ -1,0 +1,120 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Comprehensive Reporting System Admin </title>
+    @*   j query CDN*@
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.2.1/owl.carousel.js"></script>
+    @*j query Data Table*@
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.css" />
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.js"></script>
+
+    <!-- Include DataTables Editor CSS and JS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/2.1.2/css/buttons.dataTables.min.css">
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/2.1.2/js/dataTables.buttons.min.js"></script>
+
+    <!-- Include Editor CSS and JS -->
+    <link rel="stylesheet" type="text/css" href="https://editor.datatables.net/extensions/Editor/css/editor.dataTables.min.css">
+    <script type="text/javascript" charset="utf8" src="https://editor.datatables.net/extensions/Editor/js/dataTables.editor.min.js"></script>
+    <!-- Custom styles for this template -->
+    <script src="https://kit.fontawesome.com/d6881fc7ea.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.canvasjs.com/canvasjs.min.js"></script>
+    <link href="~/admin/css/apexcharts.css" rel="stylesheet" />
+    <link href="~/admin/css/tooplate-mini-finance.css" rel="stylesheet" />
+    <link href="~/admin/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="~/admin/css/bootstrap-icons.css" rel="stylesheet" />
+    <link href="~/css/site.css" rel="stylesheet" />
+    <link href="~/admin/login/login.css" rel="stylesheet" />
+    <link href="~/responsivecss/responsive.css" rel="stylesheet" />
+
+    <script src="~/js/jquery-ui.js"></script>
+    @* BootStrap-DatePicekr *@
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <style>
+        #showPasswordButton {
+            position: absolute;
+            display: flex;
+            margin-left: 17%;
+            margin-top: -3%;
+        }
+
+        .icon-buttonShowHide {
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+           
+        }
+
+            .icon-buttonShowHide i {
+                font-size: 24px; /* Adjust the size of the icon as needed */
+                color: #e63946; /* Change the icon color as needed */
+            }
+
+        .scrollable-td {
+            max-height: 100px; /* Adjust the maximum height as needed */
+            overflow-y: auto; /* Add vertical scrollbar if content overflows */
+            padding: 5px; /* Add padding for better appearance */
+        }
+
+       
+    </style>
+</head>
+
+<body>
+    <header class="navbar sticky-top flex-md-nowrap">
+        <div class="col-md-3 col-lg-3 me-0 px-3 fs-6">
+            <a class="navbar-brand" href="#">
+                <i class="bi-box"></i>
+                Comprehensive Reporting System
+            </a>
+        </div>
+
+        <button class="navbar-toggler position-absolute d-md-none collapsed" style="background-color:#E63946" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+
+    </header>
+
+
+    <div class="container-fluid  ">
+        @RenderBody()
+
+
+
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            $(".nav-link").click(function () {
+                // Remove "active" class from all links
+                $(".nav-link").removeClass("active");
+
+                // Add "active" class to the clicked link
+                $(this).addClass("active");
+            });
+        });
+    </script>
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="~/js/jquery.slicknav.min.js"></script>
+    @*  <script src="~/admin/js/jquery.min.js"></script>*@
+    <script src="~/admin/js/bootstrap.bundle.min.js"></script>
+    <script src="~/admin/js/apexcharts.min.js"></script>
+    <script src="~/admin/js/custom.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+
+   
+
+
+</body>
+</html>

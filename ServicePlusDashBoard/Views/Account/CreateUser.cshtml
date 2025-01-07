@@ -1,0 +1,209 @@
+﻿@model ServicePlusDashBoard.ViewModel.CreateUser
+@{
+    Layout = "_LayoutAdmin";
+}
+<div class="main-wrapper col-md-9 ms-sm-auto py-4 col-lg-9 px-md-4 border-start" style="
+    display: flex;
+    justify-content: space-between;
+">
+    @using (Html.BeginForm("CreateUser", "Account", FormMethod.Post, new { @class = "form-cs" }))
+    {
+        <p class="title-cs">Create user  </p>
+        <p class="message-cs">Signup now and get full access to our CRS portal. </p>
+        @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+        {
+            <div class="alert alert-danger">
+                @ViewBag.ErrorMessage
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(ViewBag.SuccessMessage))
+        {
+            <div class="alert alert-success">
+                @ViewBag.SuccessMessage
+            </div>
+        }
+      
+        
+        <div class="flex-cs">
+            <label>
+                @Html.TextBoxFor(d=>d.FirstName ,new {@class="input",maxlength="20"})
+                <span>Firstname</span>
+                @Html.ValidationMessageFor(d => d.FirstName, "", new { @class = "text-danger" }) <!-- Display validation error for Email field -->
+
+            </label>
+            <label>
+                @Html.TextBoxFor(d=>d.Lastname ,new {@class="input",maxlength="20"})
+                <span>LastName</span>
+                @Html.ValidationMessageFor(d => d.Lastname, "", new { @class = "text-danger" }) <!-- Display validation error for Email field -->
+
+            </label>
+        </div>
+        <div class="flex-cs">
+            <label>
+
+                @Html.TextBoxFor(d=>d.UserName ,new {@class="input",maxlength="20"})
+
+                <span>UserName</span>
+                @Html.ValidationMessageFor(d => d.UserName, "", new { @class = "text-danger" }) <!-- Display validation error for Email field -->
+
+            </label>
+            <label>
+                @Html.TextBoxFor(d=>d.Email ,new {@class="input",maxlength="20"})
+
+                <span>Email</span>
+                @Html.ValidationMessageFor(d => d.Email, "", new { @class = "text-danger" }) <!-- Display validation error for Email field -->
+
+            </label>
+        </div>
+
+        <div class="flex-cs">
+            <label style="width: 44%;">
+
+                @Html.ListBoxFor(d => d.District, ViewBag.DistrictSelectList as SelectList, new { @class = "input", id = "District", placeholder = "Select District" ,style="font-size: 0.9rem;padding: 0.9rem;color: #116e78 !important;"})
+
+             @*    <span>District</span> *@
+                @Html.ValidationMessageFor(d => d.District, "", new { @class = "text-danger" })
+            </label>
+            <label style="width: 44%;">
+                @Html.ListBoxFor(d => d.DepartmentName, ViewBag.DepartmentSelectList as SelectList, new { @class = "input", id = "DepartmentName", placeholder = "Select Department",style="font-size: 0.9rem;padding: 0.9rem;color: #116e78 !important;" })
+
+               @*  <span>DepartmentName</span> *@
+                @Html.ValidationMessageFor(d => d.DepartmentName, "", new { @class = "text-danger" })
+            </label>
+
+        </div>
+        <span></span>
+        <div class="flex-cs">
+            <label style="width: 44%;">
+                @Html.ListBoxFor(d => d.ServiceName, ViewBag.ServicesSelectList as SelectList, new { @class = "input", id = "ServiceName", placeholder = "Select Service",style="font-size: 0.9rem;padding: 0.9rem;color: #116e78 !important;" })
+                 
+                @Html.ValidationMessageFor(d => d.ServiceName, "", new { @class = "text-danger" })
+            </label>
+            <label style="width: 44%;">
+                @Html.ListBoxFor(d => d.Roles, ViewBag.RoleSelectList as MultiSelectList, new { @class = "input", id = "rolelist" , multiple = "multiple",style="font-size: 0.9rem;padding: 0.9rem;text-align:center;font-size: small;color: #116e78 !important;" })
+                <span></span>
+                @Html.ValidationMessageFor(d => d.Roles, "", new { @class = "text-danger" ,style="padding-left: 6%;" }) <!-- Display validation error for Email field -->
+
+            </label>
+        </div>
+        <label>
+            @Html.TextBoxFor(d=>d.Password ,new {@class="input",type="password",name="password",id="password",maxlength="20"})
+            <span>Password</span>
+
+            <input type="checkbox" id="showPassword"> Show Password   <i class="fa-regular fa-face-grin-tongue-wink fa-shake fa-lg" style="color: #116e78;"></i>
+
+
+        </label>
+        @Html.ValidationMessageFor(d => d.Password, "", new { @class = "text-danger",style="padding-left: 6%;" }) <!-- Display validation error for Email field -->
+
+        <button class="submit-cs">Submit</button>
+
+      
+    }
+
+
+    <div class="RolePermissions">
+        @using (Html.BeginForm("GetRolePermission", "Account", FormMethod.Post, new { @class = "role-prms" }))
+        {
+            
+            <p class="title-cs">Role Permissions  </p>
+            <p class="message-cs">Here you can check role Permissions </p>
+
+             <div class=" " style="display: flex;justify-content: space-between;">
+                @Html.DropDownListFor(d => d.Roles, ViewBag.CheckSelectList as SelectList, new {@class = "role-drop", id = "rolelist" ,style="color: #116e78 !important;"   })
+                @Html.ValidationMessageFor(d => d.Roles, "", new { @class = "text-danger",style="padding-left: 6%;" }) <!-- Display validation error for Email field -->
+
+                <div>
+
+            <button class="submit-cs"  >
+                Check-Permissions
+            </button>
+                </div>
+            </div>
+
+            if (ViewBag.RolePermission != null)
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col" style="color:#116e78">API Name</th>
+
+                            <th scope="col" style="color:#116e78">API Descriptions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in ViewBag.RolePermission)
+                        {
+                            <tr>
+                                <td style="color:#116e78">@item.ApiName</td>
+
+                                <td style="color:#116e78; white-space: pre-wrap; max-height: 100px; overflow-y: auto;">@item.ApiDescription</td>
+
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        }
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+    const passwordField = document.getElementById("password");
+    const showPasswordCheckbox = document.getElementById("showPassword");
+
+    showPasswordCheckbox.addEventListener("change", function () {
+        if (showPasswordCheckbox.checked) {
+            passwordField.type = "text"; // Show the password
+        } else {
+            passwordField.type = "password"; // Hide the password
+        }
+    });
+</script> 
+<script>
+    $(function () {
+        $('#rolelist').multipleSelect({            
+            filter: true,
+            filterPlaceholder: 'Search Role',
+            showClear: true,
+            placeholder: 'Select Role'
+        })
+
+        $('#District').multipleSelect({
+            filter: true,
+            filterPlaceholder: 'Search  District',
+            showClear: true,
+            placeholder: 'Select District'
+        })
+        $('#DepartmentName').multipleSelect({
+            filter: true,
+            filterPlaceholder: 'Search Department Name',
+            showClear: true,
+            placeholder: 'Select Department'
+        })
+        $('#ServiceName').multipleSelect({
+            filter: true,
+            filterPlaceholder: 'Search Service Name',
+            showClear: true,
+            placeholder: 'Select Service'
+        })
+       
+    })
+</script>
+ 

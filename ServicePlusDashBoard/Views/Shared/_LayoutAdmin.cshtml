@@ -1,0 +1,320 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Comprehensive Reporting System Admin </title>
+    @*   j query CDN*@
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.2.1/owl.carousel.js"></script>
+    @*j query Data Table*@
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.css" />
+
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.js"></script>
+    <!-- Custom styles for this template -->
+    <script src="https://kit.fontawesome.com/d6881fc7ea.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.canvasjs.com/canvasjs.min.js"></script>
+    <link href="~/admin/css/apexcharts.css" rel="stylesheet" />
+    <link href="~/admin/css/tooplate-mini-finance.css" rel="stylesheet" />
+    <link href="~/admin/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="~/admin/css/bootstrap-icons.css" rel="stylesheet" />
+    <link href="~/css/site.css" rel="stylesheet" />
+    <link href="~/admin/login/login.css" rel="stylesheet" />
+
+    <link href="~/responsivecss/responsive.css" rel="stylesheet" />
+
+
+    @* BootStrap-DatePicekr *@
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+
+    <link rel="stylesheet" href="https://unpkg.com/multiple-select@1.6.0/dist/multiple-select.min.css">
+    <script src="https://unpkg.com/multiple-select@1.6.0/dist/multiple-select.min.js"></script>
+    <style>
+        .ms-parent   {
+            width: 100% !important; 
+            padding-bottom: 6% !important;
+        }
+
+        .placeholder{
+            display: contents !important;
+            color: #116e78 !important;
+        }
+
+        .ms-choice {
+            height: 118% !important;
+            padding-left: 0.6Rem;
+            font-size: 0.9em;
+            border:none;
+            color: #116e78 !important;
+        }
+        .icon-close{
+            display:none;
+        }
+
+     
+    </style>
+
+
+</head>
+<body>
+    <header class="navbar sticky-top flex-md-nowrap">
+        <div class="col-md-3 col-lg-3 me-0 px-3 fs-6">
+            <a class="navbar-brand" href="#">
+                <i class="bi-box"></i>
+                CRS Admin Pannel
+            </a>
+        </div>
+
+        <button class="navbar-toggler position-absolute d-md-none collapsed" style="background-color:#E63946" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+         
+
+        <div class="navbar-nav me-lg-2">
+            <div class="nav-item text-nowrap d-flex align-items-center">
+                <div class="dropdown ps-3">
+                    <a class="nav-link dropdown-toggle text-center" href="#" role="button" data-bs-toggle="modal" data-bs-target="#notificationModal">
+                        <i class="bi-bell"></i>
+                        <span class="position-absolute start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                            <span class="visually-hidden">New alerts</span>
+                        </span>
+                    </a>
+
+                      </div>
+
+
+
+                <div class="dropdown px-3">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="/Dashboard/images/medium-shot-happy-man-smiling.jpg" class="profile-image img-fluid" alt="">
+                    </a>
+                    <ul class="dropdown-menu bg-white shadow dropdown-menu-start" style="position:absolute;">
+                        <li>
+                            <div class="dropdown-menu-profile-thumb d-flex">
+                                <img src="/Dashboard/images/medium-shot-happy-man-smiling.jpg" class="profile-image img-fluid me-3" alt="">
+
+                                <div class="d-flex flex-column">
+                                    <small>Thomas</small>
+                                    <a href="#">thomas@site.com</a>
+                                </div>
+                            </div>
+                        </li>
+
+                        <li>
+                            <a class="dropdown-item" href="profile.html">
+                                <i class="bi-person me-2"></i>
+                                Profile
+                            </a>
+                        </li>
+
+                        <li>
+                            <a class="dropdown-item" href="setting.html">
+                                <i class="bi-gear me-2"></i>
+                                Settings
+                            </a>
+                        </li>
+
+                        <li>
+
+                            <a class="dropdown-item" href="help-center.html">
+                                <i class="bi-question-circle me-2"></i>
+                                Create User
+                            </a>
+                        </li>
+
+                        <li class="border-top mt-3 pt-2 mx-4">
+                            <a class="dropdown-item ms-0 me-0" href="#">
+                                <i class="bi-box-arrow-left me-2"></i>
+                                Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+
+        </div>
+        </div>
+    </header>
+
+@*     Notificiation  *@
+       <div class="modal fade" id="notificationModal" tabindex="-1" aria-labelledby="notificationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="notificationModalLabel">Notifications</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="list-group">
+                        <!-- Add your notification items here -->
+                        <li class="list-group-item">
+                            <div class="d-flex align-items-center">
+                                <div class="notifications-icon-wrap bg-success me-3">
+                                    <i class="notifications-icon bi-check-circle-fill"></i>
+                                </div>
+                                <div>
+                                    <span>Your account has been created successfully.</span>
+                                    <p>12 days ago</p>
+                                </div>
+                            </div>
+                        </li>
+                        <!-- Add more notification items as needed -->
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+   
+    <div class="container-fluid ">
+        <div class="row">
+            <nav id="sidebarMenu" class="col-md-3 col-lg-3 d-md-block sidebar collapse">
+                <div class="position-sticky py-4 px-3 sidebar-sticky">
+                    <ul class="nav flex-column h-100">
+                        <li class="nav-item">
+                            <a class="nav-link" aria-current="page" href="/Home/Index">
+                                <i class="bi-house-fill me-2"></i>
+                                Overview
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Home/Index">
+                                <i class="bi-wallet me-2"></i>
+                                Reports
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Admin/ReceivedJson">
+                                @* <i class="fa-solid fa-file"></i>*@
+                                <i class="fa-solid fa-file-code"></i>
+                                ReceivedJson
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Admin/ConsolidatePendency">
+                                
+                                <i class="fa-solid fa-file-shield fa-bounce"></i>
+                                ConsolidatePendencyReport
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Admin/ConsolidateReport">
+
+                                <i class="fa-solid fa-file-shield fa-bounce"></i>
+                                ConsolidateReport
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="@Url.Action("CreateUser", "Account")" class="nav-link" role="button">
+                                <i class="bi-person me-2 fa-lg"></i> Create User
+                            </a>
+
+                        </li>
+                        <li class="nav-item">
+                            <a href="@Url.Action("CreateRole", "Account")" class="nav-link" role="button">
+                                <i class="fa-solid fa-person fa-bounce fa-lg"></i> Create Role
+                            </a>
+
+                        </li>
+                        <a href="@Url.Action("GetUser", "Account")" class="nav-link" role="button">
+                            <i class="fa-solid fa-users fa-bounce fa-lg"></i> Users
+                        </a>
+
+                        </li>
+                        <li class="nav-item">
+                            <a href="@Url.Action("AddApiDescription", "Account")" class="nav-link" role="button">
+                                <i class="fa-solid fa-dice-one fa-lg"></i> Add API Description
+                            </a>
+
+                        </li>  
+                        <li class="nav-item">
+                     
+                        
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Admin/UpdateReports">
+                                <i class="fa-solid fa-arrows-rotate fa-spin fa-lg"></i>
+                                Update Reports
+                            </a>
+                        </li>
+
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Admin /Setting">
+                                <i class="bi-gear me-2 fa-lg"></i>
+                                Settings
+                            </a>
+                        </li>
+
+                        <li class="nav-item border-top mt-auto pt-2">
+                            <a class="nav-link active" href="/Account/LogOut">
+                                <i class="bi-box-arrow-left me-2"></i>
+                                Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            <div class ="container-fluid">   @RenderBody()</div>
+
+
+
+        </div>
+    </div>
+
+
+    <footer class="site-footer">
+        <div class="container-fluid">
+            <div class="row">
+
+                <div class="col-lg-12 col-12">
+                    <p class="copyright-text">
+                        Copyright © Mini Sec
+                        - Design: <a rel="sponsored" href="" target="_blank">NIC</a>
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </footer>
+    <script>
+        $(document).ready(function () {
+            $(".nav-link").click(function () {
+                // Remove "active" class from all links
+                $(".nav-link").removeClass("active");
+
+                // Add "active" class to the clicked link
+                $(this).addClass("active");
+            });
+        });
+    </script>
+    <script>
+        $(document).ready(function () {
+
+            $(".overlay").hide();
+            $('.loader').hide();
+        });
+    </script>
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="~/js/jquery.slicknav.min.js"></script>
+    @*  <script src="~/admin/js/jquery.min.js"></script>*@
+    <script src="~/admin/js/bootstrap.bundle.min.js"></script>
+    <script src="~/admin/js/apexcharts.min.js"></script>
+    <script src="~/admin/js/custom.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+   
+   
+
+
+</body>
+</html>

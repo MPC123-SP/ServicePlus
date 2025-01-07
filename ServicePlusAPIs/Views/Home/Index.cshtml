@@ -1,0 +1,140 @@
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.css" /> 
+<link href="c:\users\hp\desktop\officialnet\serviceplusapis\asset\fontawesome\css\fontawesome.css" rel="stylesheet" /> 
+<link href="c:\users\hp\desktop\officialnet\serviceplusapis\asset\fontawesome\css\brands.css" rel="stylesheet" /> 
+<link href="c:\users\hp\desktop\officialnet\serviceplusapis\asset\fontawesome\css\solid.css" rel="stylesheet" /> 
+
+﻿<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.js"></script>
+<script src="https://kit.fontawesome.com/d6881fc7ea.js" crossorigin="anonymous"></script>
+
+<style>
+    #myTable_processing {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top:5%;
+    }
+
+    .dataTables_empty {
+        display: none !important;
+    }
+
+  
+</style> 
+<table id="myTable" class="table table-striped" style="width:100%">
+    <thead>
+        <tr>
+            <th> District Name                                      </th>
+            <th>Total Application Received                          </th>
+            <th>Total Application Deliverd                          </th>
+            <th>Total Application Rejected                          </th>
+            <th>Total Application in Process                        </th>
+            <th>Pending beyond stipulated Timeline 1 to 5 Days      </th>
+            <th>Pending beyond stipulated Timeline 6 to 30 Days     </th>
+            <th>Pending beyond stipulated Timeline 31 to 60 Days    </th>
+            <th>Pending beyond stipulated Timeline 61 to 90 Days    </th>
+            <th>Pending beyond stipulated Timeline 91 and above Days</th>
+            <th>Pending beyond stipulated Timeline Total VII to XI  </th>
+            <th>Send Back                                           </th>
+            @*<th>% Pendency of total applications received           </th>*@
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Row 1 Data 1</td>
+            <td>Row 1 Data 2</td>
+            <td>Row 1 Data 3</td>
+            <td>Row 1 Data 4</td>
+            <td>Row 1 Data 5</td>
+            <td>Row 1 Data 6</td>
+            <td>Row 1 Data 7</td>
+            <td>Row 1 Data 8</td>
+            <td>Row 1 Data 9</td>
+            <td>Row 1 Data 10</td>
+            <td>Row 1 Data 11</td>
+            <td>Row 1 Data 12</td>
+            @*<td>Row 1 Data 13</td>*@
+        </tr>
+    </tbody>
+</table>
+
+ 
+<button type="button" class="btn btn-dark" onclick="Test()">TestBtn</button>
+<script>
+    var dataLoaded = false;
+    $(document).ready(function () {
+
+        $('#myTable').DataTable({
+            processing: true, // Enable processing indicator
+             // Enable server-side processing
+            ajax: {
+                url: '/api/ServicePlus/IncomeReport',
+                dataSrc: ''
+            },
+            language: {
+                processing: '<div class="dataTables_processing"> <i class="fa-regular fa-hand fa-bounce fa-2xl"></i> Ruko jara Sabar Kro</div>'
+            },
+            columns: [
+                { data: 'districtName' },
+                { data: 'applicationRecieved' },
+                { data: 'deliverd' },
+                { data: 'rejected' },
+                { data: 'inProcess' },
+                { data: 'day1to5' },
+                { data: 'day6to30' },
+                { data: 'day31to60' },
+                { data: 'day61to90' },
+                { data: 'day91toAbove' },
+                { data: 'totalPendingDays' },
+                { data: 'sendBack' },
+               // { data: 'pendencyPercentage' }
+            ]
+        }).on('draw.dt', function () {
+            // Data is fully loaded
+            dataLoaded = true;
+        });
+       
+    });
+    
+    function SendAppID() {
+
+
+        var appID = $("#appID").val();
+        $.ajax({
+            url: '/api/ServicePlus/GetAppRecordById', // the URL of the endpoint you want to call
+            type: 'GET', // the HTTP method to use (GET, POST, PUT, DELETE, etc.)
+            dataType: 'json', // the expected data type of the response
+            data: { appId: appID }, // any data you want to send along with the request
+            success: function (data) {
+                // the function to execute if the request is successful
+                console.log('Success:', data);
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                // the function to execute if the request fails
+                console.log('Error:', textStatus, errorThrown);
+            }
+        });
+    }
+    function Test() {
+        $.ajax({
+            url: '/api/ServicePlus/IncomeReport', // the URL of the endpoint you want to call
+            type: 'GET', // the HTTP method to use (GET, POST, PUT, DELETE, etc.)
+            dataType: 'json', // the expected data type of the response
+            // any data you want to send along with the request
+            success: function (data) {
+                // the function to execute if the request is successful
+
+                console.log('Success:', data);
+
+                var obj = JSON.parse(data);
+                console.log(obj);
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                // the function to execute if the request fails
+                console.log('Error:', textStatus, errorThrown);
+            }
+        });
+
+    }
+</script> 

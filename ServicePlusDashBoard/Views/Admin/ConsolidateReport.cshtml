@@ -1,0 +1,229 @@
+﻿@{
+    Layout = "_LayoutAdmin";
+}
+
+<div class="main-wrapper col-md-9 ms-sm-auto py-4 col-lg-9 px-md-4 border-start">
+    <div class="table-responsive">
+        <table id="ConsolidateReport" class="account-table table-sm">
+            <thead>
+                <th></th>
+            <th scope="col"> Service Name                                      </th>
+            <th scope="col">DepartmentName                         </th>
+            <th scope="col">ApplRefNo                         </th>
+            <th scope="col">ApplId                         </th>
+            <th scope="col">ServiceId                         </th> 
+            <th scope="col">ServiceVersion                        </th> 
+            <th scope="col">SubmissionMode      </th>
+            <th scope="col">SubmissionDate     </th>
+            <th scope="col">AppliedBy    </th>
+            <th scope="col">SubmissionLocation   </th>
+            <th scope="col">PaymentMode</th>
+            <th scope="col">ReferenceNo </th>
+            <th scope="col">PaymentDate   </th>
+            <th scope="col">Amount          </th> 
+            </thead>
+            <tbody>
+                <!-- Table body will be dynamically populated -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.2/js/jquery.dataTables.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.11.2/css/jquery.dataTables.min.css">
+
+
+
+<script>
+    
+
+    $(document).ready(function () {
+        function format(d) {
+            var headers = ['ApplId', 'Task Name', 'UserName', 'Designation', 'User ID', 'ExecutedTime', 'ReceivedTime', 'LocationName', 'DepartmentLevel', 'Official Forms']; // Define your headers here
+            var childTable =
+                '<table class="border border-success">' +
+                '<tr>';
+
+            // Generate header row
+            if (d.executionRecord && d.executionRecord.length > 0) {
+                for (var i = 0; i < headers.length; i++) {
+                    childTable += '<th>' + headers[i] + '</th>';
+                }
+            } else {
+                // If no records found, display "No records found" and hide headers
+                childTable += '<th colspan="' + headers.length + '">Application is recently Submitted, No Action Taken By official workflow player</th>';
+            }
+
+            childTable += '</tr>';
+
+            // Include data rows from the executionRecord
+            if (d.executionRecord && d.executionRecord.length > 0) {
+                for (var j = 0; j < d.executionRecord.length; j++) {
+                    childTable += '<tr class="border border-success">';
+                    childTable += '<td>' + d.executionRecord[j].taskDetails.applId + '</td>';
+                    childTable += '<td>' + d.executionRecord[j].taskDetails.taskName + '</td>';
+                    childTable += '<td>' + d.executionRecord[j].taskDetails.userDetail.userName + '</td>';
+                    childTable += '<td>' + d.executionRecord[j].taskDetails.userDetail.designation + '</td>';
+                    childTable += '<td>' + d.executionRecord[j].taskDetails.userName + '</td>';
+
+                    // Format the executedTime and receivedTime in "yyyy-mm-dd HH:mm:ss" format
+                    var executedTime = new Date(d.executionRecord[j].taskDetails.executedTime);
+                    var formattedExecutedTime = executedTime.toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
+
+                    var receivedTime = new Date(d.executionRecord[j].taskDetails.receivedTime);
+                    var formattedReceivedTime = receivedTime.toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
+
+                    childTable += '<td>' + formattedExecutedTime + '</td>';
+                    childTable += '<td>' + formattedReceivedTime + '</td>';
+
+                    childTable += '<td>' + d.executionRecord[j].taskDetails.userDetail.locationName + '</td>';
+                    childTable += '<td>' + d.executionRecord[j].taskDetails.userDetail.departmentLevel + '</td>';
+
+                    // Include "officialFormDetail" data as bullet points
+                    // Include "officialFormDetail" data as bullet points
+                    var officialForms = '';
+                    if (d.executionRecord[j].officialFormDetail && d.executionRecord[j].officialFormDetail.length > 0) {
+                        officialForms += '<ul>'; // Start the unordered list
+                        for (var k = 0; k < d.executionRecord[j].officialFormDetail.length; k++) {
+                            var formValue = d.executionRecord[j].officialFormDetail[k].officalFormValue;
+                            if (formValue && formValue.trim() !== '') {
+                                officialForms += '<li>' + formValue + '</li>';
+                            }
+                        }
+                        officialForms += '</ul>'; // End the unordered list
+                    }
+
+                    // Only append if officialForms is not empty
+                    if (officialForms.trim() !== '') {
+                        childTable += '<td class="border border-success">' + officialForms + '</td>';
+                    } else {
+                        // If officialForms is empty, you can add a placeholder or leave it blank
+                        childTable += '<td class="border border-success">No official forms</td>';
+                    }
+                     
+
+                    // Include other fields from the executionRecord here as additional columns
+                    childTable += '</tr>';
+                }
+            }
+
+            childTable += '</table>';
+
+            return childTable;
+        }
+
+
+        var table = $('#ConsolidateReport').DataTable({
+            serverSide: true, // Enable server-side processing
+            searching: false, // Disable search bar
+            ordering: false, // Disable sorting
+            ajax: {
+                url: '/Admin/ConsolidateReports',
+                type: 'GET',
+                dataType: 'json',
+                data: function (params) {
+                    return {
+                        page: Math.floor(params.start / params.length) + 1,
+                        pageSize: params.length
+                    };
+                },
+                dataSrc: 'data',
+                error: function (xhr, error, thrown) {
+                    // Handle error
+                    console.log("Error: " + thrown);
+                }
+            },
+            columns: [
+                {
+                    className: 'dt-control',
+                    orderable: false,
+                    data: null,
+                    defaultContent: ''
+                },
+                { data: 'initiatedRecord.serviceName' }, // Bind to the appropriate field
+                { data: 'initiatedRecord.departmentName' },
+                { data: 'initiatedRecord.applRefNo' }, // You'll need to calculate and fill these columns dynamically
+                { data: 'initiatedRecord.applId' },
+                { data: 'initiatedRecord.serviceId' }, 
+                { data: 'initiatedRecord.versionNo' },
+                { data: 'initiatedRecord.submissionMode' },
+                { data: 'initiatedRecord.submissionDate' },
+                { data: 'initiatedRecord.appliedBy' },
+                { data: 'initiatedRecord.submissionLocation' },
+                { data: 'initiatedRecord.paymentMode' },
+                { data: 'initiatedRecord.referenceNo' },
+                { data: 'initiatedRecord.paymentDate' },
+                { data: 'initiatedRecord.amount' }
+            ],
+            columnDefs: [
+                {
+                    targets: 8, // Index of the 'submissionDate' column (zero-based)
+                    render: function (data, type, row) {
+                        // Format 'submissionDate' in yyyy-mm-dd HH:mm:ss format
+                        if (type === 'display' || type === 'filter') {
+                            var date = new Date(data);
+                            var formattedDate = date.getFullYear() + '-' + (date.getMonth() + 1).toString().padStart(2, '0') + '-' + date.getDate().toString().padStart(2, '0');
+                            formattedDate += ' ' + date.getHours().toString().padStart(2, '0') + ':' + date.getMinutes().toString().padStart(2, '0') + ':' + date.getSeconds().toString().padStart(2, '0');
+                            return formattedDate;
+                        }
+                        return data; // For sorting and other types
+                    }
+                }
+            ]
+            ,
+            order: [[1, 'asc']],
+            paging: true,
+            pageLength: 10,
+            lengthMenu: [10, 25, 50, 100],
+            info: true,
+            language: {
+                infoEmpty: "No entries to show",
+                infoFiltered: "(filtered from _MAX_ total entries)"
+            },
+            drawCallback: function () {
+                // Update the pagination display
+
+                var pageInfo = this.api().page.info();
+                var currentPage = pageInfo.page + 1;
+                var start = pageInfo.recordsTotal === 0 ? 0 : (pageInfo.page * pageInfo.length) + 1;
+                var end = pageInfo.page === pageInfo.pages - 1 ? pageInfo.recordsTotal : (pageInfo.page + 1) * pageInfo.length;
+                $('.dataTables_info').html('Showing ' + start + ' to ' + end + ' of ' + pageInfo.recordsTotal + ' entries');
+            }
+        });
+
+        // Update pagination links
+        $('.paginate_button').on('click', function (e) {
+            debugger
+            e.preventDefault();
+            var pageIdx = $(this).data('dt-idx');
+            if (pageIdx === 'next') {
+                dataTable.page('next').draw('page');
+            } else if (pageIdx === 'previous') {
+                dataTable.page('previous').draw('page');
+            } else {
+                dataTable.page(pageIdx).draw('page');
+            }
+        });
+        // Add event listener for opening and closing details
+        $('#ConsolidateReport tbody').on('click', 'td.dt-control', function (e) {
+            let tr = e.target.closest('tr');
+            let row = table.row(tr);
+
+            if (row.child.isShown()) {
+                // This row is already open - close it
+                row.child.hide();
+            }
+            else {
+                // Open this row
+                row.child(format(row.data())).show();
+            }
+        });
+    });
+ 
+
+</script>
+
+

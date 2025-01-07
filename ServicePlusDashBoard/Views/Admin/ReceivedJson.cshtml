@@ -1,0 +1,100 @@
+﻿@{
+    Layout = "_LayoutAdmin";
+}
+
+<div class="main-wrapper col-md-9 ms-sm-auto py-4 col-lg-9 px-md-4 border-start">
+    <div class="table-responsive">
+        <table id="ReceivedJson" class="account-table table-sm">
+            <thead>
+                <tr>
+                    <th>Received Json Date</th>
+                    <th>Intitiated Records</th>
+                    <th>Execution Records</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Table body will be dynamically populated -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.2/js/jquery.dataTables.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.11.2/css/jquery.dataTables.min.css">
+
+
+
+<script>
+    $(document).ready(function () {
+        var dataTable = $('#ReceivedJson').DataTable({
+            serverSide: true, // Enable server-side processing
+            searching: false, // Disable search bar
+            ordering: false, // Disable sorting
+            ajax: {
+                url: '/Admin/ReceivedJsonDailyBasis',
+                type: 'GET',
+                dataType: 'json',
+                data: function (params) {
+                    return {
+                        page: Math.floor(params.start / params.length) + 1,
+                        pageSize: params.length
+                    };
+                },
+                dataSrc: 'data',
+                error: function (xhr, error, thrown) {
+                    // Handle error
+                    console.log("Error: " + thrown);
+                }
+            },
+            columns: [
+                {
+                    data: 'jsonReceivedDate',
+                    render: function (data) {
+                        // Assuming 'data' contains the date value in ISO format (e.g., "2023-07-19T12:34:56")
+                        // You can use moment.js to format the date as "yyyy-mm-dd HH:MM"
+                        return moment(data).format('YYYY-MM-DD HH:mm');
+                    }
+                },
+                { data: 'receivedInititatedRecord' },
+                { data: 'receivedExecutionRecord' }
+            ],
+            paging: true,
+            pageLength: 10,
+            lengthMenu: [10, 25, 50, 100],
+            info: true,
+            language: {
+                infoEmpty: "No entries to show",
+                infoFiltered: "(filtered from _MAX_ total entries)"
+            },
+            drawCallback: function () {
+                // Update the pagination display
+              
+                var pageInfo = this.api().page.info();
+                var currentPage = pageInfo.page + 1;
+                var start = pageInfo.recordsTotal === 0 ? 0 : (pageInfo.page * pageInfo.length) + 1;
+                var end = pageInfo.page === pageInfo.pages - 1 ? pageInfo.recordsTotal : (pageInfo.page + 1) * pageInfo.length;
+                $('.dataTables_info').html('Showing ' + start + ' to ' + end + ' of ' + pageInfo.recordsTotal + ' entries');
+            }
+        });
+
+        // Update pagination links
+        $('.paginate_button').on('click', function (e) {
+            debugger
+            e.preventDefault();
+            var pageIdx = $(this).data('dt-idx');
+            if (pageIdx === 'next') {
+                dataTable.page('next').draw('page');
+            } else if (pageIdx === 'previous') {
+                dataTable.page('previous').draw('page');
+            } else {
+                dataTable.page(pageIdx).draw('page');
+            }
+        });
+    });
+     
+</script>
+
+

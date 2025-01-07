@@ -1,0 +1,118 @@
+﻿@model ServicePlusDashBoard.ViewModel.CreateRole
+@{
+    Layout = "_LayoutAdmin";
+} 
+
+<div class="main-wrapper col-md-9 ms-sm-auto py-4 col-lg-9 px-md-4 border-start" style="
+    display: flex;
+    justify-content: space-between;
+">
+    <div class="form-cs1"> 
+    @using (Html.BeginForm("CreateRole", "Account", FormMethod.Post, new { @class = "", id = "createRoleForm" }))
+{ 
+
+    <p class="title-cs">Create Role</p>
+            <p class="message-cs">Whenever an admin wants to create a new role, follow these steps:</p>
+            <ol>
+                <li> Write the role name.</li>
+                <li>In the permissions dropdown, select the API name that you want to grant to the role.</li>
+                <li>To learn more about the selected API, there is a search bar below. It already has "Report" written in it. If you click on it, it will show you details about the Report-related API. If you want to search for a different API, simply delete "Report" from the Search Bar, and it will display all available APIs.</li>
+
+            </ol>
+            <br></br>
+    <div class="flex-cs1">
+        <label>
+            @Html.TextBoxFor(d => d.Role, new { @class = "input", maxlength = "20" })
+            <span>Role Name</span>
+        </label>
+          <label>
+                @{
+                    var permission = Model.PermissionSelectList;
+                    if (permission != null || permission.Count() >= 0)
+                    {
+                            <div style="border:1px solid #bfc7cf;border-radius:7px;margin-left: 6%;width: 105%;">
+                                @Html.ListBoxFor(d => d.ReportPermissions, Model.PermissionSelectList as MultiSelectList, new { @class = "input", id = "permission", style = "text-align:center;font-size: small;",data_placeholder = "Please Select Permissions" ,data_width="auto" })
+                        </div>
+                    }
+                }
+            </label>
+                <label>
+                    <button class="submit-cs" id="submitFormButton" style="width: 137px;">
+                        Submit
+                    </button>
+                </label>
+
+    </div>
+    
+       
+
+}
+
+       
+    <div class="form-cs1">
+        @if (ViewBag.apiDescription != null)
+        {
+            <div class="table-responsive">
+                <input type="text" id="searchInput" class="form-control" placeholder="Search API Name">
+
+                <table class="table table-striped table-bordered" id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>ApiName</th>
+                            <th>ApiDescription</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var apiname in ViewBag.apiDescription)
+                        {
+                            <tr>
+                                <td>@apiname.ApiName</td>
+                                <td>@apiname.ApiDescription</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    </div>
+</div>
+
+<script>
+    $(function () {
+        $('#permission').multipleSelect({ 
+            filter: true,
+            filterPlaceholder: 'Search Permission',
+            showClear: true,
+            placeholder: 'Please Select Permission'
+
+        })
+    })
+</script>
+
+<script>
+    $(document).ready(function () {
+        var defaultSearchQuery = "Report"; // Replace with your desired default query
+        var searchInput = $("#searchInput");
+
+        // Set the default search value
+        searchInput.val(defaultSearchQuery);
+
+        // Trigger a keypress event to perform the search
+        var e = $.Event("keyup");
+        e.which = 13; // 13 is the key code for Enter key
+        searchInput.trigger(e);
+
+        searchInput.on("keyup", function () {
+            var value = $(this).val().toLowerCase();
+            filterTable(value);
+        });
+
+        function filterTable(query) {
+            $("#dataTable tbody tr").filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(query) > -1);
+            });
+        }
+    });
+</script>

@@ -1,0 +1,44 @@
+﻿@{
+
+    Layout = "_LayoutHome";
+} 
+
+<div class="main-wrapper col-md-9 ms-sm-auto py-4 col-lg-9 px-md-4 border-start" style="display: flex; justify-content: space-between;">
+    @using (Html.BeginForm("DynamicReport", "Home", FormMethod.Post, new { @class = "form-cs" }))
+    {
+        <div style="overflow: auto; max-height: 99%;">
+            <p class="title-cs">Select Column For Report</p>
+            @Html.DropDownList("ServiceName", new SelectList(ViewBag.ServiceNames), "Please Select a Service", new { @class = "form-control" })
+
+            @for (int i = 0; i < ViewBag.InitiatedColumns.Count; i++)
+            {
+                <label>
+                    <input type="checkbox" name="selectedColumns" value="@ViewBag.InitiatedColumns[i]" />
+                    @ViewBag.InitiatedColumns[i]
+                </label>
+
+                <br></br>
+            }
+
+            <!-- Add an input element for serviceName -->
+            <input type="text" name="serviceName" id="serviceName" value="" style="display: none;" />
+
+        </div>
+
+        <button type="submit">Submit</button>
+    }
+</div>
+
+<script>
+    $(document).ready(function () {
+        // Listen for changes to the dropdown selection
+        $("#ServiceName").on("change", function () {
+            // Update the value of the hidden input with the selected value
+            $("#serviceName").val($(this).val());
+        });
+    });
+</script>
+
+
+         
+

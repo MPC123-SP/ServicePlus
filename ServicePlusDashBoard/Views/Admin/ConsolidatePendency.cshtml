@@ -1,0 +1,87 @@
+﻿@{
+    Layout = "_LayoutAdmin";
+}
+
+<div class="main-wrapper col-md-9 ms-sm-auto py-4 col-lg-9 px-md-4 border-start">
+    <div class="table-responsive">
+        <table id="ConsolidatePendencyReport" class="account-table table-sm">
+            <thead>
+            <th scope="col"> Service Nane                                      </th>
+            <th scope="col">Total Application Received                          </th>
+            <th scope="col">Total Application Deliverd                          </th>
+            <th scope="col">Total Application Rejected                          </th>
+            <th scope="col">Total Application in Process                        </th>
+            <th scope="col">Pending beyond stipulated Timeline 1 to 5 Days      </th>
+            <th scope="col">Pending beyond stipulated Timeline 6 to 30 Days     </th>
+            <th scope="col">Pending beyond stipulated Timeline 31 to 60 Days    </th>
+            <th scope="col">Pending beyond stipulated Timeline 61 to 90 Days    </th>
+            <th scope="col">Pending beyond stipulated Timeline 91 and above Days</th>
+            <th scope="col">Pending beyond stipulated Timeline Total VII to XI  </th>
+            <th scope="col">Send Back                                           </th>
+            <th scope="col">% Pendency of total applications received           </th>
+            </thead>
+            <tbody>
+                <!-- Table body will be dynamically populated -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.2/js/jquery.dataTables.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.11.2/css/jquery.dataTables.min.css">
+
+
+
+<script>
+
+    $(document).ready(function () {
+
+        $('#ConsolidatePendencyReport').DataTable({
+            processing: true, // Enable processing indicator
+
+            ajax: {
+                url: '/Admin/ConsolidatePendencyReport',
+                dataSrc: ''
+            },
+            // Add preXhr callback to show the loader before making the AJAX request
+            preXhr: function () {
+                $('.loader').show();
+                $(".overlay").show();
+            },
+
+            // Add xhr callback to hide the loader after the AJAX request is complete
+            xhr: function () {
+                var xhr = $.ajaxSettings.xhr();
+                xhr.onload = function () {
+                    $('.loader').hide();
+                    $(".overlay").hide();
+
+                };
+                return xhr;
+            },
+
+            columns: [
+                { data: 'serviceNane' },
+                { data: 'applicationRecieved' },
+                { data: 'deliverd' },
+                { data: 'rejected' },
+                { data: 'inProcess' },
+                { data: 'day1to5' },
+                { data: 'day6to30' },
+                { data: 'day31to60' },
+                { data: 'day61to90' },
+                { data: 'day91toAbove' },
+                { data: 'totalPendingDays' },
+                { data: 'sendBack' },
+                { data: 'pendencyPercentage' }
+            ]
+        });
+
+    }); 
+
+</script>
+
+

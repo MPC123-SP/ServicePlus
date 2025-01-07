@@ -1,0 +1,778 @@
+html {
+    font-size: 14px;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    margin-bottom: 60px;
+}
+
+/*Cards Below*/
+.card {
+    width: 12rem;
+    height: 16rem;
+    position: relative;
+    border-radius: 40px;
+    transition: all 0.8s;
+    perspective: 600px;
+    perspective-origin: center bottom;
+    margin: 2%;
+}
+
+.upper-part {
+    width: 100%;
+    height: 65%;
+    border-radius: 40px 40px 0 0;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: all 0.9s;
+}
+
+.upper-part-face,
+.upper-part-back {
+    text-align: center;
+    background-color: lightgray;
+    color: #A868D9;
+    border: 3px solid #A868D9;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    padding: 15px;
+    border-radius: 40px 40px 0 0;
+    font-weight: bold;
+    font-size: 2rem;
+    z-index: 2;
+    backface-visibility: hidden;
+    transition: all 0.6s;
+}
+
+.upper-part-back {
+    background-color: #A868D9;
+    color: lightgray;
+    transform: rotatex(180deg);
+}
+
+.lower-part {
+    width: 100%;
+    height: 35%;
+    border-radius: 0 0 40px 40px;
+    position: relative;
+    transform-style: preserve-3d;
+    transform-origin: center top;
+    transition: all 0.9s;
+}
+
+.lower-part-face,
+.lower-part-back {
+    background-color: #A868D9;
+    width: 100%;
+    height: 100%;
+    color: whitesmoke;
+    font-weight: bold;
+    font-size: xx-large;
+    position: absolute;
+    border-radius: 0 0 40px 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform: translate(0, -0.8px);
+    backface-visibility: hidden;
+    z-index: 2;
+}
+
+.lower-part-back {
+    backface-visibility: visible;
+    border-radius: 40px;
+    color: #A868D9;
+    font-size:medium;
+    background-color: lightgray;
+    transform: rotateX(180deg);
+    z-index: 1;
+    transition: border-radius 0.6s;
+}
+
+.card:hover > .upper-part {
+    transform: rotatex(-0.5turn);
+}
+
+.card:hover > .lower-part {
+    transform: translateY(88.3px) rotateX(0.5turn);
+}
+
+    .card:hover > .lower-part > .lower-part-back {
+        border: 3px solid #A868D9;
+        border-radius: 0 0 40px 40px;
+    }
+
+
+
+
+/*Deliverd Card */
+.upper-part-face-d,
+.upper-part-back-d {
+    text-align: center;
+    background-color: lightgray;
+    color: rgb(53, 160, 99);
+    border: 3px solid rgb(53, 160, 99);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    padding: 15px;
+    border-radius: 40px 40px 0 0;
+    font-weight: bold;
+    font-size: 2rem;
+    z-index: 2;
+    backface-visibility: hidden;
+    transition: all 0.6s;
+}
+
+.upper-part-back-d {
+    text-align: center;
+    background-color: lightgray;
+    color: #A868D9;
+    border: 3px solid rgb(53, 160, 99);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    padding: 15px;
+    border-radius: 40px 40px 0 0;
+    font-weight: bold;
+    z-index: 2;
+    backface-visibility: hidden;
+    transition: all 0.6s;
+}
+
+.upper-part-back-d {
+    background-color: rgb(53, 160, 99);
+    color: lightgray;
+    transform: rotatex(180deg);
+}
+
+.lower-part-face-d {
+    background-color: rgb(53, 160, 99);
+    width: 100%;
+    height: 100%;
+    color: whitesmoke;
+    font-weight: bold;
+    font-size: xx-large;
+    position: absolute;
+    border-radius: 0 0 40px 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform: translate(0, -0.8px);
+    backface-visibility: hidden;
+    z-index: 2;
+}
+
+.lower-part-back-d {
+    background-color: #A868D9;
+    width: 100%;
+    height: 100%;
+    color: lightgray;
+    font-weight: bold;
+    position: absolute;
+    border-radius: 0 0 40px 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform: translate(0, -0.8px);
+    backface-visibility: hidden;
+    z-index: 2;
+}
+
+.lower-part-back-d {
+    backface-visibility: visible;
+    border-radius: 40px;
+    color: rgb(53, 160, 99);
+    background-color: lightgray;
+    transform: rotateX(180deg);
+    z-index: 1;
+    transition: border-radius 0.6s;
+}
+
+.card:hover > .lower-part > .lower-part-back-d {
+    border: 3px solid rgb(53, 160, 99);
+    border-radius: 0 0 40px 40px;
+}
+
+
+/*Pending Card*/
+.upper-part-face-p,
+.upper-part-back-p {
+    text-align: center;
+    background-color: lightgray;
+    color: #e8a435;
+    border: 3px solid #e8a435;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    padding: 15px;
+    border-radius: 40px 40px 0 0;
+    font-weight: bold;
+    font-size: 2rem;
+    z-index: 2;
+    backface-visibility: hidden;
+    transition: all 0.6s;
+}
+
+.upper-part-back-p {
+    text-align: center;
+    background-color: lightgray;
+    color: #A868D9;
+    border: 3px solid #e8a435;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    padding: 15px;
+    border-radius: 40px 40px 0 0;
+    font-weight: bold;
+    z-index: 2;
+    backface-visibility: hidden;
+    transition: all 0.6s;
+}
+
+.upper-part-back-p {
+    background-color: #e8a435;
+    color: lightgray;
+    transform: rotatex(180deg);
+}
+
+.lower-part-face-p {
+    background-color: #e8a435;
+    width: 100%;
+    height: 100%;
+    color: whitesmoke;
+    font-weight: bold;
+    font-size: xx-large;
+    position: absolute;
+    border-radius: 0 0 40px 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform: translate(0, -0.8px);
+    backface-visibility: hidden;
+    z-index: 2;
+}
+
+.lower-part-back-p {
+    background-color: #A868D9;
+    width: 100%;
+    height: 100%;
+    color: lightgray;
+    font-weight: bold;
+    position: absolute;
+    border-radius: 0 0 40px 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform: translate(0, -0.8px);
+    backface-visibility: hidden;
+    z-index: 2;
+}
+
+.lower-part-back-p {
+    backface-visibility: visible;
+    border-radius: 40px;
+    color: #e8a435;
+    background-color: lightgray;
+    transform: rotateX(180deg);
+    z-index: 1;
+    transition: border-radius 0.6s;
+}
+
+.card:hover > .lower-part > .lower-part-back-p {
+    border: 3px solid #e8a435;
+    border-radius: 0 0 40px 40px;
+}
+
+
+/*Rejected Card*/
+.upper-part-face-r,
+.upper-part-back-r {
+    text-align: center;
+    background-color: lightgray;
+    color: #f43f5e;
+    border: 3px solid #f43f5e;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    padding: 15px;
+    border-radius: 40px 40px 0 0;
+    font-weight: bold;
+    z-index: 2;
+    font-size: 2rem;
+    backface-visibility: hidden;
+    transition: all 0.6s;
+}
+
+.upper-part-back-r {
+    text-align: center;
+    background-color: lightgray;
+    color: #f43f5e;
+    border: 3px solid #f43f5e;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    padding: 15px;
+    border-radius: 40px 40px 0 0;
+    font-weight: bold;
+    z-index: 2;
+    backface-visibility: hidden;
+    transition: all 0.6s;
+}
+
+.upper-part-back-r {
+    background-color: #f43f5e;
+    color: lightgray;
+    transform: rotatex(180deg);
+}
+
+.lower-part-face-r {
+    background-color: #f43f5e;
+    width: 100%;
+    height: 100%;
+    color: whitesmoke;
+    font-weight: bold;
+    font-size: xx-large;
+    position: absolute;
+    border-radius: 0 0 40px 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform: translate(0, -0.8px);
+    backface-visibility: hidden;
+    z-index: 2;
+}
+
+.lower-part-back-r {
+    background-color: #f43f5e;
+    width: 100%;
+    height: 100%;
+    color: lightgray;
+    font-weight: bold;
+    position: absolute;
+    border-radius: 0 0 40px 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform: translate(0, -0.8px);
+    backface-visibility: hidden;
+    z-index: 2;
+}
+
+.lower-part-back-r {
+    backface-visibility: visible;
+    border-radius: 40px;
+    color: #f43f5e;
+    background-color: lightgray;
+    transform: rotateX(180deg);
+    z-index: 1;
+    transition: border-radius 0.6s;
+}
+
+.card:hover > .lower-part > .lower-part-back-r {
+    border: 3px solid #f43f5e;
+    border-radius: 0 0 40px 40px;
+}
+
+
+/*ServicePlus Header*/
+.servicePlusHeader {
+    text-align: center;
+    background-color: #277e71;
+    border-radius: 2rem;
+    color: cornsilk;
+}
+
+/* DropDown Menu on Reports Page*/
+
+.paste-button {
+    position: relative;
+    display: flex;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    justify-content: space-between;
+    margin-bottom:1%;
+}
+
+.button {
+    background-color: #4CAF50;
+    color: #212121;
+    padding: 10px 15px;
+    font-size: 15px;
+    font-weight: bold;
+    border: 2px solid transparent;
+    border-radius: 15px;
+    cursor: pointer;
+}
+.dates-content {
+    color: #248e93;
+    padding: 8px 10px;
+    text-decoration: none;
+    display: flex;
+    font-size: 14px;
+    font-weight: 500;
+    position: relative;
+    z-index: 1;
+    min-width: 200px;
+    background-color: #fff;
+    border: 1px solid #A8DADC;
+    border-radius: 0px 15px 15px 15px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+}
+
+.dropdown-content {
+    color: #248e93;
+    padding: 8px 10px;
+    text-decoration: none;
+    display: flex;
+    font-size: 14px;
+    font-weight:500;
+    position: relative;
+    z-index: 1;
+    min-width: 200px;
+    background-color: #fff;
+    border: 1px solid #A8DADC;
+    border-radius: 0px 15px 15px 15px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+}
+
+
+
+
+
+    .dropdown-content option:hover {
+        border-radius: 0px 13px 0px 0px;
+    }
+
+    .dropdown-content option:hover {
+        border-radius: 0px 0px 13px 13px;
+    }
+
+.paste-button:hover button {
+    border-radius: 15px 15px 0px 0px;
+}
+
+.paste-button:hover .dropdown-content {
+    display: block;
+}
+/*DropDown Menu end*/
+
+/*Date Picker*/
+label {
+    margin-left: 20px;
+}
+
+#datepicker {
+    width: 180px;
+    margin: 0 20px 20px 20px;
+}
+
+    #datepicker > span:hover {
+        cursor: pointer;
+    }
+
+.customDatePicker {
+    display: flex;
+    margin-bottom: 2%;
+}
+
+.customDatePickerfilterButton {
+    display: flex;
+    flex-direction: column;
+}
+/*end*/
+
+/*Cutom Loader*/
+
+
+/*Loader*/
+.loader {
+    position: absolute;
+    width: 120px;
+    height: 90px;
+    margin-top: 25%;
+    margin-left: 28%;
+    z-index: 999;
+}
+
+    .loader:before {
+        content: "";
+        position: absolute;
+        bottom: 30px;
+        left: 50px;
+        height: 30px;
+        width: 30px;
+        border-radius: 50%;
+        background: #2a9d8f;
+        animation: loading-bounce 0.5s ease-in-out infinite alternate;
+    }
+
+    .loader:after {
+        content: "";
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 7px;
+        width: 45px;
+        border-radius: 4px;
+        box-shadow: 0 5px 0 #f2f2f2, -35px 50px 0 #f2f2f2, -70px 95px 0 #f2f2f2;
+        animation: loading-step 1s ease-in-out infinite;
+    }
+
+@keyframes loading-bounce {
+    0% {
+        transform: scale(1, 0.7);
+    }
+
+    40% {
+        transform: scale(0.8, 1.2);
+    }
+
+    60% {
+        transform: scale(1, 1);
+    }
+
+    100% {
+        bottom: 140px;
+    }
+}
+
+@keyframes loading-step {
+    0% {
+        box-shadow: 0 10px 0 rgba(0, 0, 0, 0), 0 10px 0 red, -35px 50px 0 red, -70px 90px 0 red;
+    }
+
+    100% {
+        box-shadow: 0 10px 0 black, -35px 50px 0 black, -70px 90px 0 black, -70px 90px 0 rgba(0, 0, 0, 0);
+    }
+}
+
+
+/*End Cutom Loader*/
+
+.vertical-chain1 {
+    display: flex;
+    align-items: center;
+    position: relative;
+    margin-left: 5rem;
+}
+
+    .vertical-chain1 i {
+        margin: 5px; /* Adjust the spacing between icons as needed */
+        transform: rotate(90deg);
+        position: absolute;
+        transition: transform 0.3s ease-in-out;
+    }
+.vertical-chain1 :hover {
+    transform: rotate(90deg) translateY(-5px); /* Adjust the vertical movement */
+}
+
+        .vertical-chain1 i:nth-child(1) {
+            rotate: 36deg;
+        }
+
+        .vertical-chain1 i:nth-child(2) {
+            top: 1.0rem; /* Adjust the vertical spacing between icons */
+            rotate: 36deg;
+        }
+
+        .vertical-chain1 i:nth-child(3) {
+            top: 2.6rem; /* Adjust the vertical spacing between icons */
+            rotate: 36deg;
+        }
+
+        .vertical-chain1 i:nth-child(4) {
+            top: 3.5rem;
+            rotate: 90deg;
+        }
+
+.vertical-chain2 {
+    display: flex;
+    align-items: center;
+    position: relative;
+    margin-left: 20rem;
+}
+
+    .vertical-chain2 i {
+        margin: 5px; /* Adjust the spacing between icons as needed */
+        transform: rotate(90deg);
+        position: absolute;
+    }
+
+        .vertical-chain2 i:nth-child(1) {
+            rotate: 36deg;
+        }
+
+        .vertical-chain2 i:nth-child(2) {
+            top: 1.0rem; /* Adjust the vertical spacing between icons */
+            rotate: 36deg;
+        }
+
+        .vertical-chain2 i:nth-child(3) {
+            top: 2.6rem; /* Adjust the vertical spacing between icons */
+            rotate: 36deg;
+        }
+
+        .vertical-chain2 i:nth-child(4) {
+            top: 3.5rem;
+            rotate: 90deg;
+        }
+
+
+.vertical-chain3 {
+    display: flex;
+    align-items: center;
+    position: relative;
+    margin-left: 34rem;
+}
+
+    .vertical-chain3 i {
+        margin: 5px; /* Adjust the spacing between icons as needed */
+        transform: rotate(90deg);
+        position: absolute;
+    }
+
+        .vertical-chain3 i:nth-child(1) {
+            rotate: 36deg;
+        }
+
+        .vertical-chain3 i:nth-child(2) {
+            top: 1.0rem; /* Adjust the vertical spacing between icons */
+            rotate: 36deg;
+        }
+
+        .vertical-chain3 i:nth-child(3) {
+            top: 2.6rem; /* Adjust the vertical spacing between icons */
+            rotate: 36deg;
+        }
+
+        .vertical-chain3 i:nth-child(4) {
+            top: 3.5rem;
+            rotate: 90deg;
+        }
+
+
+.vertical-chain4 {
+    display: flex;
+    align-items: center;
+    position: relative;
+    margin-left: 48rem;
+}
+
+    .vertical-chain4 i {
+        margin: 5px; /* Adjust the spacing between icons as needed */
+        transform: rotate(90deg);
+        position: absolute;
+    }
+
+        .vertical-chain4 i:nth-child(1) {
+            rotate: 36deg;
+        }
+
+        .vertical-chain4 i:nth-child(2) {
+            top: 1.0rem; /* Adjust the vertical spacing between icons */
+            rotate: 36deg;
+        }
+
+        .vertical-chain4 i:nth-child(3) {
+            top: 2.6rem; /* Adjust the vertical spacing between icons */
+            rotate: 36deg;
+        }
+
+        .vertical-chain4 i:nth-child(4) {
+            top: 3.5rem;
+            rotate: 90deg;
+        }
+
+
+/* Define the animation keyframes for the wind effect */
+@keyframes wind {
+    0% {
+        transform: translateX(0);
+    }
+
+    50% {
+        transform: translateX(10px); /* Adjust this value for the desired wind effect distance */
+    }
+
+    100% {
+        transform: translateX(0);
+    }
+}
+
+/* Apply the animation to the cards */
+.wind-animation {
+    animation: wind 2s ease-in-out infinite; /* Adjust the duration and easing as needed */
+}
+
+.overlay {
+    position: absolute;
+    width: -webkit-fill-available;
+    height: -webkit-fill-available;
+    opacity: 0.9;
+    z-index: 1;
+    cursor: none;
+}
+.flex-cs1 {
+    display: flex;
+    width: 100%;
+    gap: 60px;
+}
+.custom-modal {
+    color: #248e93;
+    padding: 8px 10px;
+    text-decoration: none;
+    display: flex;
+    font-size: 14px;
+    font-weight: 500;
+    position: relative;
+    z-index: 1;
+    min-width: 200px;
+    background-color: #fff;
+    border: 1px solid #A8DADC;
+    border-radius: 0px 15px 15px 15px;
+    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+}
+
+
+
+.red-row {
+    background-color: #fa0505 !important; /* Red background */
+    color: whitesmoke !important; /* White text (you can adjust text color as needed) */
+}
