@@ -56,7 +56,7 @@ namespace ServicePlusDashBoard.Controllers
 
                     httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
 
-                    HttpResponseMessage response = await httpClient.GetAsync($"{ApiEndPoints.JSONReceivedDatesEndPoint}?page={page}&pageSize={pageSize}");
+                    HttpResponseMessage response = await _httpClient.GetAsync($"{ApiEndPoints.JSONReceivedDatesEndPoint}?page={page}&pageSize={pageSize}");
                     if (response.IsSuccessStatusCode)
                     {
                         var content = await response.Content.ReadAsStringAsync();
@@ -100,7 +100,7 @@ namespace ServicePlusDashBoard.Controllers
 
                     httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
 
-                    HttpResponseMessage response = await httpClient.GetAsync($"{ApiEndPoints.ConsolidateReportEndPoint}?page={page}&pageSize={pageSize}");
+                    HttpResponseMessage response = await _httpClient.GetAsync($"{ApiEndPoints.ConsolidateReportEndPoint}?page={page}&pageSize={pageSize}");
                     if (response.IsSuccessStatusCode)
                     {
                         var content = await response.Content.ReadAsStringAsync();
@@ -139,7 +139,7 @@ namespace ServicePlusDashBoard.Controllers
                 {
 
                     httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
-                    HttpResponseMessage response = await httpClient.GetAsync(ApiEndPoints.ConsolidatePendencyReportEndPoint);
+                    HttpResponseMessage response = await _httpClient.GetAsync(ApiEndPoints.ConsolidatePendencyReportEndPoint);
                     if (response.IsSuccessStatusCode)
                     {
                         var content = await response.Content.ReadAsStringAsync();
@@ -165,7 +165,7 @@ namespace ServicePlusDashBoard.Controllers
         [HttpPost]
         public async Task<IActionResult> UpdateReport(string urlType)
         {
-            string url = "http://10.147.24.36:8082/api/ServicePlus/UpdatePendencyReport";
+          
 
             using (var httpClientHandler = new HttpClientHandler())
             {
@@ -179,7 +179,7 @@ namespace ServicePlusDashBoard.Controllers
                 using (var httpClient = new HttpClient(httpClientHandler))
                 {
                     // Send the POST request without any content
-                    HttpResponseMessage response = await httpClient.PostAsync(ApiEndPoints.UpdatePendencyReportEndPoint, null);
+                    HttpResponseMessage response = await _httpClient.PostAsync(ApiEndPoints.UpdatePendencyReportEndPoint, null);
 
                     if (response.IsSuccessStatusCode)
                     {

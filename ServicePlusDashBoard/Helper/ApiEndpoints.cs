@@ -10,7 +10,10 @@
         public const string GetSewaKendraZoneWiseReportEndPoint = "/api/ServicePlus/GetSewaKendraZoneWiseReport";
         public const string GetSewaKendraWiseReportEndPoint = "/api/ServicePlus/GetSewaKendraWiseReport";
         public const string JSONReceivedDatesEndPoint = "/api/ServicePlus/JSONReceivedDates";
-       
+        public const string ConsolidateReportEndPoint = "/api/ServicePlus/ConsolidateReport";
+        public const string ConsolidatePendencyReportEndPoint = "/api/ServicePlus/ConsolidatePendencyReport";
+        public const string UpdatePendencyReportEndPoint = "/api/ServicePlus/UpdatePendencyReport";
+
     }
     public static class ApiAccountEndPoints
     {
@@ -27,4 +30,5 @@
         public const string GetAccountApiNamesEndPoint = "/api/Authenticate/GetApiNames";
         public const string GetReportNameEndPoint = "/api/Authenticate/GetReportName";
     }
+
 }

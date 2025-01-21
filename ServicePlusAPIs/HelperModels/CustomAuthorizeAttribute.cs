@@ -32,7 +32,7 @@ public class CustomAuthorizeAttribute : Attribute, IAuthorizationFilter
         var roleManager = context.HttpContext.RequestServices.GetRequiredService<RoleManager<IdentityRole>>();
 
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.ASCII.GetBytes("ServicePlusApiMadeByNIC");
+        var key = Encoding.ASCII.GetBytes("ServicePlusApiMadeByNIC123456789");
         tokenHandler.ValidateToken(token, new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,

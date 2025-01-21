@@ -40,7 +40,7 @@ namespace ServicePlusDashBoard.Controllers
 
                 using (var httpClient = new HttpClient(httpClientHandler))
                 {
-                    HttpResponseMessage response = await httpClient.GetAsync(ApiEndPoints.PendencyReportEndPoint);
+                    HttpResponseMessage response = await _httpClient.GetAsync(ApiEndPoints.PendencyReportEndPoint);
                     if (response.IsSuccessStatusCode)
                     {
                         string content = await response.Content.ReadAsStringAsync();
@@ -86,7 +86,7 @@ namespace ServicePlusDashBoard.Controllers
 
                     httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
 
-                    HttpResponseMessage response = await httpClient.GetAsync(ApiEndPoints.PendencyReportEndPoint);
+                    HttpResponseMessage response = await _httpClient.GetAsync(ApiEndPoints.PendencyReportEndPoint);
                     if (response.IsSuccessStatusCode)
                     {
                         var content = await response.Content.ReadAsStringAsync();
@@ -118,7 +118,7 @@ namespace ServicePlusDashBoard.Controllers
 
                     httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
 
-                    HttpResponseMessage response = await httpClient.GetAsync($"{ApiEndPoints.GetSewaKendraWiseReportEndPoint}?draw={draw}&start={start}&length={length}&searchValue={searchValue}&sortColumn={sortColumn}&sortDirection={sortDirection}&fromDate={fromDate}&toDate={toDate}");
+                    HttpResponseMessage response = await _httpClient.GetAsync($"{ApiEndPoints.GetSewaKendraWiseReportEndPoint}?draw={draw}&start={start}&length={length}&searchValue={searchValue}&sortColumn={sortColumn}&sortDirection={sortDirection}&fromDate={fromDate}&toDate={toDate}");
                     if (response.IsSuccessStatusCode)
                     {
                         var content = await response.Content.ReadAsStringAsync();
@@ -155,7 +155,7 @@ namespace ServicePlusDashBoard.Controllers
 
                     httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
 
-                    HttpResponseMessage response = await httpClient.GetAsync($"{ApiEndPoints.GetSewaKendraZoneWiseReportEndPoint}?draw={draw}&start={start}&length={length}&searchValue={searchValue}&sortColumn={sortColumn}&sortDirection={sortDirection}&fromDate={formattedFromDate}&toDate={formattedToDate}&zoneType={zoneType}");
+                    HttpResponseMessage response = await _httpClient.GetAsync($"{ApiEndPoints.GetSewaKendraZoneWiseReportEndPoint}?draw={draw}&start={start}&length={length}&searchValue={searchValue}&sortColumn={sortColumn}&sortDirection={sortDirection}&fromDate={formattedFromDate}&toDate={formattedToDate}&zoneType={zoneType}");
                     if (response.IsSuccessStatusCode)
                     {
                         var content = await response.Content.ReadAsStringAsync();
@@ -214,7 +214,7 @@ namespace ServicePlusDashBoard.Controllers
 
                 using (var httpClient = new HttpClient(httpClientHandler))
                 {
-                    HttpResponseMessage response = await httpClient.GetAsync(ApiEndPoints.PendencyReportEndPoint);
+                    HttpResponseMessage response = await _httpClient.GetAsync(ApiEndPoints.PendencyReportEndPoint);
                     if (response.IsSuccessStatusCode)
                     {
                         string content = await response.Content.ReadAsStringAsync();
@@ -299,7 +299,7 @@ namespace ServicePlusDashBoard.Controllers
 
                 using (var httpClient = new HttpClient(httpClientHandler))
                 {
-                    HttpResponseMessage response = await httpClient.GetAsync(ApiEndPoints.PendencyReportEndPoint);
+                    HttpResponseMessage response = await _httpClient.GetAsync(ApiEndPoints.PendencyReportEndPoint);
                     if (response.IsSuccessStatusCode)
                     {
                         string content = await response.Content.ReadAsStringAsync();
@@ -380,7 +380,7 @@ namespace ServicePlusDashBoard.Controllers
             using (var httpClient = new HttpClient(httpClientHandler))
             {
                 httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
-                HttpResponseMessage response = await httpClient.GetAsync(url);
+                HttpResponseMessage response = await _httpClient.GetAsync(url);
                 if (response.IsSuccessStatusCode)
                 {
                     string content = await response.Content.ReadAsStringAsync();

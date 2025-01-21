@@ -333,7 +333,7 @@ namespace ServicePlusDashBoard.Controllers
             using (var httpClient = new HttpClient(httpClientHandler))
             {
                 httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
-                HttpResponseMessage response = await httpClient.GetAsync(url);
+                HttpResponseMessage response = await _httpClient.GetAsync(url);
                 if (response.IsSuccessStatusCode)
                 {
                     string content = await response.Content.ReadAsStringAsync();
@@ -363,7 +363,7 @@ namespace ServicePlusDashBoard.Controllers
             using (var httpClient = new HttpClient(httpClientHandler))
             {
                 httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
-                HttpResponseMessage response = await httpClient.GetAsync(url);
+                HttpResponseMessage response = await _httpClient.GetAsync(url);
                 if (response.IsSuccessStatusCode)
                 {
                     string content = await response.Content.ReadAsStringAsync();
@@ -397,7 +397,7 @@ namespace ServicePlusDashBoard.Controllers
                 var jsonContent = JsonConvert.SerializeObject(data);
                 var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
-                HttpResponseMessage response = await httpClient.PostAsync(url, content);
+                HttpResponseMessage response = await _httpClient.PostAsync(url, content);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -441,7 +441,7 @@ namespace ServicePlusDashBoard.Controllers
                     using (var httpClient = new HttpClient(httpClientHandler))
                     {
                         httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
-                        HttpResponseMessage response = await httpClient.GetAsync(ApiEndPoints.GetApiNamesEndPoint);
+                        HttpResponseMessage response = await _httpClient.GetAsync(ApiEndPoints.GetApiNamesEndPoint);
 
                         if (response.IsSuccessStatusCode)
                         {
@@ -489,7 +489,7 @@ namespace ServicePlusDashBoard.Controllers
                         var jsonRequest = JsonConvert.SerializeObject(createRole);
                         var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
 
-                        HttpResponseMessage response = await httpClient.PostAsync(ApiAccountEndPoints.CreateDynamicRolesEndPoint, content);
+                        HttpResponseMessage response = await _httpClient.PostAsync(ApiAccountEndPoints.CreateDynamicRolesEndPoint, content);
 
                         if (response.IsSuccessStatusCode)
                         {
@@ -565,7 +565,7 @@ namespace ServicePlusDashBoard.Controllers
 
                     httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
 
-                    HttpResponseMessage response = await httpClient.GetAsync($"{ApiAccountEndPoints.GetUserEndPoint}?page={page}&pageSize={pageSize}");
+                    HttpResponseMessage response = await _httpClient.GetAsync($"{ApiAccountEndPoints.GetUserEndPoint}?page={page}&pageSize={pageSize}");
                     if (response.IsSuccessStatusCode)
                     {
                         var content = await response.Content.ReadAsStringAsync();

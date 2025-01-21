@@ -17,8 +17,8 @@ builder.Services.AddControllersWithViews();
 // Register HttpClient with a custom handler to include the token
 builder.Services.AddHttpClient("ServicePlusClient", client =>
 {
-    client.BaseAddress = new Uri("http://10.147.24.36:8082");
-   // client.BaseAddress = new Uri("https://localhost:44375/");
+   // client.BaseAddress = new Uri("http://10.147.24.36:8082");
+    client.BaseAddress = new Uri("https://localhost:44375/");
 })
 .AddHttpMessageHandler(() =>
 {
