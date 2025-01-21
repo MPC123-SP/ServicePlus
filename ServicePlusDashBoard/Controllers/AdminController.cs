@@ -40,7 +40,7 @@ namespace ServicePlusDashBoard.Controllers
                 page=1;
                 pageSize = 10;
             }
-            string url = $"http://10.147.24.36:8083/api/ServicePlus/JSONReceivedDates?page={page}&pageSize={pageSize}";
+            
             using (var httpClientHandler = new HttpClientHandler())
             {
                 // Set TLS version 
@@ -56,7 +56,7 @@ namespace ServicePlusDashBoard.Controllers
 
                     httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
 
-                    HttpResponseMessage response = await httpClient.GetAsync(url);
+                    HttpResponseMessage response = await httpClient.GetAsync($"{ApiEndPoints.JSONReceivedDatesEndPoint}?page={page}&pageSize={pageSize}");
                     if (response.IsSuccessStatusCode)
                     {
                         var content = await response.Content.ReadAsStringAsync();
@@ -84,8 +84,7 @@ namespace ServicePlusDashBoard.Controllers
             {
                 page = 1;
                 pageSize = 10;
-            }
-            string url = $"http://10.147.24.36:8083/api/ServicePlus/ConsolidateReport?page={page}&pageSize={pageSize}";
+            } 
             using (var httpClientHandler = new HttpClientHandler())
             {
                 // Set TLS version 
@@ -101,7 +100,7 @@ namespace ServicePlusDashBoard.Controllers
 
                     httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
 
-                    HttpResponseMessage response = await httpClient.GetAsync(url);
+                    HttpResponseMessage response = await httpClient.GetAsync($"{ApiEndPoints.ConsolidateReportEndPoint}?page={page}&pageSize={pageSize}");
                     if (response.IsSuccessStatusCode)
                     {
                         var content = await response.Content.ReadAsStringAsync();
@@ -126,8 +125,7 @@ namespace ServicePlusDashBoard.Controllers
         public async Task<IActionResult> ConsolidatePendencyReport()
         {
 
-            var jwtToken = Request.Cookies["jwtToken"];
-            string url = "http://10.147.24.36:8083/api/ServicePlus/ConsolidatePendencyReport"; // Replace with your desired URL
+            var jwtToken = Request.Cookies["jwtToken"]; 
             using (var httpClientHandler = new HttpClientHandler())
             {
                 // Set TLS version 
@@ -141,7 +139,7 @@ namespace ServicePlusDashBoard.Controllers
                 {
 
                     httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
-                    HttpResponseMessage response = await httpClient.GetAsync(url);
+                    HttpResponseMessage response = await httpClient.GetAsync(ApiEndPoints.ConsolidatePendencyReportEndPoint);
                     if (response.IsSuccessStatusCode)
                     {
                         var content = await response.Content.ReadAsStringAsync();
@@ -181,7 +179,7 @@ namespace ServicePlusDashBoard.Controllers
                 using (var httpClient = new HttpClient(httpClientHandler))
                 {
                     // Send the POST request without any content
-                    HttpResponseMessage response = await httpClient.PostAsync(url, null);
+                    HttpResponseMessage response = await httpClient.PostAsync(ApiEndPoints.UpdatePendencyReportEndPoint, null);
 
                     if (response.IsSuccessStatusCode)
                     {

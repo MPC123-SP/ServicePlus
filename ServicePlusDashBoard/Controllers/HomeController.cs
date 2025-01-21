@@ -29,7 +29,6 @@ namespace ServicePlusDashBoard.Controllers
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            string url = "http://10.147.24.36:8082/api/ServicePlus/PendencyReport"; // Replace with your desired URL
             using (var httpClientHandler = new HttpClientHandler())
             {
                 // Set TLS version 
@@ -41,7 +40,7 @@ namespace ServicePlusDashBoard.Controllers
 
                 using (var httpClient = new HttpClient(httpClientHandler))
                 {
-                    HttpResponseMessage response = await httpClient.GetAsync(url);
+                    HttpResponseMessage response = await httpClient.GetAsync(ApiEndPoints.PendencyReportEndPoint);
                     if (response.IsSuccessStatusCode)
                     {
                         string content = await response.Content.ReadAsStringAsync();
@@ -72,7 +71,6 @@ namespace ServicePlusDashBoard.Controllers
 
         public async Task<IActionResult>PendencyReport()
         {
-            string url = "http://10.147.24.36:8083/api/ServicePlus/PendencyReport"; // Replace with your desired URL
             using (var httpClientHandler = new HttpClientHandler())
             {
                 // Set TLS version 
@@ -88,7 +86,7 @@ namespace ServicePlusDashBoard.Controllers
 
                     httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
 
-                    HttpResponseMessage response = await httpClient.GetAsync(url);
+                    HttpResponseMessage response = await httpClient.GetAsync(ApiEndPoints.PendencyReportEndPoint);
                     if (response.IsSuccessStatusCode)
                     {
                         var content = await response.Content.ReadAsStringAsync();
@@ -105,7 +103,6 @@ namespace ServicePlusDashBoard.Controllers
 
         public async Task<IActionResult> GetSewaKendraWiseReport(int draw, int start, int length, string searchValue, int sortColumn, string sortDirection, string fromDate, string toDate)
         {
-            string url = $"http://10.147.24.36:8083/api/ServicePlus/GetSewaKendraWiseReport?draw={draw}&start={start}&length={length}&searchValue={searchValue}&sortColumn={sortColumn}&sortDirection={sortDirection}&fromDate={fromDate}&toDate={toDate}";
             using (var httpClientHandler = new HttpClientHandler())
             {
                 // Set TLS version 
@@ -121,7 +118,7 @@ namespace ServicePlusDashBoard.Controllers
 
                     httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
 
-                    HttpResponseMessage response = await httpClient.GetAsync(url);
+                    HttpResponseMessage response = await httpClient.GetAsync($"{ApiEndPoints.GetSewaKendraWiseReportEndPoint}?draw={draw}&start={start}&length={length}&searchValue={searchValue}&sortColumn={sortColumn}&sortDirection={sortDirection}&fromDate={fromDate}&toDate={toDate}");
                     if (response.IsSuccessStatusCode)
                     {
                         var content = await response.Content.ReadAsStringAsync();
@@ -141,7 +138,7 @@ namespace ServicePlusDashBoard.Controllers
             string formattedFromDate = fromDate.HasValue ? fromDate.Value.ToString("yyyy-MM-dd") : null;
             string formattedToDate = toDate.HasValue ? toDate.Value.ToString("yyyy-MM-dd") : null;
 
-            string url = $"http://10.147.24.36:8083/api/ServicePlus/GetSewaKendraZoneWiseReport?draw={draw}&start={start}&length={length}&searchValue={searchValue}&sortColumn={sortColumn}&sortDirection={sortDirection}&fromDate={formattedFromDate}&toDate={formattedToDate}&zoneType={zoneType}";
+          
 
             using (var httpClientHandler = new HttpClientHandler())
             {
@@ -158,7 +155,7 @@ namespace ServicePlusDashBoard.Controllers
 
                     httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
 
-                    HttpResponseMessage response = await httpClient.GetAsync(url);
+                    HttpResponseMessage response = await httpClient.GetAsync($"{ApiEndPoints.GetSewaKendraZoneWiseReportEndPoint}?draw={draw}&start={start}&length={length}&searchValue={searchValue}&sortColumn={sortColumn}&sortDirection={sortDirection}&fromDate={formattedFromDate}&toDate={formattedToDate}&zoneType={zoneType}");
                     if (response.IsSuccessStatusCode)
                     {
                         var content = await response.Content.ReadAsStringAsync();
@@ -186,9 +183,8 @@ namespace ServicePlusDashBoard.Controllers
             return View();
         }
         public async Task<IActionResult> Reports()
-        {
-            var reportNameUrl = "http://10.147.24.36:8083/api/Authenticate/GetReportName";
-            var reportsName =await  SendHttpGetRequest<string>(reportNameUrl);           
+        { 
+            var reportsName =await  SendHttpGetRequest<string>(ApiAccountEndPoints.GetReportNameEndPoint);           
 
             List<ZoneTypes> ZoneTypes = new List<ZoneTypes>()
             {
@@ -207,7 +203,6 @@ namespace ServicePlusDashBoard.Controllers
         
         public async Task<IActionResult> PendencyExcel()
         {
-            string url = "http://10.147.24.36:8082/api/ServicePlus/PendencyReport"; // Replace with your desired URL
             using (var httpClientHandler = new HttpClientHandler())
             {
                 // Set TLS version 
@@ -219,7 +214,7 @@ namespace ServicePlusDashBoard.Controllers
 
                 using (var httpClient = new HttpClient(httpClientHandler))
                 {
-                    HttpResponseMessage response = await httpClient.GetAsync(url);
+                    HttpResponseMessage response = await httpClient.GetAsync(ApiEndPoints.PendencyReportEndPoint);
                     if (response.IsSuccessStatusCode)
                     {
                         string content = await response.Content.ReadAsStringAsync();
@@ -292,7 +287,7 @@ namespace ServicePlusDashBoard.Controllers
             int yOffset = 10;
             int columnWidth = 75;
 
-            string url = "http://10.147.24.36:8082/api/ServicePlus/PendencyReport"; // Replace with your desired URL
+           
             using (var httpClientHandler = new HttpClientHandler())
             {
                 // Set TLS version 
@@ -304,7 +299,7 @@ namespace ServicePlusDashBoard.Controllers
 
                 using (var httpClient = new HttpClient(httpClientHandler))
                 {
-                    HttpResponseMessage response = await httpClient.GetAsync(url);
+                    HttpResponseMessage response = await httpClient.GetAsync(ApiEndPoints.PendencyReportEndPoint);
                     if (response.IsSuccessStatusCode)
                     {
                         string content = await response.Content.ReadAsStringAsync();
@@ -424,8 +419,7 @@ namespace ServicePlusDashBoard.Controllers
         {
             var initiatedDataColumns = GetPropertyNames(typeof(InitiatedData));
             ViewBag.InitiatedColumns = initiatedDataColumns;
-            string urlServiceName = "http://10.147.24.36:8083/api/ServicePlus/GetServicesName";
-            var serviceNames = await SendHttpGetRequest<string>(urlServiceName);            
+            var serviceNames = await SendHttpGetRequest<string>(ApiEndPoints.GetServicesNameEndPoint);            
             ViewBag.ServiceNames = serviceNames;
             return View();
         }
