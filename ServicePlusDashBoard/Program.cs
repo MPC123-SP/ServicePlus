@@ -17,7 +17,8 @@ builder.Services.AddControllersWithViews();
 // Register HttpClient with a custom handler to include the token
 builder.Services.AddHttpClient("ServicePlusClient", client =>
 {
-    client.BaseAddress = new Uri("http://10.147.24.36:8082");
+   // client.BaseAddress = new Uri("http://10.147.24.36:8082");
+    client.BaseAddress = new Uri("https://localhost:44375/");
 })
 .AddHttpMessageHandler(() =>
 {
@@ -36,10 +37,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 ValidateIssuer = true,
                 ValidateAudience = true,
                 ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-                ValidIssuer = configuration["JWT:ValidAudience"], // Set your issuer
-                ValidAudience = configuration["JWT:ValidIssuer"], // Set your audience
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("yourSecretKey"))
+                ClockSkew = TimeSpan.Zero,
+                ValidIssuer = configuration["JWT:ValidIssuer"],// Set your issuer
+                ValidAudience = configuration["JWT:ValidAudience"], // Set your audience
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:Secret"]))
             };
             options.Events = new JwtBearerEvents
             {
