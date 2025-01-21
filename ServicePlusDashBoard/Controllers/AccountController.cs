@@ -8,7 +8,6 @@ using ServicePlusDashBoard.AccountModels;
 using ServicePlusDashBoard.Helper;
 using ServicePlusDashBoard.ViewModel;
 using System.IdentityModel.Tokens.Jwt;
-using System.Net.Http;
 using System.Security.Authentication;
 using System.Security.Claims;
 using System.Text;
@@ -82,8 +81,9 @@ namespace ServicePlusDashBoard.Controllers
                         { // Store the token in cookies
                             Response.Cookies.Append("jwtToken", token.token, new CookieOptions
                             {
-
-
+                                HttpOnly = true,
+                                Secure = false, // Set to true if using HTTPS
+                                SameSite = SameSiteMode.Strict // Adjust based on your needs
                             });
 
                             return RedirectToAction("Index", "Admin");
@@ -92,7 +92,9 @@ namespace ServicePlusDashBoard.Controllers
                         { // Store the token in cookies
                             Response.Cookies.Append("jwtToken", token.token, new CookieOptions
                             {
-
+                                HttpOnly = true,
+                                Secure = false, // Set to true if using HTTPS
+                                SameSite = SameSiteMode.Strict // Adjust based on your needs
                             });
 
                             return RedirectToAction("Index", "Home");
