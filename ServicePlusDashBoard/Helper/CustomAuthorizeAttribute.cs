@@ -34,7 +34,7 @@ namespace ServicePlusDashBoard.Helper
             // Retrieve the RoleManager from the service provider
             
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes("ServicePlusApiMadeByNIC");
+            var key = Encoding.ASCII.GetBytes("ServicePlusApiMadeByNIC123456789");
             tokenHandler.ValidateToken(token, new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
