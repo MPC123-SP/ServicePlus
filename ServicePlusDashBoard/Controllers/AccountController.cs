@@ -25,18 +25,32 @@ namespace ServicePlusDashBoard.Controllers
         public AccountController(IHttpClientFactory httpClientFactory, HttpClient httpClient, IHttpContextAccessor httpContextAccessor)
         {
             _httpClient = httpClientFactory.CreateClient("ServicePlusClient");
+
             _httpContextAccessor = httpContextAccessor;
         }
         [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> Login()
         {
-            var endpoint = ApiEndpoints.GetServicesName; // Retrieve endpoint
-          
-            var serviceNames = await _httpClient.GetAsync(endpoint);
-            ViewBag.ServiceNames = serviceNames;
+            // Fetch JSON response from the endpoint
+            var response = await _httpClient.GetAsync(ApiEndPoints.GetServicesNameEndPoint);
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Read JSON as a string and deserialize it to a C# object
+                var jsonString = await response.Content.ReadAsStringAsync();
+                var serviceNames = JsonConvert.DeserializeObject<List<string>>(jsonString);
+                ViewBag.ServiceNames = serviceNames;
+            }
+            else
+            {
+                // Handle error case
+                ViewBag.ServiceNames = new List<string>();
+            }
+
             return View();
         }
+
 
         [AllowAnonymous]
         [HttpPost]
@@ -47,7 +61,7 @@ namespace ServicePlusDashBoard.Controllers
                 string Role = "";
                 TokenResponse token = await GetTokenFromOtherAPI(loginViewModel.UserName, loginViewModel.Password);
                 // Decode the JWT token to extract claims
-                if (token!=null)
+                if (token != null)
                 {
                     if (token.token != null)
                     {
@@ -68,8 +82,8 @@ namespace ServicePlusDashBoard.Controllers
                         { // Store the token in cookies
                             Response.Cookies.Append("jwtToken", token.token, new CookieOptions
                             {
-                                 
-                                
+
+
                             });
 
                             return RedirectToAction("Index", "Admin");
@@ -78,7 +92,7 @@ namespace ServicePlusDashBoard.Controllers
                         { // Store the token in cookies
                             Response.Cookies.Append("jwtToken", token.token, new CookieOptions
                             {
-                                
+
                             });
 
                             return RedirectToAction("Index", "Home");
@@ -97,9 +111,21 @@ namespace ServicePlusDashBoard.Controllers
                 }
 
             }
-            string urlServiceName = "http://10.147.24.36:8083/api/ServicePlus/GetServicesName";
-            var serviceNames = await SendHttpGetRequest<string>(urlServiceName);
-            ViewBag.ServiceNames = serviceNames;
+
+            var response = await _httpClient.GetAsync(ApiEndPoints.GetServicesNameEndPoint);
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Read JSON as a string and deserialize it to a C# object
+                var jsonString = await response.Content.ReadAsStringAsync();
+                var serviceNames = JsonConvert.DeserializeObject<List<string>>(jsonString);
+                ViewBag.ServiceNames = serviceNames;
+            }
+            else
+            {
+                // Handle error case
+                ViewBag.ServiceNames = new List<string>();
+            }
 
 
             // Handle authentication failure
@@ -109,33 +135,25 @@ namespace ServicePlusDashBoard.Controllers
         private async Task<TokenResponse> GetTokenFromOtherAPI(string userName, string password)
         {
             // Make an HTTP request to the other API to get the token
-            // Use HttpClient or any other HTTP library to send the request
-
-            // Example using HttpClient:
-            using (var client = new HttpClient())
+            var requestContent = new StringContent(JsonConvert.SerializeObject(new
             {
-                var requestContent = new StringContent(JsonConvert.SerializeObject(new
-                {
-                    Username = userName,
-                    Password = password
-                }), Encoding.UTF8, "application/json");
+                Username = userName,
+                Password = password
+            }), Encoding.UTF8, "application/json");
 
-                var response = await client.PostAsync("http://10.147.24.36:8083/api/Authenticate/login", requestContent);
+            var response = await _httpClient.PostAsync(ApiAccountEndPoints.LoginEndPoint, requestContent);
 
-                if (response.IsSuccessStatusCode)
-                {
-                    var tokenResponse = JsonConvert.DeserializeObject<TokenResponse>(await response.Content.ReadAsStringAsync());
-                    return tokenResponse; // Assuming the token is returned in the response
-                }
-                else
-                {
-                    var tokenResponse = JsonConvert.DeserializeObject<TokenResponse>(await response.Content.ReadAsStringAsync());
-                    return tokenResponse; // Assuming the token is returned in the response
-
-                }
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonString = await response.Content.ReadAsStringAsync();
+                var tokenResponse = JsonConvert.DeserializeObject<TokenResponse>(jsonString);
+                return tokenResponse; // Assuming the token is returned in the response
             }
-
-           
+            else
+            {
+                var errorString = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Error fetching token: {errorString}");
+            }
         }
 
         public IActionResult LogOut()
@@ -154,30 +172,28 @@ namespace ServicePlusDashBoard.Controllers
         public async Task<IActionResult> CreateUser()
         {
             var jwtToken = Request.Cookies["jwtToken"];
-            string urlGetRoles = "http://10.147.24.36:8083/api/Authenticate/GetRole";
-            string urlPermissions = "http://10.147.24.36:8083/api/ServicePlus/GetApiNames";
-            List<RolesViewModel> dataList = await SendHttpGetRequestAsync<RolesViewModel>(urlGetRoles);
+            List<RolesViewModel> dataList = await SendHttpGetRequestAsync<RolesViewModel>(ApiAccountEndPoints.GetRoleEndPoint);
             SelectList roleSelectList = new SelectList(dataList, "Name", "Name");
             SelectList checkRoleSelectList = new SelectList(dataList, "Id", "Name");
             ViewBag.RoleSelectList = roleSelectList;
             ViewBag.CheckSelectList = checkRoleSelectList;
 
-            List<PermissionsViewModel> permissionsViewModels = await SendHttpGetRequestAsync<PermissionsViewModel>(urlPermissions);
+            List<PermissionsViewModel> permissionsViewModels = await SendHttpGetRequestAsync<PermissionsViewModel>(ApiEndPoints.GetApiNamesEndPoint);
             SelectList permissionSelectList = new SelectList(permissionsViewModels, "ApiName", "ApiName");
             ViewBag.PermissionSelectList = permissionSelectList;
 
-            string urlGetDistrict = "http://10.147.24.36:8083/api/ServicePlus/GetDistricts";
-            List<DistrictViewModel> districtViewModel = await SendHttpGetRequestAsync<DistrictViewModel>(urlGetDistrict);
+
+            List<DistrictViewModel> districtViewModel = await SendHttpGetRequestAsync<DistrictViewModel>(ApiEndPoints.GetDistrictsEndPoint);
             SelectList districtSelectList = new SelectList(districtViewModel, "CustomLGDDDistrictCode", "CustomLGDDDistrictName");
             ViewBag.DistrictSelectList = districtSelectList;
 
-            string urlGetDepartments = "http://10.147.24.36:8083/api/ServicePlus/GetDepartments";
-            var getDepartments = await SendHttpGetRequest<string>(urlGetDepartments);
+
+            var getDepartments = await SendHttpGetRequest<string>(ApiEndPoints.GetDepartmentsEndPoint);
             SelectList departmentsSelectList = new SelectList(getDepartments);
             ViewBag.DepartmentSelectList = departmentsSelectList;
 
-            string urlGetServices = "http://10.147.24.36:8083/api/ServicePlus/GetServicesName";
-            var getServices = await SendHttpGetRequest<string>(urlGetServices);
+
+            var getServices = await SendHttpGetRequest<string>(ApiEndPoints.GetServicesNameEndPoint);
             SelectList serviceNamesSelectList = new SelectList(getServices);
 
             ViewBag.ServicesSelectList = serviceNamesSelectList;
@@ -201,13 +217,11 @@ namespace ServicePlusDashBoard.Controllers
         public async Task<IActionResult> CreateUser(CreateUser createUser)
         {
             var jwtToken = Request.Cookies["jwtToken"];
-            string urlGetRoles = "http://10.147.24.36:8083/api/Authenticate/GetRole";
-            string urlPermissions = "http://10.147.24.36:8083/api/ServicePlus/GetApiNames";
             if (ModelState.IsValid)
             {
                 if (jwtToken != null)
                 {
-                    string urlCreate = "http://10.147.24.36:8083/api/Authenticate/register";
+
 
                     using (var httpClientHandler = new HttpClientHandler())
                     {
@@ -226,7 +240,7 @@ namespace ServicePlusDashBoard.Controllers
                             var jsonRequest = JsonConvert.SerializeObject(createUser);
                             var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
 
-                            HttpResponseMessage response = await httpClient.PostAsync(urlCreate, content);
+                            HttpResponseMessage response = await httpClient.PostAsync(ApiAccountEndPoints.RegisterEndPoint, content);
 
                             if (response.IsSuccessStatusCode)
                             {
@@ -272,28 +286,26 @@ namespace ServicePlusDashBoard.Controllers
                 }
             }
 
-            List<RolesViewModel> dataList = await SendHttpGetRequestAsync<RolesViewModel>(urlGetRoles);
+            List<RolesViewModel> dataList = await SendHttpGetRequestAsync<RolesViewModel>(ApiAccountEndPoints.GetRoleEndPoint);
             SelectList roleSelectList = new SelectList(dataList, "Name", "Name");
             ViewBag.RoleSelectList = roleSelectList;
             SelectList checkRoleSelectList = new SelectList(dataList, "Id", "Name");
             ViewBag.CheckSelectList = checkRoleSelectList;
 
-            List<PermissionsViewModel> permissionsViewModels = await SendHttpGetRequestAsync<PermissionsViewModel>(urlPermissions);
+            List<PermissionsViewModel> permissionsViewModels = await SendHttpGetRequestAsync<PermissionsViewModel>(ApiEndPoints.GetServicesNameEndPoint);
             SelectList permissionSelectList = new SelectList(permissionsViewModels, "ApiName", "ApiName");
             ViewBag.PermissionSelectList = permissionSelectList;
 
-            string urlGetDistrict = "http://10.147.24.36:8083/api/ServicePlus/GetDistricts";
-            List<DistrictViewModel> districtViewModel = await SendHttpGetRequestAsync<DistrictViewModel>(urlGetDistrict);
+            List<DistrictViewModel> districtViewModel = await SendHttpGetRequestAsync<DistrictViewModel>(ApiEndPoints.GetDistrictsEndPoint);
             SelectList districtSelectList = new SelectList(districtViewModel, "CustomLGDDDistrictName", "CustomLGDDDistrictName");
             ViewBag.DistrictSelectList = districtSelectList;
 
-            string urlGetDepartments = "http://10.147.24.36:8083/api/ServicePlus/GetDepartments";
-            var getDepartments = await SendHttpGetRequest<string>(urlGetDepartments);
+            var getDepartments = await SendHttpGetRequest<string>(ApiEndPoints.GetDepartmentsEndPoint);
             SelectList departmentsSelectList = new SelectList(getDepartments);
             ViewBag.DepartmentSelectList = departmentsSelectList;
 
-            string urlGetServices = "http://10.147.24.36:8083/api/ServicePlus/GetServicesName";
-            var getServices = await SendHttpGetRequest<string>(urlGetServices);
+
+            var getServices = await SendHttpGetRequest<string>(ApiEndPoints.GetServicesNameEndPoint);
             SelectList serviceNamesSelectList = new SelectList(getServices);
 
             ViewBag.ServicesSelectList = serviceNamesSelectList;
@@ -411,7 +423,6 @@ namespace ServicePlusDashBoard.Controllers
 
             if (jwtToken != null)
             {
-                string urlPermissions = "http://10.147.24.36:8083/api/ServicePlus/GetApiNames";
 
                 var viewModel = new CreateRole();
 
@@ -428,7 +439,7 @@ namespace ServicePlusDashBoard.Controllers
                     using (var httpClient = new HttpClient(httpClientHandler))
                     {
                         httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
-                        HttpResponseMessage response = await httpClient.GetAsync(urlPermissions);
+                        HttpResponseMessage response = await httpClient.GetAsync(ApiEndPoints.GetApiNamesEndPoint);
 
                         if (response.IsSuccessStatusCode)
                         {
@@ -438,8 +449,7 @@ namespace ServicePlusDashBoard.Controllers
                         }
                     }
                 }
-                var urlApiNames = "http://10.147.24.36:8083/api/Authenticate/GetApiNames";
-                List<ApiDescriptions> apiNames = await SendHttpGetRequestAsync<ApiDescriptions>(urlApiNames);
+                List<ApiDescriptions> apiNames = await SendHttpGetRequestAsync<ApiDescriptions>(ApiAccountEndPoints.GetAccountApiNamesEndPoint);
                 ViewBag.apiDescription = apiNames;
                 return View(viewModel);
             }
@@ -458,7 +468,6 @@ namespace ServicePlusDashBoard.Controllers
             var jwtToken = Request.Cookies["jwtToken"];
             if (jwtToken != null)
             {
-                string urlPermissions = "http://10.147.24.36:8083/api/Authenticate/CreateDynamicRoles";
 
                 // Populate Permissions and PermissionSelectList
                 using (var httpClientHandler = new HttpClientHandler())
@@ -478,7 +487,7 @@ namespace ServicePlusDashBoard.Controllers
                         var jsonRequest = JsonConvert.SerializeObject(createRole);
                         var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
 
-                        HttpResponseMessage response = await httpClient.PostAsync(urlPermissions, content);
+                        HttpResponseMessage response = await httpClient.PostAsync(ApiAccountEndPoints.CreateDynamicRolesEndPoint, content);
 
                         if (response.IsSuccessStatusCode)
                         {
@@ -506,8 +515,8 @@ namespace ServicePlusDashBoard.Controllers
         [HttpPost]
         public async Task<IActionResult> GetRolePermission(CreateUser createUser)
         {
-            string urlGetRolesPermission = "http://10.147.24.36:8083/api/Authenticate/GetRolePermissionsById?roleId=" + createUser.Roles.FirstOrDefault();
-            var rolePermission = await SendHttpGetRequestAsync<ApiDescriptions>(urlGetRolesPermission);
+
+            var rolePermission = await SendHttpGetRequestAsync<ApiDescriptions>($"{ApiAccountEndPoints.GetRolePermissionsByIdEndPoint}?roleId={createUser.Roles.FirstOrDefault()}");
 
             // Serialize the rolePermission object to a JSON string
             string rolePermissionJson = JsonConvert.SerializeObject(rolePermission);
@@ -538,7 +547,7 @@ namespace ServicePlusDashBoard.Controllers
                 page = 1;
                 pageSize = 10;
             }
-            string url = $"http://10.147.24.36:8083/api/Authenticate/GetUser?page={page}&pageSize={pageSize}";
+             
             using (var httpClientHandler = new HttpClientHandler())
             {
                 // Set TLS version 
@@ -554,7 +563,7 @@ namespace ServicePlusDashBoard.Controllers
 
                     httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
 
-                    HttpResponseMessage response = await httpClient.GetAsync(url);
+                    HttpResponseMessage response = await httpClient.GetAsync($"{ApiAccountEndPoints.GetUserEndPoint}?page={page}&pageSize={pageSize}");
                     if (response.IsSuccessStatusCode)
                     {
                         var content = await response.Content.ReadAsStringAsync();
@@ -578,9 +587,8 @@ namespace ServicePlusDashBoard.Controllers
 
         [HttpGet]
         public async Task<IActionResult> AddApiDescription()
-        {
-            var urlApiNames = "http://10.147.24.36:8083/api/Authenticate/GetApiNames";
-            List<ApiDescriptions> apiNames = await SendHttpGetRequestAsync<ApiDescriptions>(urlApiNames);
+        { 
+            List<ApiDescriptions> apiNames = await SendHttpGetRequestAsync<ApiDescriptions>(ApiAccountEndPoints.GetAccountApiNamesEndPoint);
 
             // Filter the list to include only items with empty descriptions
             var apiNamesWithEmptyDescriptions = apiNames.Where(api => string.IsNullOrEmpty(api.ApiDescription)).ToList();
@@ -601,9 +609,8 @@ namespace ServicePlusDashBoard.Controllers
         {
             if (ModelState.IsValid)
             {
-                var updateApiUrl = "http://10.147.24.36:8083/api/Authenticate/AddEditApiDescription";
-
-                ApiResponse response = await SendHttpPostRequest<string>(updateApiUrl, apiDescription);
+                 
+                ApiResponse response = await SendHttpPostRequest<string>(ApiAccountEndPoints.AddEditApiDescriptionEndPoint, apiDescription);
 
                 TempData["Response"] = response.Message;
             }
@@ -612,9 +619,8 @@ namespace ServicePlusDashBoard.Controllers
 
         [HttpGet]
         public async Task<IActionResult> UpdateApiName()
-        {
-            var updateApiUrl = "http://10.147.24.36:8083/api/Authenticate/UpdateApiNames";
-            ApiResponse response = await SendHttpPostRequest<string>(updateApiUrl, "");
+        { 
+            ApiResponse response = await SendHttpPostRequest<string>(ApiAccountEndPoints.UpdateApiNamesEndPoint, "");
 
             TempData["Response"] = response.Message;
             return RedirectToAction("AddApiDescription");
@@ -625,8 +631,8 @@ namespace ServicePlusDashBoard.Controllers
         {
             if (!string.IsNullOrWhiteSpace(userName))
             {
-                var url = "http://10.147.24.36:8083/api/Authenticate/DisableUserAccountByUserName?username=" + userName;
-                ApiResponse response = await SendHttpPostRequest<string>(url, userName);
+                
+                ApiResponse response = await SendHttpPostRequest<string>($"{ApiAccountEndPoints.DisableUserAccountByUserNameEndPoint}?username={userName}", userName);
 
                 TempData["Response"] = response.Message;
             }
@@ -638,8 +644,8 @@ namespace ServicePlusDashBoard.Controllers
         {
             if (!string.IsNullOrWhiteSpace(userName))
             {
-                var url = "http://10.147.24.36:8083/api/Authenticate/EnableUserAccountByUserName?username=" + userName;
-                ApiResponse response = await SendHttpPostRequest<string>(url, userName);
+                 
+                ApiResponse response = await SendHttpPostRequest<string>($"{ApiAccountEndPoints.EnableUserAccountByUserNameEndPoint}?username={userName}", userName);
 
                 TempData["Response"] = response.Message;
             }
