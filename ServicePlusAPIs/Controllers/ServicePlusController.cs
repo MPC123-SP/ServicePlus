@@ -1711,6 +1711,7 @@ namespace ServicePlusAPIs.Controllers
         [AllowAnonymous]
         [HttpGet]
         [Route("GetServicesName")]
+
         public async Task<IActionResult> GetServiceName()
         {
             var servicePlusName = _servicePlusContext.InitiatedDatas.Select(d => d.ServiceName).Distinct().ToList();
