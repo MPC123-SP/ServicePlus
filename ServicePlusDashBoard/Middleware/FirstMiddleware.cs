@@ -11,14 +11,20 @@
         }
 
         public async Task Invoke(HttpContext httpContext)
-        { 
+        {
             var jwtToken = httpContext.Request.Cookies["jwtToken"];
             if (!string.IsNullOrWhiteSpace(jwtToken))
             {
-                httpContext.Request.Headers.Add("Authorization", "Bearer " + jwtToken);
+                // Check if Authorization header already exists
+                if (!httpContext.Request.Headers.ContainsKey("Authorization"))
+                {
+                    httpContext.Request.Headers.Add("Authorization", "Bearer " + jwtToken);
+                }
+            }
 
-            } 
-
+            // Log the Authorization header to check if it's being set
+            var authorizationHeader = httpContext.Request.Headers["Authorization"].ToString();
+            Console.WriteLine("Authorization Header: " + authorizationHeader);
 
             await _next(httpContext);
         }
@@ -33,3 +39,4 @@
         }
     }
 }
+ 

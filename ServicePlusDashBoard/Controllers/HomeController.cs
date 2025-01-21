@@ -13,7 +13,7 @@ using ServicePlusDashBoard.Models;
 
 namespace ServicePlusDashBoard.Controllers
 {
-    [Authorize]
+    [Authorize] 
     public class HomeController : Controller
     {
         private readonly PermissionService _permissionService;
@@ -25,8 +25,8 @@ namespace ServicePlusDashBoard.Controllers
             _httpClient = httpClientFactory.CreateClient("ServicePlusClient");
             _httpContextAccessor = httpContextAccessor;
         }
-      
-         
+
+        [HttpGet]
         public async Task<IActionResult> Index()
         {
             string url = "http://10.147.24.36:8082/api/ServicePlus/PendencyReport"; // Replace with your desired URL

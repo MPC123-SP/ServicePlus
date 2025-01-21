@@ -2,9 +2,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using ServicePlusDashBoard.Helper;
 using ServicePlusDashBoard.Middleware;
-using System.IdentityModel.Tokens.Jwt;
-using System.Net.Http.Headers;
-using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,7 +17,8 @@ builder.Services.AddControllersWithViews();
 // Register HttpClient with a custom handler to include the token
 builder.Services.AddHttpClient("ServicePlusClient", client =>
 {
-    client.BaseAddress = new Uri("http://10.147.24.36:8083/api/ServicePlus/");
+   // client.BaseAddress = new Uri("http://10.147.24.36:8082");
+    client.BaseAddress = new Uri("https://localhost:44375/");
 })
 .AddHttpMessageHandler(() =>
 {
@@ -28,12 +26,42 @@ builder.Services.AddHttpClient("ServicePlusClient", client =>
 });
 builder.Services.AddHttpClient();  // Registers HttpClient for injection
 builder.Services.AddHttpContextAccessor(); // For accessing HttpContext to get cookies
-var app = builder.Build();
 
-app.UseMiddleware<FirstMiddleware>();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.RequireHttpsMetadata = false;
+            options.SaveToken = true;
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero,
+                ValidIssuer = configuration["JWT:ValidIssuer"],// Set your issuer
+                ValidAudience = configuration["JWT:ValidAudience"], // Set your audience
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:Secret"]))
+            };
+            options.Events = new JwtBearerEvents
+            {
+                OnAuthenticationFailed = context =>
+                {
+                    Console.WriteLine($"Authentication failed: {context.Exception.Message}");
+                    return Task.CompletedTask;
+                },
+                OnTokenValidated = context =>
+                {
+                    Console.WriteLine($"Token validated: {context.SecurityToken}");
+                    return Task.CompletedTask;
+                }
+            };
+        });
+
+var app = builder.Build(); 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseMiddleware<FirstMiddleware>();
 app.UseAuthentication(); // Enable authentication middleware
 app.UseAuthorization(); // Enable authorization middleware
  

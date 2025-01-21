@@ -57,7 +57,7 @@ namespace ServicePlusAPIs.Controllers
         {
             var userLogin = _mapper.Map<UserLoginViewModel, UserLogin>(model);
             var user = await _userManager.FindByNameAsync(userLogin.Username);
-            var userRecord= _servicePlusContext.Users
+            var userRecord = _servicePlusContext.Users
                          .Include(u => u.RegisterUserDistricts)
                          .Include(u => u.RegisterUserServices)
                          .Include(u => u.RegisterUserDepartments).Where(d => d.UserName == user.UserName).ToList();
@@ -67,12 +67,12 @@ namespace ServicePlusAPIs.Controllers
             {
                 var isLockoutEnabled = await _userManager.GetLockoutEnabledAsync(user);
 
-                if (isLockoutEnabled==false)
+                if (isLockoutEnabled == false)
                 {
                     // Check if the user is currently locked out
                     var isLockedOut = await _userManager.IsLockedOutAsync(user);
 
-                    if (isLockedOut==false)
+                    if (isLockedOut == false)
                     {
                         // Return a response indicating that the account is locked
                         return Unauthorized(new Response { Status = "Error", Message = "User account is  locked." });
@@ -81,7 +81,7 @@ namespace ServicePlusAPIs.Controllers
                 var userRoles = await _userManager.GetRolesAsync(user);
                 var registerUserServices = await _servicePlusContext.RegisterUserServices.Where(d => d.UserId == user.Id).ToListAsync();
                 var rolePermissions = new List<RolePermission>();
-                
+
                 foreach (var role in userRoles)
                 {
                     var rolesId = _roleManager.Roles.Where(d => d.Name == role).Select(d => d.Id).FirstOrDefault();
@@ -126,13 +126,25 @@ namespace ServicePlusAPIs.Controllers
         {
             var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]));
 
-            var token = new JwtSecurityToken(
-                issuer: _configuration["JWT:ValidIssuer"],
-                audience: _configuration["JWT:ValidAudience"],
-                expires: DateTime.Now.AddHours(3),
-                claims: authClaims,
-                signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
-                );
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Issuer = _configuration["JWT:ValidIssuer"],
+                Audience = _configuration["JWT:ValidAudience"],
+                Expires = DateTime.Now.AddHours(4),
+                SigningCredentials = new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256),
+                Subject = new ClaimsIdentity(authClaims),
+            };
+
+           
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.CreateJwtSecurityToken(
+                issuer: tokenDescriptor.Issuer,
+                audience: tokenDescriptor.Audience,
+                subject: tokenDescriptor.Subject,
+                expires: tokenDescriptor.Expires,
+                signingCredentials: tokenDescriptor.SigningCredentials);
+
+
 
             return token;
         }
@@ -359,7 +371,7 @@ namespace ServicePlusAPIs.Controllers
         {
             var totalCount = await _servicePlusContext.Users.CountAsync();
 
-            var userList =await _servicePlusContext.Users
+            var userList = await _servicePlusContext.Users
                        .Include(u => u.RegisterUserDistricts)
                        .Include(u => u.RegisterUserServices)
                        .Include(u => u.RegisterUserDepartments).OrderByDescending(d => d.UserName)
@@ -392,7 +404,7 @@ namespace ServicePlusAPIs.Controllers
                         UserName = user.UserName,
                         RoleName = roles, // Role name 
                         RolePermissions = rolePermissions,
-                        LockoutEnabled=user.LockoutEnabled
+                        LockoutEnabled = user.LockoutEnabled
                     });
                 }
             }
@@ -711,8 +723,7 @@ namespace ServicePlusAPIs.Controllers
         }
 
         #endregion
-       
-      
+
 
 
     }
