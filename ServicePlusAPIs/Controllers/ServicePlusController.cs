@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -2093,6 +2094,38 @@ namespace ServicePlusAPIs.Controllers
             {
                 return NotFound("No records found with the existing service name.");
             }
+        }
+
+        #endregion
+
+
+        #region Public Sports Report
+        [HttpGet("GetPublicSportsReport")]
+        public async Task<IActionResult> GetPublicSportsReport(int page, int pageSize)
+        {
+            var totalCount = await _servicePlusContext.InitiatedDatas.Where(d => d.ServiceName.Contains("Punjab Sports Events Portal")).CountAsync();
+
+            var initiatedRecords = await _servicePlusContext.InitiatedDatas.Include(d=>d.AttributeDetail).Where(d => d.ServiceName.Contains("Punjab Sports Events Portal")).OrderByDescending(d => d.SubmissionDate)
+            .Skip((page - 1) * pageSize)
+                .Take(pageSize).ToListAsync();
+
+            var result = new
+            {
+
+                recordsTotal = totalCount,
+                recordsFiltered = totalCount,
+                data = initiatedRecords.Select(initiatedRecord => new
+                {
+                    initiatedRecord,
+                    ExecutionRecord = GetExecutionRecord(initiatedRecord.ApplId ?? 0).Any()
+                            ? GetExecutionRecord(initiatedRecord.ApplId ?? 0)
+                            : null
+                })
+
+            };
+
+
+            return Ok(result);
         }
 
         #endregion
