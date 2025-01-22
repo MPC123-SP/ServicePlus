@@ -2105,69 +2105,91 @@ namespace ServicePlusAPIs.Controllers
         [HttpGet("GetPublicIndividualSportsReport")]
         public async Task<IActionResult> GetPublicIndividualSportsReport(int page, int pageSize)
         {
-            var totalCount = await _servicePlusContext.InitiatedDatas
-                .Where(d => d.ServiceName.Contains("Punjab Sports Events Portal"))
-                .CountAsync();
+            // Build the base query
+            var query = from initiatedData in _servicePlusContext.InitiatedDatas
+                        join taskDetails in _servicePlusContext.TaskDetails on initiatedData.ApplId equals taskDetails.ApplId
+                        join officialFormDetails in _servicePlusContext.OfficialFormDetails on taskDetails.ExecutionDataId equals officialFormDetails.ExecutionDataId into groupedOfficialFormDetails
+                        where initiatedData.ServiceName.Contains("Punjab Sports Events Portal") && taskDetails.TaskId == 23005
+                        orderby initiatedData.InitiatedDataId descending
+                        select new
+                        {
+                            InitiatedDataId = initiatedData.InitiatedDataId,
+                            AttributeDetails = initiatedData.AttributeDetail
+                                .Where(attr => new[]
+                                {
+                            "169954", "169964", "170094", "170202", "170203", "170246", "170608"
+                                }.Contains(attr.ApplicationFormFieldID))
+                                .ToList(),
+                            initiatedData.ServiceId,
+                            initiatedData.ServiceName,
+                            initiatedData.ApplId,
+                            initiatedData.ApplRefNo,
+                            initiatedData.SubmissionDate,
+                            TaskDetail = new
+                            {
+                                taskDetails.TaskDetailID,
+                                taskDetails.ExecutionDataId,
+                                taskDetails.TaskName,
+                                OfficialFormDetails = groupedOfficialFormDetails
+                                    .Where(ofd => ofd.OfficalFormID == "170912")
+                                    .ToList()
+                            }
+                        };
 
-            var initiatedRecords = await (
-     from initiatedData in _servicePlusContext.InitiatedDatas.Include(d => d.AttributeDetail.Where(d => d.ApplicationFormFieldID == "170608"  ))
-     join taskDetails in _servicePlusContext.TaskDetails on initiatedData.ApplId equals taskDetails.ApplId
-     join officialFormDetails in _servicePlusContext.OfficialFormDetails on taskDetails.ExecutionDataId equals officialFormDetails.ExecutionDataId into groupedOfficialFormDetails
-     where initiatedData.ServiceName.Contains("Punjab Sports Events Portal") && taskDetails.TaskId == 23005
-     orderby initiatedData.InitiatedDataId descending
-     select new PublicSportsViewModel
-     {
-         InitiatedDataId = initiatedData.InitiatedDataId,
-         AttributeDetailID = initiatedData.AttributeDetail.Select(d => d.AttributeDetailID).FirstOrDefault(),
-         TaskDetailID = taskDetails.TaskDetailID,
-         ExecutionDataId = taskDetails.ExecutionDataId,
-         OfficialFormDetailID = groupedOfficialFormDetails.Select(d => d.OfficialFormDetailID).FirstOrDefault(),
-         ApplId = initiatedData.ApplId,
-         ApplRefNo = initiatedData.ApplRefNo,
-         TaskName = taskDetails.TaskName,
-         TaskId = taskDetails.TaskId,
-         ServiceId = initiatedData.ServiceId,
-         ServiceName = initiatedData.ServiceName,
-         SubmissionDate = initiatedData.SubmissionDate,
-         ApplicantFirstName = initiatedData.AttributeDetail
-             .Where(d => d.ApplicationFormFieldID == "169954")
-             .Select(d => d.ApplicationFormFieldValue)
-             .FirstOrDefault(),
-         ApplicantGender = initiatedData.AttributeDetail
-             .Where(d => d.ApplicationFormFieldID == "169964")
-             .Select(d => Regex.Replace(d.ApplicationFormFieldValue, @"^\d+~", ""))
-             .FirstOrDefault(),
-         ApplicantGame = initiatedData.AttributeDetail
-             .Where(d => d.ApplicationFormFieldID == "170094")
-             .Select(d => Regex.Replace(d.ApplicationFormFieldValue, @"^\d+~", ""))
-             .FirstOrDefault(),
-         ApplicantAgeGroup = initiatedData.AttributeDetail
-             .Where(d => d.ApplicationFormFieldID == "170202")
-             .Select(d => Regex.Replace(d.ApplicationFormFieldValue, @"^\d+~", ""))
-             .FirstOrDefault(),
-         ApplicantEvent = initiatedData.AttributeDetail
-             .Where(d => d.ApplicationFormFieldID == "170203")
-             .Select(d => Regex.Replace(d.ApplicationFormFieldValue, @"^\d+~", ""))
-             .FirstOrDefault(),
-         ApplicantGameCategory = initiatedData.AttributeDetail
-             .Where(d => d.ApplicationFormFieldID == "170246")
-             .Select(d => Regex.Replace(d.ApplicationFormFieldValue, @"^\d+~", ""))
-             .FirstOrDefault(),
-         ApplicantMedal = DeserializeJsonStreamAsync(groupedOfficialFormDetails
-             .Where(d => d.OfficalFormID == "170912")
-             .Select(d => d.OfficalFormValue)
-             .FirstOrDefault())
-     })
-     .Skip((page - 1) * pageSize)
-     .Take(pageSize)
-     .ToListAsync();
+            // Count query
+            var totalCount = await query.CountAsync();
+
+            // Paginate records
+            var paginatedRecords = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            // Transform data into ViewModel
+            var result = paginatedRecords.Select(data => new PublicSportsViewModel
+            {
+                InitiatedDataId = data.InitiatedDataId,
+                AttributeDetailID = data.AttributeDetails
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170608")?.AttributeDetailID,
+                TaskDetailID = data.TaskDetail?.TaskDetailID,
+                ExecutionDataId = data.TaskDetail?.ExecutionDataId,
+                OfficialFormDetailID = data.TaskDetail?.OfficialFormDetails
+                    .FirstOrDefault()?.OfficialFormDetailID,
+                ApplId = data.ApplId,
+                ApplRefNo = data.ApplRefNo,
+                TaskName = data.TaskDetail?.TaskName,
+                TaskId = 23005, // Since it's filtered, we know the value
+                ServiceId = data.ServiceId,
+                ServiceName = data.ServiceName,
+                SubmissionDate = data.SubmissionDate,
+                ApplicantFirstName = data.AttributeDetails
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169954")?.ApplicationFormFieldValue,
+                ApplicantGender = CleanValue(data.AttributeDetails
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169964")?.ApplicationFormFieldValue),
+                ApplicantGame = CleanValue(data.AttributeDetails
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170094")?.ApplicationFormFieldValue),
+                ApplicantAgeGroup = CleanValue(data.AttributeDetails
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170202")?.ApplicationFormFieldValue),
+                ApplicantEvent = CleanValue(data.AttributeDetails
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170203")?.ApplicationFormFieldValue),
+                ApplicantGameCategory = CleanValue(data.AttributeDetails
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170246")?.ApplicationFormFieldValue),
+                ApplicantMedal = DeserializeJsonStreamAsync(data.TaskDetail?.OfficialFormDetails
+                    .FirstOrDefault()?.OfficalFormValue)
+            }).ToList();
 
             return Ok(new
             {
                 TotalCount = totalCount,
-                Records = initiatedRecords
+                Records = result
             });
         }
+
+        private string CleanValue(string value)
+        {
+            return string.IsNullOrEmpty(value) ? null : Regex.Replace(value, @"^\d+~", "");
+        }
+
 
         [HttpGet("GetPublicTeamSportsReport")]
         public async Task<IActionResult> GetPublicTeamSportsReport(int page, int pageSize)
