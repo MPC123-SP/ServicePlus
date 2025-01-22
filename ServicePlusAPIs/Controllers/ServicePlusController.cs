@@ -2,7 +2,7 @@
 using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore; 
+using Microsoft.EntityFrameworkCore;
 using ServicePlusAPIs.AuthenticateModels;
 using ServicePlusAPIs.Context;
 using ServicePlusAPIs.HelperModels;
@@ -2110,14 +2110,14 @@ namespace ServicePlusAPIs.Controllers
                 .CountAsync();
 
             var initiatedRecords = await (
-                from initiatedData in _servicePlusContext.InitiatedDatas.Include(d=>d.AttributeDetail.Where(d=>d.ApplicationFormFieldID== "170608"&&d.ApplicationFormFieldValue.StartsWith("2~")))                 
+                from initiatedData in _servicePlusContext.InitiatedDatas.Include(d => d.AttributeDetail.Where(d => d.ApplicationFormFieldID == "170608" && d.ApplicationFormFieldValue.StartsWith("2~")))
                 join taskDetails in _servicePlusContext.TaskDetails on initiatedData.ApplId equals taskDetails.ApplId
                 join officialFormDetails in _servicePlusContext.OfficialFormDetails on taskDetails.ExecutionDataId equals officialFormDetails.ExecutionDataId into groupedOfficialFormDetails
-                where initiatedData.ServiceName.Contains("Punjab Sports Events Portal") && taskDetails.TaskId == 23005 
+                where initiatedData.ServiceName.Contains("Punjab Sports Events Portal") && taskDetails.TaskId == 23005
                 select new PublicSportsViewModel
                 {
                     InitiatedDataId = initiatedData.InitiatedDataId,
-                    AttributeDetailID = initiatedData.AttributeDetail.Select(d=>d.AttributeDetailID).FirstOrDefault(),
+                    AttributeDetailID = initiatedData.AttributeDetail.Select(d => d.AttributeDetailID).FirstOrDefault(),
                     TaskDetailID = taskDetails.TaskDetailID,
                     ExecutionDataId = taskDetails.ExecutionDataId,
                     OfficialFormDetailID = groupedOfficialFormDetails.Select(d => d.OfficialFormDetailID).FirstOrDefault(),
@@ -2231,8 +2231,12 @@ namespace ServicePlusAPIs.Controllers
                 Records = initiatedRecords
             });
         }
-        public static  string DeserializeJsonStreamAsync(string? jsonStream)
+        public static string DeserializeJsonStreamAsync(string? jsonStream)
         {
+            if (jsonStream == null)
+            {
+                return string.Empty;
+            }
             var jsonData = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonStream);
 
             if (jsonData != null && jsonData.Count > 0)
@@ -2241,10 +2245,10 @@ namespace ServicePlusAPIs.Controllers
                 var lastKeyValue = jsonData.Last();
 
                 // Store the last value in a variable
-                string lastValue = Regex.Replace(lastKeyValue.Value.ToString(), @"^\d+~", "") ;
+                string lastValue = Regex.Replace(lastKeyValue.Value.ToString(), @"^\d+~", "");
 
                 // Output the last value
-               
+
                 return lastValue;
             }
             else
