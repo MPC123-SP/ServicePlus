@@ -15,7 +15,7 @@
         public int? TaskId { get; set; }
         public string? ServiceId { get; set; } 
         public string? ServiceName { get; set; }// this field is only available in InitiatedData Table
-
+        public DateTime? SubmissionDate { get; set; } 
         public string? ApplicantFirstName { get; set; }
         public string? ApplicantGender { get; set; }
         public string? ApplicantGame { get; set; }

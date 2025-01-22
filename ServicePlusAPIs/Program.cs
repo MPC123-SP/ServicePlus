@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -111,14 +112,14 @@ builder.Services.AddSwaggerGen(opt =>
 });
 builder.Services.AddAutoMapper(typeof(MapperProfile));
 
+// Add CORS
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(builder =>
     {
-        builder.AllowAnyOrigin()                 
-               .AllowAnyMethod()
-               .AllowAnyHeader()
-               .WithOrigins("*");
+        builder.AllowAnyOrigin()
+             .AllowAnyHeader()
+               .AllowAnyMethod();
     });
 });
 
@@ -130,25 +131,37 @@ var _logger = new LoggerConfiguration()
 builder.Logging.AddSerilog(_logger);
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(); 
-
+builder.Services.AddSwaggerGen();
+builder.Services.AddResponseCompression(o =>
+{
+    o.EnableForHttps = true;
+    o.Providers.Add<BrotliCompressionProvider>();
+    o.Providers.Add<GzipCompressionProvider>();
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(o =>
+{
+    o.Level = System.IO.Compression.CompressionLevel.Fastest;
+});
+builder.Services.Configure<GzipCompressionProviderOptions>(o =>
+{
+    o.Level = System.IO.Compression.CompressionLevel.Fastest;
+});
 var app = builder.Build();
+app.UseResponseCompression();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+
 app.UseCors();
-// Configure the HTTP request pipeline.
-//app.UseMiddleware<FirstMiddleware>();
-app.UseSwagger();
-app.UseSwaggerUI();
+app.UseWebSockets();
 
-app.UseHttpsRedirection();
-app.UseRouting();
-// Authentication & Authorization
-app.UseAuthentication();
+app.UseAuthentication();  
+app.UseStaticFiles();
 app.UseAuthorization();
-
+app.UseHttpsRedirection(); 
 app.MapControllers();
-
-//app.MapControllerRoute(
-//    name: "default",
-//    pattern: "{controller=swagger}/{action=Index}/{id?}");
 
 app.Run();
