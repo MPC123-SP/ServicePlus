@@ -2,7 +2,7 @@
 using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore; 
 using ServicePlusAPIs.AuthenticateModels;
 using ServicePlusAPIs.Context;
 using ServicePlusAPIs.HelperModels;
@@ -17,11 +17,13 @@ using ServicePlusAPIs.Models.ServiceWiseModels.PSEB_Initiated_AttributeDetails;
 using ServicePlusAPIs.ReportsModel;
 using ServicePlusAPIs.ReportsViewModel;
 using ServicePlusAPIs.ViewModels;
+using ServicePlusAPIs.ViewModels.PublicModel;
 using System.Data;
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace ServicePlusAPIs.Controllers
 {
@@ -2100,32 +2102,157 @@ namespace ServicePlusAPIs.Controllers
 
 
         #region Public Sports Report
-        [HttpGet("GetPublicSportsReport")]
-        public async Task<IActionResult> GetPublicSportsReport(int page, int pageSize)
+        [HttpGet("GetPublicIndividualSportsReport")]
+        public async Task<IActionResult> GetPublicIndividualSportsReport(int page, int pageSize)
         {
-            var totalCount = await _servicePlusContext.InitiatedDatas.Where(d => d.ServiceName.Contains("Punjab Sports Events Portal")).CountAsync();
+            var totalCount = await _servicePlusContext.InitiatedDatas
+                .Where(d => d.ServiceName.Contains("Punjab Sports Events Portal"))
+                .CountAsync();
 
-            var initiatedRecords = await _servicePlusContext.InitiatedDatas.Include(d=>d.AttributeDetail).Where(d => d.ServiceName.Contains("Punjab Sports Events Portal")).OrderByDescending(d => d.SubmissionDate)
-            .Skip((page - 1) * pageSize)
-                .Take(pageSize).ToListAsync();
-
-            var result = new
-            {
-
-                recordsTotal = totalCount,
-                recordsFiltered = totalCount,
-                data = initiatedRecords.Select(initiatedRecord => new
+            var initiatedRecords = await (
+                from initiatedData in _servicePlusContext.InitiatedDatas.Include(d=>d.AttributeDetail.Where(d=>d.ApplicationFormFieldID== "170608"&&d.ApplicationFormFieldValue.StartsWith("2~")))                 
+                join taskDetails in _servicePlusContext.TaskDetails on initiatedData.ApplId equals taskDetails.ApplId
+                join officialFormDetails in _servicePlusContext.OfficialFormDetails on taskDetails.ExecutionDataId equals officialFormDetails.ExecutionDataId into groupedOfficialFormDetails
+                where initiatedData.ServiceName.Contains("Punjab Sports Events Portal") && taskDetails.TaskId == 23005 
+                select new PublicSportsViewModel
                 {
-                    initiatedRecord,
-                    ExecutionRecord = GetExecutionRecord(initiatedRecord.ApplId ?? 0).Any()
-                            ? GetExecutionRecord(initiatedRecord.ApplId ?? 0)
-                            : null
+                    InitiatedDataId = initiatedData.InitiatedDataId,
+                    AttributeDetailID = initiatedData.AttributeDetail.Select(d=>d.AttributeDetailID).FirstOrDefault(),
+                    TaskDetailID = taskDetails.TaskDetailID,
+                    ExecutionDataId = taskDetails.ExecutionDataId,
+                    OfficialFormDetailID = groupedOfficialFormDetails.Select(d => d.OfficialFormDetailID).FirstOrDefault(),
+                    ApplId = initiatedData.ApplId,
+                    ApplRefNo = initiatedData.ApplRefNo,
+                    TaskName = taskDetails.TaskName,
+                    TaskId = taskDetails.TaskId,
+                    ServiceId = initiatedData.ServiceId,
+                    ServiceName = initiatedData.ServiceName,
+                    ApplicantFirstName = initiatedData.AttributeDetail
+                        .Where(d => d.ApplicationFormFieldID == "169954")
+                        .Select(d => d.ApplicationFormFieldValue)
+                        .FirstOrDefault(),
+                    ApplicantGender = initiatedData.AttributeDetail
+                        .Where(d => d.ApplicationFormFieldID == "169964")
+                         .Select(d => Regex.Replace(d.ApplicationFormFieldValue, @"^\d+~", ""))
+                        .FirstOrDefault(),
+                    ApplicantGame = initiatedData.AttributeDetail
+                        .Where(d => d.ApplicationFormFieldID == "170094")
+                        .Select(d => Regex.Replace(d.ApplicationFormFieldValue, @"^\d+~", ""))
+                        .FirstOrDefault(),
+                    ApplicantAgeGroup = initiatedData.AttributeDetail
+                        .Where(d => d.ApplicationFormFieldID == "170202")
+                         .Select(d => Regex.Replace(d.ApplicationFormFieldValue, @"^\d+~", ""))
+                        .FirstOrDefault(),
+                    ApplicantEvent = initiatedData.AttributeDetail
+                        .Where(d => d.ApplicationFormFieldID == "170203")
+                        .Select(d => Regex.Replace(d.ApplicationFormFieldValue, @"^\d+~", ""))
+                        .FirstOrDefault(),
+                    ApplicantGameCategory = initiatedData.AttributeDetail
+                        .Where(d => d.ApplicationFormFieldID == "170246")
+                       .Select(d => Regex.Replace(d.ApplicationFormFieldValue, @"^\d+~", ""))
+                        .FirstOrDefault(),
+                    ApplicantMedal = DeserializeJsonStreamAsync(groupedOfficialFormDetails
+                        .Where(d => d.OfficalFormID == "170912")
+                        .Select(d => d.OfficalFormValue)
+                        .FirstOrDefault())
                 })
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
 
-            };
+            return Ok(new
+            {
+                TotalCount = totalCount,
+                Records = initiatedRecords
+            });
+        }
 
+        [HttpGet("GetPublicTeamSportsReport")]
+        public async Task<IActionResult> GetPublicTeamSportsReport(int page, int pageSize)
+        {
+            var totalCount = await _servicePlusContext.InitiatedDatas
+                .Where(d => d.ServiceName.Contains("Punjab Sports Events Portal"))
+                .CountAsync();
 
-            return Ok(result);
+            var initiatedRecords = await (
+                from initiatedData in _servicePlusContext.InitiatedDatas.Include(d => d.AttributeDetail.Where(d => d.ApplicationFormFieldID == "170608" && d.ApplicationFormFieldValue.StartsWith("2~")))
+                join taskDetails in _servicePlusContext.TaskDetails on initiatedData.ApplId equals taskDetails.ApplId
+                join officialFormDetails in _servicePlusContext.OfficialFormDetails on taskDetails.ExecutionDataId equals officialFormDetails.ExecutionDataId into groupedOfficialFormDetails
+                where initiatedData.ServiceName.Contains("Punjab Sports Events Portal") && taskDetails.TaskId == 23005 && initiatedData.InitiatedDataId == 465620
+                select new PublicSportsViewModel
+                {
+                    InitiatedDataId = initiatedData.InitiatedDataId,
+                    AttributeDetailID = initiatedData.AttributeDetail.Select(d => d.AttributeDetailID).FirstOrDefault(),
+                    TaskDetailID = taskDetails.TaskDetailID,
+                    ExecutionDataId = taskDetails.ExecutionDataId,
+                    OfficialFormDetailID = groupedOfficialFormDetails.Select(d => d.OfficialFormDetailID).FirstOrDefault(),
+                    ApplId = initiatedData.ApplId,
+                    ApplRefNo = initiatedData.ApplRefNo,
+                    TaskName = taskDetails.TaskName,
+                    TaskId = taskDetails.TaskId,
+                    ServiceId = initiatedData.ServiceId,
+                    ServiceName = initiatedData.ServiceName,
+                    ApplicantFirstName = initiatedData.AttributeDetail
+                        .Where(d => d.ApplicationFormFieldID == "169954")
+                        .Select(d => d.ApplicationFormFieldValue)
+                        .FirstOrDefault(),
+                    ApplicantGender = initiatedData.AttributeDetail
+                        .Where(d => d.ApplicationFormFieldID == "169964")
+                         .Select(d => Regex.Replace(d.ApplicationFormFieldValue, @"^\d+~", ""))
+                        .FirstOrDefault(),
+                    ApplicantGame = initiatedData.AttributeDetail
+                        .Where(d => d.ApplicationFormFieldID == "170094")
+                        .Select(d => Regex.Replace(d.ApplicationFormFieldValue, @"^\d+~", ""))
+                        .FirstOrDefault(),
+                    ApplicantAgeGroup = initiatedData.AttributeDetail
+                        .Where(d => d.ApplicationFormFieldID == "170202")
+                         .Select(d => Regex.Replace(d.ApplicationFormFieldValue, @"^\d+~", ""))
+                        .FirstOrDefault(),
+                    ApplicantEvent = initiatedData.AttributeDetail
+                        .Where(d => d.ApplicationFormFieldID == "170203")
+                        .Select(d => Regex.Replace(d.ApplicationFormFieldValue, @"^\d+~", ""))
+                        .FirstOrDefault(),
+                    ApplicantGameCategory = initiatedData.AttributeDetail
+                        .Where(d => d.ApplicationFormFieldID == "170246")
+                       .Select(d => Regex.Replace(d.ApplicationFormFieldValue, @"^\d+~", ""))
+                        .FirstOrDefault(),
+                    ApplicantMedal = DeserializeJsonStreamAsync(groupedOfficialFormDetails
+                        .Where(d => d.OfficalFormID == "170912")
+                        .Select(d => d.OfficalFormValue)
+                        .FirstOrDefault())
+                })
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return Ok(new
+            {
+                TotalCount = totalCount,
+                Records = initiatedRecords
+            });
+        }
+        public static  string DeserializeJsonStreamAsync(string? jsonStream)
+        {
+            var jsonData = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonStream);
+
+            if (jsonData != null && jsonData.Count > 0)
+            {
+                // Get the last key-value pair
+                var lastKeyValue = jsonData.Last();
+
+                // Store the last value in a variable
+                string lastValue = Regex.Replace(lastKeyValue.Value.ToString(), @"^\d+~", "") ;
+
+                // Output the last value
+               
+                return lastValue;
+            }
+            else
+            {
+                Console.WriteLine("Invalid JSON or empty data.");
+            }
+
+            return string.Empty; // Return empty string if no valid data
         }
 
         #endregion
