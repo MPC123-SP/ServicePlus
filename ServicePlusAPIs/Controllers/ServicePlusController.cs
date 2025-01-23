@@ -2103,7 +2103,7 @@ namespace ServicePlusAPIs.Controllers
 
         #region Public Sports Report
         [HttpGet("GetPublicIndividualSportsReport")]
-        public async Task<IActionResult> GetPublicIndividualSportsReport(int page, int pageSize)
+        public async Task<IActionResult> GetPublicIndividualSportsReport(int page, int pageSize, DateTime? startDate = null, DateTime? endDate = null, string searchValue = null)
         {
             // Build the base query
             var query = from initiatedData in _servicePlusContext.InitiatedDatas
@@ -2131,10 +2131,22 @@ namespace ServicePlusAPIs.Controllers
                                 taskDetails.ExecutionDataId,
                                 taskDetails.TaskName,
                                 OfficialFormDetails = groupedOfficialFormDetails
-                                    .Where(ofd => ofd.OfficalFormID == "170912")
-                                    .ToList()
+                            .Where(ofd => ofd.OfficalFormID == "170912" &&
+                  (string.IsNullOrWhiteSpace(searchValue) ||
+                   ofd.OfficalFormValue.Contains(searchValue)))
+                            .ToList()
+
+
                             }
                         };
+
+            // Apply date filter if both dates are provided
+            if (startDate.HasValue && endDate.HasValue)
+            {
+                var startUtc = startDate.Value.ToUniversalTime(); // Convert to UTC
+                var endUtc = endDate.Value.Date.AddDays(1).AddTicks(-1).ToUniversalTime(); // Extend to end of day and convert to UTC
+                query = query.Where(data => data.SubmissionDate >= startUtc && data.SubmissionDate <= endUtc);
+            }
 
             // Count query
             var totalCount = await query.CountAsync();
@@ -2177,7 +2189,12 @@ namespace ServicePlusAPIs.Controllers
                 ApplicantMedal = DeserializeJsonStreamAsync(data.TaskDetail?.OfficialFormDetails
                     .FirstOrDefault()?.OfficalFormValue)
             }).ToList();
-
+            // Filter by medal if provided
+            if (!string.IsNullOrWhiteSpace(searchValue))
+            {
+                totalCount = result.Where(d => d.ApplicantMedal != null && d.ApplicantMedal.Equals(searchValue, StringComparison.OrdinalIgnoreCase)).Count();
+                result = result.Where(d => d.ApplicantMedal != null && d.ApplicantMedal.Equals(searchValue, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
             return Ok(new
             {
                 TotalCount = totalCount,
@@ -2191,6 +2208,9 @@ namespace ServicePlusAPIs.Controllers
         }
 
 
+
+
+
         [HttpGet("GetPublicTeamSportsReport")]
         public async Task<IActionResult> GetPublicTeamSportsReport(int page, int pageSize)
         {
@@ -2199,12 +2219,12 @@ namespace ServicePlusAPIs.Controllers
                 .CountAsync();
 
             var initiatedRecords = await (
-                from initiatedData in _servicePlusContext.InitiatedDatas.Include(d => d.AttributeDetail.Where(d => d.ApplicationFormFieldID == "170608"  ))
+                from initiatedData in _servicePlusContext.InitiatedDatas.Include(d => d.AttributeDetail.Where(d => d.ApplicationFormFieldID == "170608"))
                 join taskDetails in _servicePlusContext.TaskDetails on initiatedData.ApplId equals taskDetails.ApplId
                 join officialFormDetails in _servicePlusContext.OfficialFormDetails on taskDetails.ExecutionDataId equals officialFormDetails.ExecutionDataId into groupedOfficialFormDetails
-                where initiatedData.ServiceName.Contains("Punjab Sports Events Portal") && taskDetails.TaskId == 23005  
+                where initiatedData.ServiceName.Contains("Punjab Sports Events Portal") && taskDetails.TaskId == 23005
                 orderby initiatedData.InitiatedDataId descending
-                
+
                 select new PublicSportsViewModel
                 {
                     InitiatedDataId = initiatedData.InitiatedDataId,
@@ -2247,7 +2267,7 @@ namespace ServicePlusAPIs.Controllers
                         .Select(d => d.OfficalFormValue)
                         .FirstOrDefault())
                 })
-                
+
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
