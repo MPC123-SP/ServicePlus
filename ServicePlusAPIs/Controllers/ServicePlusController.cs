@@ -3,6 +3,7 @@ using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using ServicePlusAPIs.AuthenticateModels;
 using ServicePlusAPIs.Context;
 using ServicePlusAPIs.HelperModels;
@@ -54,7 +55,7 @@ namespace ServicePlusAPIs.Controllers
         [Route("Add")]
         public async Task<IActionResult> IncomeAdd([FromBody] ServiceViewModel serviceViewModel)
         {
-            string json = JsonSerializer.Serialize(serviceViewModel, new JsonSerializerOptions
+            string json = System.Text.Json.JsonSerializer.Serialize(serviceViewModel, new JsonSerializerOptions
             {
                 WriteIndented = true // Makes the JSON output formatted and easier to read
             });
@@ -362,7 +363,7 @@ namespace ServicePlusAPIs.Controllers
         [Route("AddServicePlusData")]
         public async Task<IActionResult> AddServicePlusData([FromBody] ServiceViewModel serviceViewModel)
         {
-            string json = JsonSerializer.Serialize(serviceViewModel, new JsonSerializerOptions
+            string json = System.Text.Json.JsonSerializer.Serialize(serviceViewModel, new JsonSerializerOptions
             {
                 WriteIndented = true // Makes the JSON output formatted and easier to read
             });
@@ -2212,79 +2213,115 @@ namespace ServicePlusAPIs.Controllers
 
 
         [HttpGet("GetPublicTeamSportsReport")]
-        public async Task<IActionResult> GetPublicTeamSportsReport(int page, int pageSize)
+        public async Task<IActionResult> GetPublicTeamSportsReport(int page, int pageSize, DateTime? startDate = null, DateTime? endDate = null, string searchValue = null)
         {
-            var totalCount = await _servicePlusContext.InitiatedDatas
-                .Where(d => d.ServiceName.Contains("Punjab Sports Events Portal"))
-                .CountAsync();
+            var query = from initiatedData in _servicePlusContext.InitiatedDatas
+                        join taskDetails in _servicePlusContext.TaskDetails on initiatedData.ApplId equals taskDetails.ApplId
+                        join officialFormDetails in _servicePlusContext.OfficialFormDetails on taskDetails.ExecutionDataId equals officialFormDetails.ExecutionDataId into groupedOfficialFormDetails
+                        where initiatedData.ServiceName.Contains("Punjab Sports Events Portal") && taskDetails.TaskId == 23005
+                        
+                        orderby initiatedData.InitiatedDataId descending
+                        select new
+                        {
+                            InitiatedDataId = initiatedData.InitiatedDataId,
+                            AttributeDetails = initiatedData.AttributeDetail
+                                .Where(attr => new[]
+                                {
+                            "169954", "169964", "170094", "170202", "170203", "170246", "170608"
+                                }.Contains(attr.ApplicationFormFieldID))
+                                .ToList(),
+                            initiatedData.ServiceId,
+                            initiatedData.ServiceName,
+                            initiatedData.ApplId,
+                            initiatedData.ApplRefNo,
+                            initiatedData.SubmissionDate,
+                            TaskDetail = groupedOfficialFormDetails
+                                .Where(ofd => ofd.OfficalFormID == "171829" &&
+                                              (string.IsNullOrWhiteSpace(searchValue) ||
+                                               ofd.OfficalFormValue.Contains(searchValue)))
+                                .Select(ofd => new
+                                {
+                                    taskDetails.TaskDetailID,
+                                    taskDetails.ExecutionDataId,
+                                    taskDetails.TaskName,
+                                    OfficialFormDetail = ofd
+                                }).ToList()
+                        };
 
-            var initiatedRecords = await (
-                from initiatedData in _servicePlusContext.InitiatedDatas.Include(d => d.AttributeDetail.Where(d => d.ApplicationFormFieldID == "170608"))
-                join taskDetails in _servicePlusContext.TaskDetails on initiatedData.ApplId equals taskDetails.ApplId
-                join officialFormDetails in _servicePlusContext.OfficialFormDetails on taskDetails.ExecutionDataId equals officialFormDetails.ExecutionDataId into groupedOfficialFormDetails
-                where initiatedData.ServiceName.Contains("Punjab Sports Events Portal") && taskDetails.TaskId == 23005
-                orderby initiatedData.InitiatedDataId descending
+            if (startDate.HasValue && endDate.HasValue)
+            {
+                var startUtc = startDate.Value.ToUniversalTime();
+                var endUtc = endDate.Value.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
+                query = query.Where(data => data.SubmissionDate >= startUtc && data.SubmissionDate <= endUtc);
+            }
 
-                select new PublicSportsViewModel
-                {
-                    InitiatedDataId = initiatedData.InitiatedDataId,
-                    AttributeDetailID = initiatedData.AttributeDetail.Select(d => d.AttributeDetailID).FirstOrDefault(),
-                    TaskDetailID = taskDetails.TaskDetailID,
-                    ExecutionDataId = taskDetails.ExecutionDataId,
-                    OfficialFormDetailID = groupedOfficialFormDetails.Select(d => d.OfficialFormDetailID).FirstOrDefault(),
-                    ApplId = initiatedData.ApplId,
-                    ApplRefNo = initiatedData.ApplRefNo,
-                    TaskName = taskDetails.TaskName,
-                    TaskId = taskDetails.TaskId,
-                    ServiceId = initiatedData.ServiceId,
-                    ServiceName = initiatedData.ServiceName,
-                    ApplicantFirstName = initiatedData.AttributeDetail
-                        .Where(d => d.ApplicationFormFieldID == "169954")
-                        .Select(d => d.ApplicationFormFieldValue)
-                        .FirstOrDefault(),
-                    ApplicantGender = initiatedData.AttributeDetail
-                        .Where(d => d.ApplicationFormFieldID == "169964")
-                         .Select(d => Regex.Replace(d.ApplicationFormFieldValue, @"^\d+~", ""))
-                        .FirstOrDefault(),
-                    ApplicantGame = initiatedData.AttributeDetail
-                        .Where(d => d.ApplicationFormFieldID == "170094")
-                        .Select(d => Regex.Replace(d.ApplicationFormFieldValue, @"^\d+~", ""))
-                        .FirstOrDefault(),
-                    ApplicantAgeGroup = initiatedData.AttributeDetail
-                        .Where(d => d.ApplicationFormFieldID == "170202")
-                         .Select(d => Regex.Replace(d.ApplicationFormFieldValue, @"^\d+~", ""))
-                        .FirstOrDefault(),
-                    ApplicantEvent = initiatedData.AttributeDetail
-                        .Where(d => d.ApplicationFormFieldID == "170203")
-                        .Select(d => Regex.Replace(d.ApplicationFormFieldValue, @"^\d+~", ""))
-                        .FirstOrDefault(),
-                    ApplicantGameCategory = initiatedData.AttributeDetail
-                        .Where(d => d.ApplicationFormFieldID == "170246")
-                       .Select(d => Regex.Replace(d.ApplicationFormFieldValue, @"^\d+~", ""))
-                        .FirstOrDefault(),
-                    ApplicantMedal = DeserializeJsonStreamAsync(groupedOfficialFormDetails
-                        .Where(d => d.OfficalFormID == "170912")
-                        .Select(d => d.OfficalFormValue)
-                        .FirstOrDefault())
-                })
-
+            var totalCount = await query.CountAsync();
+            var paginatedRecords = await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
+            var result = paginatedRecords.SelectMany(data => data.TaskDetail.Select(taskDetail =>
+            {
+                var officialFormData = SportsTeamDeserializeJsonStreamAsync(taskDetail.OfficialFormDetail.OfficalFormValue);
+
+                return officialFormData.Select(form => new PublicSportsViewModel
+                {
+                    InitiatedDataId = data.InitiatedDataId,
+                    AttributeDetailID = data.AttributeDetails
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170608")?.AttributeDetailID,
+                    TaskDetailID = taskDetail.TaskDetailID,
+                    ExecutionDataId = taskDetail.ExecutionDataId,
+                    OfficialFormDetailID = taskDetail.OfficialFormDetail.OfficialFormDetailID,
+                    ApplId = data.ApplId,
+                    ApplRefNo = form.ApplicationRefNo,
+                    TaskName = taskDetail.TaskName,
+                    TaskId = 23005,
+                    ServiceId = data.ServiceId,
+                    ServiceName = data.ServiceName,
+                    SubmissionDate = data.SubmissionDate,
+                    ApplicantFirstName = form.PlayerName,
+                    ApplicantGender = CleanValue(data.AttributeDetails
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169964")?.ApplicationFormFieldValue),
+                    ApplicantGame = CleanValue(data.AttributeDetails
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170094")?.ApplicationFormFieldValue),
+                    ApplicantAgeGroup = CleanValue(data.AttributeDetails
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170202")?.ApplicationFormFieldValue),
+                    ApplicantEvent = CleanValue(data.AttributeDetails
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170203")?.ApplicationFormFieldValue),
+                    ApplicantGameCategory = CleanValue(data.AttributeDetails
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170246")?.ApplicationFormFieldValue),
+                    ApplicantMedal = form.Position
+                });
+            })).ToList();
+
+            if (!string.IsNullOrWhiteSpace(searchValue))
+            {
+                totalCount = totalCount;
+                result = result
+                    .SelectMany(d => d)
+                    .Where(d => !string.IsNullOrEmpty(d.ApplicantMedal) &&
+                                d.ApplicantMedal.Equals(searchValue, StringComparison.OrdinalIgnoreCase))
+                    .GroupBy(x => x) // Grouping back to List<IEnumerable>
+                    .Select(group => group.AsEnumerable())
+                    .ToList();
+            }
+
+
             return Ok(new
             {
                 TotalCount = totalCount,
-                Records = initiatedRecords
+                Records = result
             });
         }
+
         public static string DeserializeJsonStreamAsync(string? jsonStream)
         {
             if (jsonStream == null)
             {
                 return string.Empty;
             }
-            var jsonData = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonStream);
+            var jsonData = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(jsonStream);
 
             if (jsonData != null && jsonData.Count > 0)
             {
@@ -2304,6 +2341,40 @@ namespace ServicePlusAPIs.Controllers
             }
 
             return string.Empty; // Return empty string if no valid data
+        }
+
+        private List<PlayerDetail> SportsTeamDeserializeJsonStreamAsync(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return new List<PlayerDetail>();
+
+            var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+
+            var result = new List<PlayerDetail>();
+            var detectedKeys = data.Keys
+        .Where(k => k.StartsWith("171830_") && int.TryParse(k.Split('_')[1], out int index) && index <= 9) // Limit to valid range
+        .Select(k => new { Key = k, Index = k.Split('_')[1] })
+        .ToList();
+            // Identify the maximum player index dynamically
+            int maxIndex = detectedKeys
+     .Select(k => int.Parse(k.Index))
+     .DefaultIfEmpty(0)
+     .Max();
+
+            for (int i = 1; i <= maxIndex; i++)
+            {
+                result.Add(new PlayerDetail
+                {
+                    PlayerName = data.ContainsKey($"171830_{i}") ? data[$"171830_{i}"]?.ToString() : null,
+                    DateOfBirth = data.ContainsKey($"171831_{i}") ? data[$"171831_{i}"]?.ToString() : null,
+                    MobileNumber = data.ContainsKey($"171832_{i}") ? data[$"171832_{i}"]?.ToString() : null,
+                    Email = data.ContainsKey($"171833_{i}") ? data[$"171833_{i}"]?.ToString() : null,
+                    ApplicationRefNo = data.ContainsKey($"171834_{i}") ? data[$"171834_{i}"]?.ToString() : null,
+                    Position = data.ContainsKey($"171835_{i}") ? data[$"171835_{i}"]?.ToString().Split('~')[1] : null
+                });
+            }
+
+            return result;
         }
 
 

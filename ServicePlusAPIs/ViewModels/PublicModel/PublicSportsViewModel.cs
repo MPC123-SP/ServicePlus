@@ -25,4 +25,14 @@
         public string? ApplicantMedal { get; set; }
 
     }
+    public class PlayerDetail
+    {
+        public string? PlayerName { get; set; }
+        public string? DateOfBirth { get; set; }
+        public string? MobileNumber { get; set; }
+        public string? Email { get; set; }
+        public string? ApplicationRefNo { get; set; }
+        public string? Position { get; set; }
+    }
+
 }
