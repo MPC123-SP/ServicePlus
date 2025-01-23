@@ -2306,6 +2306,54 @@ namespace ServicePlusAPIs.Controllers
             return string.Empty; // Return empty string if no valid data
         }
 
+
+
+
+        [HttpGet("GetSportSupportDoc")]
+        public async Task<IActionResult> GetSportSupportDoc(int applId)
+        {
+            // Base URL where the documents are stored
+            var baseUrl = $"http://10.147.24.36:8082/SSD/";
+
+            // Construct the full file URL
+            var fileUrl = $"{baseUrl}{applId}.pdf"; // Assuming files are in PDF format
+
+            try
+            {
+                // Use HttpClient to check if the file exists and fetch its content
+                using (var httpClient = new HttpClient())
+                {
+                    var response = await httpClient.GetAsync(fileUrl);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        return NotFound(new
+                        {
+                            Message = "Document not found.",
+                            ApplId = applId
+                        });
+                    }
+
+                    // Return the file as a response
+                    return Ok(new
+                    {
+                        FileUrl = fileUrl,
+                        ApplId = applId
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the exception if needed and return an error response
+                return StatusCode(500, new
+                {
+                    Message = "An error occurred while retrieving the document.",
+                    Error = ex.Message
+                });
+            }
+        }
+
+
         #endregion
 
 
