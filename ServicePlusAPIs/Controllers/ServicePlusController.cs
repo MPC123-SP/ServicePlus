@@ -2111,6 +2111,7 @@ namespace ServicePlusAPIs.Controllers
                         join taskDetails in _servicePlusContext.TaskDetails on initiatedData.ApplId equals taskDetails.ApplId
                         join officialFormDetails in _servicePlusContext.OfficialFormDetails on taskDetails.ExecutionDataId equals officialFormDetails.ExecutionDataId into groupedOfficialFormDetails
                         where initiatedData.ServiceName.Contains("Punjab Sports Events Portal") && taskDetails.TaskId == 23005
+                          && groupedOfficialFormDetails.All(ofd => ofd.OfficalFormID != "171829") // Add condition for OfficialFormID
                         orderby initiatedData.InitiatedDataId descending
                         select new
                         {
@@ -2209,45 +2210,39 @@ namespace ServicePlusAPIs.Controllers
         }
 
 
-
-
-
+         
         [HttpGet("GetPublicTeamSportsReport")]
         public async Task<IActionResult> GetPublicTeamSportsReport(int page, int pageSize, DateTime? startDate = null, DateTime? endDate = null, string searchValue = null)
         {
-            var query = from initiatedData in _servicePlusContext.InitiatedDatas
-                        join taskDetails in _servicePlusContext.TaskDetails on initiatedData.ApplId equals taskDetails.ApplId
+            var query = from taskDetails in _servicePlusContext.TaskDetails
+                        join initiatedData in _servicePlusContext.InitiatedDatas on taskDetails.ApplId equals initiatedData.ApplId
                         join officialFormDetails in _servicePlusContext.OfficialFormDetails on taskDetails.ExecutionDataId equals officialFormDetails.ExecutionDataId into groupedOfficialFormDetails
-                        where initiatedData.ServiceName.Contains("Punjab Sports Events Portal") && taskDetails.TaskId == 23005
-                        
+                        where taskDetails.TaskId == 23005 
+                              && initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
+                                && groupedOfficialFormDetails.All(ofd => ofd.OfficalFormID != "170912") // Add condition for OfficialFormID
                         orderby initiatedData.InitiatedDataId descending
                         select new
                         {
-                            InitiatedDataId = initiatedData.InitiatedDataId,
-                            AttributeDetails = initiatedData.AttributeDetail
-                                .Where(attr => new[]
-                                {
-                            "169954", "169964", "170094", "170202", "170203", "170246", "170608"
-                                }.Contains(attr.ApplicationFormFieldID))
-                                .ToList(),
+                            initiatedData.InitiatedDataId,
+                            initiatedData.AttributeDetail,
                             initiatedData.ServiceId,
                             initiatedData.ServiceName,
                             initiatedData.ApplId,
                             initiatedData.ApplRefNo,
                             initiatedData.SubmissionDate,
-                            TaskDetail = groupedOfficialFormDetails
-                                .Where(ofd => ofd.OfficalFormID == "171829" &&
-                                              (string.IsNullOrWhiteSpace(searchValue) ||
-                                               ofd.OfficalFormValue.Contains(searchValue)))
-                                .Select(ofd => new
-                                {
-                                    taskDetails.TaskDetailID,
-                                    taskDetails.ExecutionDataId,
-                                    taskDetails.TaskName,
-                                    OfficialFormDetail = ofd
-                                }).ToList()
+                            TaskDetail = groupedOfficialFormDetails.Where(ofd =>
+                                ofd.OfficalFormID == "171829"  &&
+                                (string.IsNullOrWhiteSpace(searchValue) || ofd.OfficalFormValue.Contains(searchValue))
+                            ).Select(ofd => new
+                            {
+                                taskDetails.TaskDetailID,
+                                taskDetails.ExecutionDataId,
+                                taskDetails.TaskName,
+                                OfficialFormDetail = ofd
+                            }).ToList()
                         };
 
+            // Apply date filter before pagination
             if (startDate.HasValue && endDate.HasValue)
             {
                 var startUtc = startDate.Value.ToUniversalTime();
@@ -2255,20 +2250,27 @@ namespace ServicePlusAPIs.Controllers
                 query = query.Where(data => data.SubmissionDate >= startUtc && data.SubmissionDate <= endUtc);
             }
 
+            // Calculate total count before pagination
             var totalCount = await query.CountAsync();
-            var paginatedRecords = await query
+
+            // Paginate the base query
+            var paginatedData = await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            var result = paginatedRecords.SelectMany(data => data.TaskDetail.Select(taskDetail =>
+            // Transform the paginated records
+            var result = paginatedData.SelectMany(data => data.TaskDetail.Select(taskDetail =>
             {
                 var officialFormData = SportsTeamDeserializeJsonStreamAsync(taskDetail.OfficialFormDetail.OfficalFormValue);
+
+                if (officialFormData == null || !officialFormData.Any())
+                    return Enumerable.Empty<PublicSportsViewModel>();
 
                 return officialFormData.Select(form => new PublicSportsViewModel
                 {
                     InitiatedDataId = data.InitiatedDataId,
-                    AttributeDetailID = data.AttributeDetails
+                    AttributeDetailID = data.AttributeDetail
                         .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170608")?.AttributeDetailID,
                     TaskDetailID = taskDetail.TaskDetailID,
                     ExecutionDataId = taskDetail.ExecutionDataId,
@@ -2281,39 +2283,46 @@ namespace ServicePlusAPIs.Controllers
                     ServiceName = data.ServiceName,
                     SubmissionDate = data.SubmissionDate,
                     ApplicantFirstName = form.PlayerName,
-                    ApplicantGender = CleanValue(data.AttributeDetails
+                    ApplicantGender = CleanValue(data.AttributeDetail
                         .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169964")?.ApplicationFormFieldValue),
-                    ApplicantGame = CleanValue(data.AttributeDetails
+                    ApplicantGame = CleanValue(data.AttributeDetail
                         .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170094")?.ApplicationFormFieldValue),
-                    ApplicantAgeGroup = CleanValue(data.AttributeDetails
+                    ApplicantAgeGroup = CleanValue(data.AttributeDetail
                         .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170202")?.ApplicationFormFieldValue),
-                    ApplicantEvent = CleanValue(data.AttributeDetails
+                    ApplicantEvent = CleanValue(data.AttributeDetail
                         .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170203")?.ApplicationFormFieldValue),
-                    ApplicantGameCategory = CleanValue(data.AttributeDetails
+                    ApplicantGameCategory = CleanValue(data.AttributeDetail
                         .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170246")?.ApplicationFormFieldValue),
                     ApplicantMedal = form.Position
                 });
-            })).ToList();
+            }))
+            .Where(x => x != null) // Exclude null projections
+            .SelectMany(x => x)
+            .ToList();
 
+            // Filter the result based on searchValue if provided
             if (!string.IsNullOrWhiteSpace(searchValue))
             {
-                totalCount = totalCount;
                 result = result
-                    .SelectMany(d => d)
                     .Where(d => !string.IsNullOrEmpty(d.ApplicantMedal) &&
                                 d.ApplicantMedal.Equals(searchValue, StringComparison.OrdinalIgnoreCase))
-                    .GroupBy(x => x) // Grouping back to List<IEnumerable>
-                    .Select(group => group.AsEnumerable())
                     .ToList();
+
+                // Update totalCount after filtering
+                totalCount = result.Count;
             }
 
-
+            // Return the paginated result
             return Ok(new
             {
                 TotalCount = totalCount,
-                Records = result
+                Records = result.OrderBy(d => d.ApplicantGame).ToList(),
             });
+
+
         }
+
+        
 
         public static string DeserializeJsonStreamAsync(string? jsonStream)
         {
