@@ -2209,17 +2209,15 @@ namespace ServicePlusAPIs.Controllers
             return string.IsNullOrEmpty(value) ? null : Regex.Replace(value, @"^\d+~", "");
         }
 
-
-         
         [HttpGet("GetPublicTeamSportsReport")]
         public async Task<IActionResult> GetPublicTeamSportsReport(int page, int pageSize, DateTime? startDate = null, DateTime? endDate = null, string searchValue = null)
         {
             var query = from taskDetails in _servicePlusContext.TaskDetails
                         join initiatedData in _servicePlusContext.InitiatedDatas on taskDetails.ApplId equals initiatedData.ApplId
                         join officialFormDetails in _servicePlusContext.OfficialFormDetails on taskDetails.ExecutionDataId equals officialFormDetails.ExecutionDataId into groupedOfficialFormDetails
-                        where taskDetails.TaskId == 23005 
+                        where taskDetails.TaskId == 23005
                               && initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
-                                && groupedOfficialFormDetails.All(ofd => ofd.OfficalFormID != "170912") // Add condition for OfficialFormID
+                              && groupedOfficialFormDetails.Any(ofd => ofd.OfficalFormID == "171829") // Check if at least one exists
                         orderby initiatedData.InitiatedDataId descending
                         select new
                         {
@@ -2231,7 +2229,7 @@ namespace ServicePlusAPIs.Controllers
                             initiatedData.ApplRefNo,
                             initiatedData.SubmissionDate,
                             TaskDetail = groupedOfficialFormDetails.Where(ofd =>
-                                ofd.OfficalFormID == "171829"  &&
+                                ofd.OfficalFormID == "171829" &&
                                 (string.IsNullOrWhiteSpace(searchValue) || ofd.OfficalFormValue.Contains(searchValue))
                             ).Select(ofd => new
                             {
@@ -2242,7 +2240,8 @@ namespace ServicePlusAPIs.Controllers
                             }).ToList()
                         };
 
-            // Apply date filter before pagination
+
+            // Apply date filter
             if (startDate.HasValue && endDate.HasValue)
             {
                 var startUtc = startDate.Value.ToUniversalTime();
@@ -2250,16 +2249,16 @@ namespace ServicePlusAPIs.Controllers
                 query = query.Where(data => data.SubmissionDate >= startUtc && data.SubmissionDate <= endUtc);
             }
 
-            // Calculate total count before pagination
+            // Calculate total count
             var totalCount = await query.CountAsync();
 
-            // Paginate the base query
+            // Paginate the query
             var paginatedData = await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            // Transform the paginated records
+            // Process the paginated data
             var result = paginatedData.SelectMany(data => data.TaskDetail.Select(taskDetail =>
             {
                 var officialFormData = SportsTeamDeserializeJsonStreamAsync(taskDetail.OfficialFormDetail.OfficalFormValue);
@@ -2300,7 +2299,7 @@ namespace ServicePlusAPIs.Controllers
             .SelectMany(x => x)
             .ToList();
 
-            // Filter the result based on searchValue if provided
+            // Filter based on searchValue if provided
             if (!string.IsNullOrWhiteSpace(searchValue))
             {
                 result = result
@@ -2318,11 +2317,151 @@ namespace ServicePlusAPIs.Controllers
                 TotalCount = totalCount,
                 Records = result.OrderBy(d => d.ApplicantGame).ToList(),
             });
-
-
         }
 
-        
+        private List<PlayerDetail> SportsTeamDeserializeJsonStreamAsync(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return new List<PlayerDetail>();
+
+            var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+
+            var result = new List<PlayerDetail>();
+            var detectedKeys = data.Keys
+                .Where(k => k.StartsWith("171830_") && int.TryParse(k.Split('_')[1], out _))
+                .Select(k => new { Key = k, Index = int.Parse(k.Split('_')[1]) })
+                .ToList();
+
+            int maxIndex = detectedKeys.Select(k => k.Index).DefaultIfEmpty(0).Max();
+
+            for (int i = 1; i <= maxIndex; i++)
+            {
+                result.Add(new PlayerDetail
+                {
+                    PlayerName = data.ContainsKey($"171830_{i}") ? data[$"171830_{i}"]?.ToString() : null,
+                    DateOfBirth = data.ContainsKey($"171831_{i}") ? data[$"171831_{i}"]?.ToString() : null,
+                    MobileNumber = data.ContainsKey($"171832_{i}") ? data[$"171832_{i}"]?.ToString() : null,
+                    Email = data.ContainsKey($"171833_{i}") ? data[$"171833_{i}"]?.ToString() : null,
+                    ApplicationRefNo = data.ContainsKey($"171834_{i}") ? data[$"171834_{i}"]?.ToString() : null,
+                    Position = data.ContainsKey($"171835_{i}") ? data[$"171835_{i}"]?.ToString()?.Split('~')[1] : null
+                });
+            }
+
+            return result;
+        }
+
+        //[HttpGet("GetPublicTeamSportsReport")]
+        //public async Task<IActionResult> GetPublicTeamSportsReport(int page, int pageSize, DateTime? startDate = null, DateTime? endDate = null, string searchValue = null)
+        //{
+        //    var query = from taskDetails in _servicePlusContext.TaskDetails
+        //                join initiatedData in _servicePlusContext.InitiatedDatas on taskDetails.ApplId equals initiatedData.ApplId
+        //                join officialFormDetails in _servicePlusContext.OfficialFormDetails on taskDetails.ExecutionDataId equals officialFormDetails.ExecutionDataId into groupedOfficialFormDetails
+        //                where taskDetails.TaskId == 23005 
+        //                      && initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
+        //                        && groupedOfficialFormDetails.All(ofd => ofd.OfficalFormID != "170912") // Add condition for OfficialFormID
+        //                orderby initiatedData.InitiatedDataId descending
+        //                select new
+        //                {
+        //                    initiatedData.InitiatedDataId,
+        //                    initiatedData.AttributeDetail,
+        //                    initiatedData.ServiceId,
+        //                    initiatedData.ServiceName,
+        //                    initiatedData.ApplId,
+        //                    initiatedData.ApplRefNo,
+        //                    initiatedData.SubmissionDate,
+        //                    TaskDetail = groupedOfficialFormDetails.Where(ofd =>
+        //                        ofd.OfficalFormID == "171829"  &&
+        //                        (string.IsNullOrWhiteSpace(searchValue) || ofd.OfficalFormValue.Contains(searchValue))
+        //                    ).Select(ofd => new
+        //                    {
+        //                        taskDetails.TaskDetailID,
+        //                        taskDetails.ExecutionDataId,
+        //                        taskDetails.TaskName,
+        //                        OfficialFormDetail = ofd
+        //                    }).ToList()
+        //                };
+
+        //    // Apply date filter before pagination
+        //    if (startDate.HasValue && endDate.HasValue)
+        //    {
+        //        var startUtc = startDate.Value.ToUniversalTime();
+        //        var endUtc = endDate.Value.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
+        //        query = query.Where(data => data.SubmissionDate >= startUtc && data.SubmissionDate <= endUtc);
+        //    }
+
+        //    // Calculate total count before pagination
+        //    var totalCount = await query.CountAsync();
+
+        //    // Paginate the base query
+        //    var paginatedData = await query
+        //        .Skip((page - 1) * pageSize)
+        //        .Take(pageSize)
+        //        .ToListAsync();
+
+        //    // Transform the paginated records
+        //    var result = paginatedData.SelectMany(data => data.TaskDetail.Select(taskDetail =>
+        //    {
+        //        var officialFormData = SportsTeamDeserializeJsonStreamAsync(taskDetail.OfficialFormDetail.OfficalFormValue);
+
+        //        if (officialFormData == null || !officialFormData.Any())
+        //            return Enumerable.Empty<PublicSportsViewModel>();
+
+        //        return officialFormData.Select(form => new PublicSportsViewModel
+        //        {
+        //            InitiatedDataId = data.InitiatedDataId,
+        //            AttributeDetailID = data.AttributeDetail
+        //                .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170608")?.AttributeDetailID,
+        //            TaskDetailID = taskDetail.TaskDetailID,
+        //            ExecutionDataId = taskDetail.ExecutionDataId,
+        //            OfficialFormDetailID = taskDetail.OfficialFormDetail.OfficialFormDetailID,
+        //            ApplId = data.ApplId,
+        //            ApplRefNo = form.ApplicationRefNo,
+        //            TaskName = taskDetail.TaskName,
+        //            TaskId = 23005,
+        //            ServiceId = data.ServiceId,
+        //            ServiceName = data.ServiceName,
+        //            SubmissionDate = data.SubmissionDate,
+        //            ApplicantFirstName = form.PlayerName,
+        //            ApplicantGender = CleanValue(data.AttributeDetail
+        //                .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169964")?.ApplicationFormFieldValue),
+        //            ApplicantGame = CleanValue(data.AttributeDetail
+        //                .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170094")?.ApplicationFormFieldValue),
+        //            ApplicantAgeGroup = CleanValue(data.AttributeDetail
+        //                .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170202")?.ApplicationFormFieldValue),
+        //            ApplicantEvent = CleanValue(data.AttributeDetail
+        //                .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170203")?.ApplicationFormFieldValue),
+        //            ApplicantGameCategory = CleanValue(data.AttributeDetail
+        //                .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170246")?.ApplicationFormFieldValue),
+        //            ApplicantMedal = form.Position
+        //        });
+        //    }))
+        //    .Where(x => x != null) // Exclude null projections
+        //    .SelectMany(x => x)
+        //    .ToList();
+
+        //    // Filter the result based on searchValue if provided
+        //    if (!string.IsNullOrWhiteSpace(searchValue))
+        //    {
+        //        result = result
+        //            .Where(d => !string.IsNullOrEmpty(d.ApplicantMedal) &&
+        //                        d.ApplicantMedal.Equals(searchValue, StringComparison.OrdinalIgnoreCase))
+        //            .ToList();
+
+        //        // Update totalCount after filtering
+        //        totalCount = result.Count;
+        //    }
+
+        //    // Return the paginated result
+        //    return Ok(new
+        //    {
+        //        TotalCount = totalCount,
+        //        Records = result.OrderBy(d => d.ApplicantGame).ToList(),
+        //    });
+
+
+        //}
+
+
 
         public static string DeserializeJsonStreamAsync(string? jsonStream)
         {
@@ -2352,39 +2491,39 @@ namespace ServicePlusAPIs.Controllers
             return string.Empty; // Return empty string if no valid data
         }
 
-        private List<PlayerDetail> SportsTeamDeserializeJsonStreamAsync(string json)
-        {
-            if (string.IsNullOrWhiteSpace(json))
-                return new List<PlayerDetail>();
+     //   private List<PlayerDetail> SportsTeamDeserializeJsonStreamAsync(string json)
+     //   {
+     //       if (string.IsNullOrWhiteSpace(json))
+     //           return new List<PlayerDetail>();
 
-            var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+     //       var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
 
-            var result = new List<PlayerDetail>();
-            var detectedKeys = data.Keys
-        .Where(k => k.StartsWith("171830_") && int.TryParse(k.Split('_')[1], out int index) && index <= 9) // Limit to valid range
-        .Select(k => new { Key = k, Index = k.Split('_')[1] })
-        .ToList();
-            // Identify the maximum player index dynamically
-            int maxIndex = detectedKeys
-     .Select(k => int.Parse(k.Index))
-     .DefaultIfEmpty(0)
-     .Max();
+     //       var result = new List<PlayerDetail>();
+     //       var detectedKeys = data.Keys
+     //   .Where(k => k.StartsWith("171830_") && int.TryParse(k.Split('_')[1], out int index) && index <= 9) // Limit to valid range
+     //   .Select(k => new { Key = k, Index = k.Split('_')[1] })
+     //   .ToList();
+     //       // Identify the maximum player index dynamically
+     //       int maxIndex = detectedKeys
+     //.Select(k => int.Parse(k.Index))
+     //.DefaultIfEmpty(0)
+     //.Max();
 
-            for (int i = 1; i <= maxIndex; i++)
-            {
-                result.Add(new PlayerDetail
-                {
-                    PlayerName = data.ContainsKey($"171830_{i}") ? data[$"171830_{i}"]?.ToString() : null,
-                    DateOfBirth = data.ContainsKey($"171831_{i}") ? data[$"171831_{i}"]?.ToString() : null,
-                    MobileNumber = data.ContainsKey($"171832_{i}") ? data[$"171832_{i}"]?.ToString() : null,
-                    Email = data.ContainsKey($"171833_{i}") ? data[$"171833_{i}"]?.ToString() : null,
-                    ApplicationRefNo = data.ContainsKey($"171834_{i}") ? data[$"171834_{i}"]?.ToString() : null,
-                    Position = data.ContainsKey($"171835_{i}") ? data[$"171835_{i}"]?.ToString().Split('~')[1] : null
-                });
-            }
+     //       for (int i = 1; i <= maxIndex; i++)
+     //       {
+     //           result.Add(new PlayerDetail
+     //           {
+     //               PlayerName = data.ContainsKey($"171830_{i}") ? data[$"171830_{i}"]?.ToString() : null,
+     //               DateOfBirth = data.ContainsKey($"171831_{i}") ? data[$"171831_{i}"]?.ToString() : null,
+     //               MobileNumber = data.ContainsKey($"171832_{i}") ? data[$"171832_{i}"]?.ToString() : null,
+     //               Email = data.ContainsKey($"171833_{i}") ? data[$"171833_{i}"]?.ToString() : null,
+     //               ApplicationRefNo = data.ContainsKey($"171834_{i}") ? data[$"171834_{i}"]?.ToString() : null,
+     //               Position = data.ContainsKey($"171835_{i}") ? data[$"171835_{i}"]?.ToString().Split('~')[1] : null
+     //           });
+     //       }
 
-            return result;
-        }
+     //       return result;
+     //   }
 
 
 
