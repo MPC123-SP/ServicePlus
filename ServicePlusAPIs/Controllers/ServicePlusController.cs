@@ -2113,21 +2113,8 @@ namespace ServicePlusAPIs.Controllers
         #region Public Sports Report
 
 
-        [HttpGet("GetPublicIndividualSportsReport")]
-        public async Task<IActionResult> GetPublicIndividualSportsReport(int page, int pageSize, DateTime? startDate = null, DateTime? endDate = null, string searchValue = null,
-string tournament = null,
-string gender = null,
-string level = null,
-string applicantGame = null,
-string applicantAgeGroup = null,
-string applicantGameCategory = null,
-string applicationType = null,
-string isMedalist = null,
-string district = null,
-string block = null,
-            //string sortColumn = "SubmissionDate", // Default sorting by SubmissionDate
-            //    string sortOrder = "desc",
-            string applicantEvent = null)
+        [HttpPost("GetPublicIndividualSportsReport")]
+        public async Task<IActionResult> GetPublicIndividualSportsReport(int page, int pageSize, [FromBody] FilterParameter filterParameter)
         {
             // Build the base query
             var query = from initiatedData in _servicePlusContext.InitiatedDatas
@@ -2161,70 +2148,70 @@ string block = null,
                                 taskDetails.TaskName,
                                 OfficialFormDetails = groupedOfficialFormDetails
                                     .Where(ofd => ofd.OfficalFormID == "170912" &&
-                                          (string.IsNullOrWhiteSpace(searchValue) ||
-                                           ofd.OfficalFormValue.Contains(searchValue)))
+                                          (string.IsNullOrWhiteSpace(filterParameter.SearchValue) ||
+                                           ofd.OfficalFormValue.Contains(filterParameter.SearchValue)))
                                     .ToList()
                             }
                         };
 
             // Apply date filter if both dates are provided
-            if (startDate.HasValue && endDate.HasValue)
+            if (filterParameter.StartDate.HasValue && filterParameter.EndDate.HasValue)
             {
-                var startUtc = startDate.Value.ToUniversalTime();
-                var endUtc = endDate.Value.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
+                var startUtc = filterParameter.StartDate.Value.ToUniversalTime();
+                var endUtc = filterParameter.EndDate.Value.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
                 query = query.Where(data => data.SubmissionDate >= startUtc && data.SubmissionDate <= endUtc);
             }
 
             // Apply filters only if parameters are not empty
-            if (!string.IsNullOrWhiteSpace(tournament))
+            if (!string.IsNullOrWhiteSpace(filterParameter.Tournament))
             {
-                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "171943" && attr.ApplicationFormFieldValue == tournament));
+                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "171943" && attr.ApplicationFormFieldValue == filterParameter.Tournament));
             }
-            if (!string.IsNullOrWhiteSpace(gender))
+            if (!string.IsNullOrWhiteSpace(filterParameter.Gender))
             {
                 query = query.Where(data => data.AttributeDetails.Any(attr =>
                     (attr.ApplicationFormFieldID == "169964" || attr.ApplicationFormFieldID == "171427")
-                    && attr.ApplicationFormFieldValue == gender));
+                    && attr.ApplicationFormFieldValue == filterParameter.Gender));
             }
 
-            if (!string.IsNullOrWhiteSpace(level))
+            if (!string.IsNullOrWhiteSpace(filterParameter.Level))
             {
                 query = query.Where(data => data.AttributeDetails.Any(attr =>
                     (attr.ApplicationFormFieldID == "170091" || attr.ApplicationFormFieldID == "170041")
-                    && attr.ApplicationFormFieldValue == level));
+                    && attr.ApplicationFormFieldValue == filterParameter.Level));
             }
 
-            if (!string.IsNullOrWhiteSpace(applicantGame))
+            if (!string.IsNullOrWhiteSpace(filterParameter.ApplicantGame))
             {
-                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170094" && attr.ApplicationFormFieldValue == applicantGame));
+                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170094" && attr.ApplicationFormFieldValue == filterParameter.ApplicantGame));
             }
-            if (!string.IsNullOrWhiteSpace(applicantAgeGroup))
+            if (!string.IsNullOrWhiteSpace(filterParameter.ApplicantAgeGroup))
             {
-                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170202" && attr.ApplicationFormFieldValue == applicantAgeGroup));
+                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170202" && attr.ApplicationFormFieldValue == filterParameter.ApplicantAgeGroup));
             }
-            if (!string.IsNullOrWhiteSpace(applicantGameCategory))
+            if (!string.IsNullOrWhiteSpace(filterParameter.ApplicantGameCategory))
             {
-                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170246" && attr.ApplicationFormFieldValue == applicantGameCategory));
+                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170246" && attr.ApplicationFormFieldValue == filterParameter.ApplicantGameCategory));
             }
-            if (!string.IsNullOrWhiteSpace(applicantEvent))
+            if (!string.IsNullOrWhiteSpace(filterParameter.ApplicantEvent))
             {
-                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170203" && attr.ApplicationFormFieldValue == applicantEvent));
+                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170203" && attr.ApplicationFormFieldValue == filterParameter.ApplicantEvent));
             }
-            if (!string.IsNullOrWhiteSpace(applicationType))
+            if (!string.IsNullOrWhiteSpace(filterParameter.ApplicationType))
             {
-                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170608" && attr.ApplicationFormFieldValue == applicationType));
+                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170608" && attr.ApplicationFormFieldValue == filterParameter.ApplicationType));
             }
-            if (!string.IsNullOrWhiteSpace(isMedalist))
+            if (!string.IsNullOrWhiteSpace(filterParameter.IsMedalist))
             {
-                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170309" && attr.ApplicationFormFieldValue == isMedalist));
+                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170309" && attr.ApplicationFormFieldValue == filterParameter.IsMedalist));
             }
-            if (!string.IsNullOrWhiteSpace(district))
+            if (!string.IsNullOrWhiteSpace(filterParameter.District))
             {
-                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170093" && attr.ApplicationFormFieldValue == district));
+                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170093" && attr.ApplicationFormFieldValue == filterParameter.District));
             }
-            if (!string.IsNullOrWhiteSpace(block))
+            if (!string.IsNullOrWhiteSpace(filterParameter.Block))
             {
-                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170092" && attr.ApplicationFormFieldValue == block));
+                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170092" && attr.ApplicationFormFieldValue == filterParameter.Block));
             }
 
             // Sorting logic
@@ -2317,10 +2304,10 @@ string block = null,
             }).ToList();
 
             // Filter by medal if provided
-            if (!string.IsNullOrWhiteSpace(searchValue))
+            if (!string.IsNullOrWhiteSpace(filterParameter.SearchValue))
             {
-                totalCount = result.Count(d => d.ApplicantMedal != null && d.ApplicantMedal.Equals(searchValue, StringComparison.OrdinalIgnoreCase));
-                result = result.Where(d => d.ApplicantMedal != null && d.ApplicantMedal.Equals(searchValue, StringComparison.OrdinalIgnoreCase)).ToList();
+                totalCount = result.Count(d => d.ApplicantMedal != null && d.ApplicantMedal.Equals(filterParameter.SearchValue, StringComparison.OrdinalIgnoreCase));
+                result = result.Where(d => d.ApplicantMedal != null && d.ApplicantMedal.Equals(filterParameter.SearchValue, StringComparison.OrdinalIgnoreCase)).ToList();
             }
 
             return Ok(new
@@ -2445,23 +2432,8 @@ string block = null,
             return string.IsNullOrEmpty(value) ? null : Regex.Replace(value, @"^\d+~", "");
         }
 
-        [HttpGet("GetPublicTeamSportsReport")]
-        public async Task<IActionResult> GetPublicTeamSportsReport(int page,
-int pageSize,
-DateTime? startDate = null,
-DateTime? endDate = null,
-string searchValue = null,
-string tournament = null,
-string gender = null,
-string level = null,
-string applicantGame = null,
-string applicantAgeGroup = null,
-string applicantGameCategory = null,
-string applicationType = null,
-string isMedalist = null,
-string district = null,
-string block = null,
-string applicantEvent = null)
+        [HttpPost("GetPublicTeamSportsReport")]
+        public async Task<IActionResult> GetPublicTeamSportsReport(int page,int pageSize, [FromBody] FilterParameter filterParameter)
         {
             var query = from taskDetails in _servicePlusContext.TaskDetails
                         join initiatedData in _servicePlusContext.InitiatedDatas on taskDetails.ApplId equals initiatedData.ApplId
@@ -2481,7 +2453,7 @@ string applicantEvent = null)
                             initiatedData.SubmissionDate,
                             TaskDetail = groupedOfficialFormDetails.Where(ofd =>
                                 ofd.OfficalFormID == "171829" &&
-                                (string.IsNullOrWhiteSpace(searchValue) || ofd.OfficalFormValue.Contains(searchValue))
+                                (string.IsNullOrWhiteSpace(filterParameter.SearchValue) || ofd.OfficalFormValue.Contains(filterParameter.SearchValue))
                             ).Select(ofd => new
                             {
                                 taskDetails.TaskDetailID,
@@ -2493,61 +2465,61 @@ string applicantEvent = null)
 
 
             // Apply date filter
-            if (startDate.HasValue && endDate.HasValue)
+            if (filterParameter.StartDate.HasValue && filterParameter.EndDate.HasValue)
             {
-                var startUtc = startDate.Value.ToUniversalTime();
-                var endUtc = endDate.Value.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
+                var startUtc = filterParameter.StartDate.Value.ToUniversalTime();
+                var endUtc = filterParameter.EndDate.Value.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
                 query = query.Where(data => data.SubmissionDate >= startUtc && data.SubmissionDate <= endUtc);
             }
             // Apply filters only if parameters are not empty
-            if (!string.IsNullOrWhiteSpace(tournament))
+            if (!string.IsNullOrWhiteSpace(filterParameter.Tournament))
             {
-                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "171943" && attr.ApplicationFormFieldValue == tournament));
+                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "171943" && attr.ApplicationFormFieldValue == filterParameter.Tournament));
             }
-            if (!string.IsNullOrWhiteSpace(gender))
+            if (!string.IsNullOrWhiteSpace(filterParameter.Gender))
             {
                 query = query.Where(data => data.AttributeDetail.Any(attr =>
                     (attr.ApplicationFormFieldID == "169964" || attr.ApplicationFormFieldID == "171427")
-                    && attr.ApplicationFormFieldValue == gender));
+                    && attr.ApplicationFormFieldValue == filterParameter.Gender));
             }
 
-            if (!string.IsNullOrWhiteSpace(level))
+            if (!string.IsNullOrWhiteSpace(filterParameter.Level))
             {
                 query = query.Where(data => data.AttributeDetail.Any(attr =>
                     (attr.ApplicationFormFieldID == "170091" || attr.ApplicationFormFieldID == "170041")
-                    && attr.ApplicationFormFieldValue == level));
+                    && attr.ApplicationFormFieldValue == filterParameter.Level));
             }
-            if (!string.IsNullOrWhiteSpace(applicantGame))
+            if (!string.IsNullOrWhiteSpace(filterParameter.ApplicantGame))
             {
-                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170094" && attr.ApplicationFormFieldValue == applicantGame));
+                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170094" && attr.ApplicationFormFieldValue == filterParameter.ApplicantGame));
             }
-            if (!string.IsNullOrWhiteSpace(applicantAgeGroup))
+            if (!string.IsNullOrWhiteSpace(filterParameter.ApplicantAgeGroup))
             {
-                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170202" && attr.ApplicationFormFieldValue == applicantAgeGroup));
+                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170202" && attr.ApplicationFormFieldValue == filterParameter.ApplicantAgeGroup));
             }
-            if (!string.IsNullOrWhiteSpace(applicantGameCategory))
+            if (!string.IsNullOrWhiteSpace(filterParameter.ApplicantGameCategory))
             {
-                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170246" && attr.ApplicationFormFieldValue == applicantGameCategory));
+                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170246" && attr.ApplicationFormFieldValue == filterParameter.ApplicantGameCategory));
             }
-            if (!string.IsNullOrWhiteSpace(applicantEvent))
+            if (!string.IsNullOrWhiteSpace(filterParameter.ApplicantEvent))
             {
-                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170203" && attr.ApplicationFormFieldValue == applicantEvent));
+                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170203" && attr.ApplicationFormFieldValue == filterParameter.ApplicantEvent));
             }
-            if (!string.IsNullOrWhiteSpace(applicationType))
+            if (!string.IsNullOrWhiteSpace(filterParameter.ApplicationType))
             {
-                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170608" && attr.ApplicationFormFieldValue == applicationType));
+                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170608" && attr.ApplicationFormFieldValue == filterParameter.ApplicationType));
             }
-            if (!string.IsNullOrWhiteSpace(isMedalist))
+            if (!string.IsNullOrWhiteSpace(filterParameter.IsMedalist))
             {
-                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170309" && attr.ApplicationFormFieldValue == isMedalist));
+                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170309" && attr.ApplicationFormFieldValue == filterParameter.IsMedalist));
             }
-            if (!string.IsNullOrWhiteSpace(district))
+            if (!string.IsNullOrWhiteSpace(filterParameter.District))
             {
-                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170093" && attr.ApplicationFormFieldValue == district));
+                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170093" && attr.ApplicationFormFieldValue == filterParameter.District));
             }
-            if (!string.IsNullOrWhiteSpace(block))
+            if (!string.IsNullOrWhiteSpace(filterParameter.Block))
             {
-                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170092" && attr.ApplicationFormFieldValue == block));
+                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170092" && attr.ApplicationFormFieldValue == filterParameter.Block));
             }
             // Calculate total count
             var totalCount = await query.CountAsync();
@@ -2627,11 +2599,11 @@ string applicantEvent = null)
             .ToList();
 
             // Filter based on searchValue if provided
-            if (!string.IsNullOrWhiteSpace(searchValue))
+            if (!string.IsNullOrWhiteSpace(filterParameter.SearchValue))
             {
                 result = result
                     .Where(d => !string.IsNullOrEmpty(d.ApplicantMedal) &&
-                                d.ApplicantMedal.Equals(searchValue, StringComparison.OrdinalIgnoreCase))
+                                d.ApplicantMedal.Equals(filterParameter.SearchValue, StringComparison.OrdinalIgnoreCase))
                     .ToList();
 
                 // Update totalCount after filtering

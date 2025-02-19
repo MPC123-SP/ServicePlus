@@ -205,4 +205,22 @@ namespace ServicePlusAPIs.ViewModels.PublicModel
         public string? Position { get; set; }
 
     }
+
+    public class FilterParameter
+    {
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public string? SearchValue { get; set; }
+        public string? Tournament { get; set; }
+        public string? Gender { get; set; }
+        public string? Level { get; set; }
+        public string? ApplicantGame { get; set; }
+        public string? ApplicantAgeGroup { get; set; }
+        public string? ApplicantGameCategory { get; set; }
+        public string? ApplicationType { get; set; }
+        public string? IsMedalist { get; set; }
+        public string? District { get; set; }
+        public string? Block { get; set; }
+        public string? ApplicantEvent { get; set; }
+    }
 }
