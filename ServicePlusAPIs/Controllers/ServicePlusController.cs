@@ -2654,179 +2654,103 @@ namespace ServicePlusAPIs.Controllers
         [HttpGet("GetPlayerDetailsByAppRefNo")]
         public async Task<IActionResult> GetPlayerDetailsByAppRefNo(string applRefNo)
         {
-            // Build the base query
-            var query = from initiatedData in _servicePlusContext.InitiatedDatas
-                        where initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
-                              && initiatedData.ApplRefNo == applRefNo && initiatedData.InitiatedRecordInsertionFlag == 1
+            var query = await (from initiatedData in _servicePlusContext.InitiatedDatas
+                               where initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
+                                     && initiatedData.ApplRefNo == applRefNo
+                                     && initiatedData.InitiatedRecordInsertionFlag == 1
+                               select new
+                               {
+                                   initiatedData.InitiatedDataId,
+                                   initiatedData.ServiceId,
+                                   initiatedData.ServiceName,
+                                   initiatedData.ApplId,
+                                   initiatedData.ApplRefNo,
+                                   initiatedData.SubmissionDate,
+                                   AttributeDetails = initiatedData.AttributeDetail
+                                       .Where(attr => new[]
+                                       {
+                                   "169954", "169955", "169957", "169958", "169964",
+                                   "170094", "170202", "170203", "170246", "170608",
+                                   "170091", "170608", "170041", "170309", "171427",
+                                   "170093", "170092", "169965", "169971", "169960",
+                                   "169972", "169969", "169970", "169959", "171762",
+                                   "169963", "169961", "169980", "169979", "169981",
+                                   "169998", "169999", "169990", "169991", "170000",
+                                   "169983", "171761", "169987", "169984", "169988",
+                                   "169985", "170308", "171647"
+                                       }.Contains(attr.ApplicationFormFieldID))
+                                       .ToList()
+                               }).FirstOrDefaultAsync();
 
-                        select new
-                        {
-                            InitiatedDataId = initiatedData.InitiatedDataId,
-                            AttributeDetails = initiatedData.AttributeDetail
-                                .Where(attr => new[]
-                                {
-                            "169954", "169955", "169957", "169958", "169964",
-                            "170094", "170202", "170203", "170246", "170608",
-                            "170091", "170608", "170041", "170309", "171427",
-                            "170093","170092","169965","169971","169960",
-                            "169972","169969","169970","169959","171762",
-                            "169963","169961","169980","169979","169981",
-                            "169998","169999","169990","169991","170000",
-                            "169983","171761","169987","169984","169988",
-                            "169985","170308","171647"
-                                }.Contains(attr.ApplicationFormFieldID))
-                                .ToList(),
-                            initiatedData.ServiceId,
-                            initiatedData.ServiceName,
-                            initiatedData.ApplId,
-                            initiatedData.ApplRefNo,
-                            initiatedData.SubmissionDate,
-
-                        };
-
-            // Count query
-            var totalCount = await query.CountAsync();
-
-            // Paginate records
-            var paginatedRecords = await query
-                .ToListAsync();
-
-            // Transform data into ViewModel
-            var result = paginatedRecords.Select(data => new PlayerDetailsViewModel
+            if (query == null)
             {
-                InitiatedDataId = data.InitiatedDataId,
-                AttributeDetailID = data.AttributeDetails
+                return NotFound(new { message = "No record found" });
+            }
+
+            var result = new
+            {
+                initiatedDataId = query.InitiatedDataId,
+                attributeDetailID = query.AttributeDetails
                     .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170608")?.AttributeDetailID,
-
-                ApplId = data.ApplId,
-                ApplRefNo = data.ApplRefNo,
-
-                TaskId = 23005,
-                ServiceId = data.ServiceId,
-                ServiceName = data.ServiceName,
-                SubmissionDate = data.SubmissionDate,
-                ApplicantFirstName = data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169954")?.ApplicationFormFieldValue,
-
-                ApplicantFatherName = CleanValue(data.AttributeDetails
-                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169955")?.ApplicationFormFieldValue),
-
-                ApplicantMotherName = CleanValue(data.AttributeDetails
-                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169965")?.ApplicationFormFieldValue),
-
-                ApplicantDOB = CleanValue(data.AttributeDetails
-                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169971")?.ApplicationFormFieldValue),
-
-                ApplicantAge = CleanValue(data.AttributeDetails
-                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169960")?.ApplicationFormFieldValue),
-
-                StateOfBirth = CleanValue(data.AttributeDetails
-                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169972")?.ApplicationFormFieldValue),
-
-                DistrictOfBirth = CleanValue(data.AttributeDetails
-                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169969")?.ApplicationFormFieldValue),
-                PANCardNumber = CleanValue(data.AttributeDetails
-                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169970")?.ApplicationFormFieldValue),
-
-                ApplicantBloodGroup = CleanValue(data.AttributeDetails
-                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169957")?.ApplicationFormFieldValue),
-                ApplicantMobileNo = CleanValue(data.AttributeDetails
-                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169958")?.ApplicationFormFieldValue),
-
-                ApplicantAlternateMobileNumber = CleanValue(data.AttributeDetails
-                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "171762")?.ApplicationFormFieldValue),
-
-                ApplicantEmail = CleanValue(data.AttributeDetails
-                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169959")?.ApplicationFormFieldValue),
-
-                ApplicantGender = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169964")?.ApplicationFormFieldValue
-                    ?? data.AttributeDetails.FirstOrDefault(attr => attr.ApplicationFormFieldID == "171427")?.ApplicationFormFieldValue),
-
-                ApplicantGame = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170094")?.ApplicationFormFieldValue),
-                Level = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170091")?.ApplicationFormFieldValue
-                    ?? data.AttributeDetails.FirstOrDefault(attr => attr.ApplicationFormFieldID == "170041")?.ApplicationFormFieldValue),
-                ApplicationType = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170608")?.ApplicationFormFieldValue),
-                ApplicantAgeGroup = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170202")?.ApplicationFormFieldValue),
-                ApplicantEvent = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170203")?.ApplicationFormFieldValue),
-                ApplicantGameCategory = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170246")?.ApplicationFormFieldValue),
-                IsMedalist = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170309")?.ApplicationFormFieldValue),
-                District = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170093")?.ApplicationFormFieldValue),
-                Block = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170092")?.ApplicationFormFieldValue),
-
-                PhysicalDisability = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169963")?.ApplicationFormFieldValue),
-
-                MaritialStatus = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169961")?.ApplicationFormFieldValue),
-
-                SpouseName = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169962")?.ApplicationFormFieldValue),
-
-                IsEmployed = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169980")?.ApplicationFormFieldValue),
-
-                EmploymentStatus = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169979")?.ApplicationFormFieldValue),
-
-                JobDescription = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169981")?.ApplicationFormFieldValue),
-
-                CompleteAddress = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169998")?.ApplicationFormFieldValue),
-
-                Region = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169999")?.ApplicationFormFieldValue),
-
-                AddState = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169990")?.ApplicationFormFieldValue),
-
-                AddDistrict = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169991")?.ApplicationFormFieldValue),
-
-                AddPincode = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170000")?.ApplicationFormFieldValue),
-
-                AccountNumber = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169983")?.ApplicationFormFieldValue),
-
-                AccountHolder = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "171761")?.ApplicationFormFieldValue),
-
-                IFSCCode = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169987")?.ApplicationFormFieldValue),
-
-
-                NameOnPassbook = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169984")?.ApplicationFormFieldValue),
-
-                BankAddress = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169988")?.ApplicationFormFieldValue),
-
-                BankName = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169985")?.ApplicationFormFieldValue),
-
-                ApplicationToBeSubmitted = CleanValue(data.AttributeDetails
-                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170308")?.ApplicationFormFieldValue),
-
-
-                PlayerEducations = PlayerEducationDeserializeJsonStreamAsync(CleanValue(data.AttributeDetails
-                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "171647")?.ApplicationFormFieldValue))
-            }).ToList();
-
+                executionDataId = (int?)null,
+                officialFormDetailID = (int?)null,
+                applId = query.ApplId,
+                applRefNo = query.ApplRefNo,
+                taskId = 23005,
+                serviceId = query.ServiceId,
+                serviceName = query.ServiceName,
+                submissionDate = query.SubmissionDate,
+                applicantFirstName = GetValue(query.AttributeDetails, "169954"),
+                applicantFatherName = GetValue(query.AttributeDetails, "169955"),
+                applicantMotherName = GetValue(query.AttributeDetails, "169965"),
+                applicantDOB = GetValue(query.AttributeDetails, "169971"),
+                applicantAge = GetValue(query.AttributeDetails, "169960"),
+                stateOfBirth = GetValue(query.AttributeDetails, "169972"),
+                districtOfBirth = GetValue(query.AttributeDetails, "169969"),
+                panCardNumber = GetValue(query.AttributeDetails, "169970"),
+                applicantBloodGroup = GetValue(query.AttributeDetails, "169957"),
+                applicantMobileNo = GetValue(query.AttributeDetails, "169958"),
+                applicantAlternateMobileNumber = GetValue(query.AttributeDetails, "171762"),
+                applicantEmail = GetValue(query.AttributeDetails, "169959"),
+                applicantGender = GetValue(query.AttributeDetails, "169964") ?? GetValue(query.AttributeDetails, "171427"),
+                applicantGame = GetValue(query.AttributeDetails, "170094"),
+                level = GetValue(query.AttributeDetails, "170091") ?? GetValue(query.AttributeDetails, "170041"),
+                applicationType = GetValue(query.AttributeDetails, "170608"),
+                applicantAgeGroup = GetValue(query.AttributeDetails, "170202"),
+                applicantEvent = GetValue(query.AttributeDetails, "170203"),
+                applicantGameCategory = GetValue(query.AttributeDetails, "170246"),
+                isMedalist = GetValue(query.AttributeDetails, "170309"),
+                district = GetValue(query.AttributeDetails, "170093"),
+                block = GetValue(query.AttributeDetails, "170092"),
+                physicalDisability = GetValue(query.AttributeDetails, "169963"),
+                maritalStatus = GetValue(query.AttributeDetails, "169961"),
+                spouseName = GetValue(query.AttributeDetails, "169962"),
+                isEmployed = GetValue(query.AttributeDetails, "169980"),
+                employmentStatus = GetValue(query.AttributeDetails, "169979"),
+                jobDescription = GetValue(query.AttributeDetails, "169981"),
+                completeAddress = GetValue(query.AttributeDetails, "169998"),
+                region = GetValue(query.AttributeDetails, "169999"),
+                addState = GetValue(query.AttributeDetails, "169990"),
+                addDistrict = GetValue(query.AttributeDetails, "169991"),
+                addPincode = GetValue(query.AttributeDetails, "170000"),
+                accountNumber = GetValue(query.AttributeDetails, "169983"),
+                accountHolder = GetValue(query.AttributeDetails, "171761"),
+                ifscCode = GetValue(query.AttributeDetails, "169987"),
+                nameOnPassbook = GetValue(query.AttributeDetails, "169984"),
+                bankAddress = GetValue(query.AttributeDetails, "169988"),
+                bankName = GetValue(query.AttributeDetails, "169985"),
+                applicationToBeSubmitted = GetValue(query.AttributeDetails, "170308"),
+                playerEducations = PlayerEducationDeserializeJsonStreamAsync(GetValue(query.AttributeDetails, "171647"))
+            };
 
             return Ok(result);
-
         }
+
+        private string GetValue(IEnumerable<AttributeDetail> attributes, string fieldId)
+        {
+            return attributes.FirstOrDefault(attr => attr.ApplicationFormFieldID == fieldId)?.ApplicationFormFieldValue ?? string.Empty;
+        }
+
 
         private List<InterNationalAchievements> InterNationalAchievementsDeserializeJsonStreamAsync(string json)
         {
