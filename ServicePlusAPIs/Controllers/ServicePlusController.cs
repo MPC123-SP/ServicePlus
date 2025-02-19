@@ -2710,7 +2710,7 @@ string applicantEvent = null)
 
         private List<InterNationalAchievements> InterNationalAchievementsDeserializeJsonStreamAsync(string json)
         {
-            if (string.IsNullOrWhiteSpace(json))
+            if (string.IsNullOrWhiteSpace(json) || json == "FieldSetValue")
                 return new List<InterNationalAchievements>();
 
             var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
@@ -2743,7 +2743,7 @@ string applicantEvent = null)
         }
         private List<NationalAchievements> NationalAchievementsDeserializeJsonStreamAsync(string json)
         {
-            if (string.IsNullOrWhiteSpace(json))
+            if (string.IsNullOrWhiteSpace(json) || json == "FieldSetValue")
                 return new List<NationalAchievements>();
 
             var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
@@ -2777,7 +2777,7 @@ string applicantEvent = null)
 
         private List<StateAchievements> StateAchievementsDeserializeJsonStreamAsync(string json)
         {
-            if (string.IsNullOrWhiteSpace(json))
+            if (string.IsNullOrEmpty(json) || json == "FieldSetValue")
                 return new List<StateAchievements>();
 
             var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
@@ -2812,7 +2812,7 @@ string applicantEvent = null)
 
         private List<DistrictAchievements> DistrictAchievementsDeserializeJsonStreamAsync(string json)
         {
-            if (string.IsNullOrWhiteSpace(json))
+            if (string.IsNullOrWhiteSpace(json) || json == "FieldSetValue")
                 return new List<DistrictAchievements>();
 
             var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
@@ -2847,7 +2847,7 @@ string applicantEvent = null)
 
         private List<BlockAchievements> BlockAchievementsDeserializeJsonStreamAsync(string json)
         {
-            if (string.IsNullOrWhiteSpace(json))
+            if (string.IsNullOrWhiteSpace(json) || json == "FieldSetValue")
                 return new List<BlockAchievements>();
 
             var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
@@ -3144,9 +3144,7 @@ string applicantEvent = null)
             // Build the base query
             var query = from initiatedData in _servicePlusContext.InitiatedDatas
                         where initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
-                              && initiatedData.ApplRefNo == applRefNo 
-                              //&& initiatedData.InitiatedRecordInsertionFlag == 1
-
+                              && initiatedData.ApplRefNo == applRefNo
                         select new
                         {
                             InitiatedDataId = initiatedData.InitiatedDataId,
@@ -3160,28 +3158,27 @@ string applicantEvent = null)
                             initiatedData.ServiceName,
                             initiatedData.ApplId,
                             initiatedData.ApplRefNo,
-                            initiatedData.SubmissionDate,
-
+                            initiatedData.SubmissionDate
                         };
 
-            // Count query
-            var totalCount = await query.CountAsync();
+            // Execute the query and get a single record
+            var data = await query.FirstOrDefaultAsync();
 
-            // Paginate records
-            var paginatedRecords = await query
-                .ToListAsync();
+            if (data == null)
+            {
+                return NotFound("No achievement records found.");
+            }
 
-            // Transform data into ViewModel
-            var result = paginatedRecords.Select(data => new PlayerAchievements
+            // Transform the single record into ViewModel
+            var result = new PlayerAchievements
             {
                 CompetitionType = CleanValue(data.AttributeDetails
                     .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170041")?.ApplicationFormFieldValue),
 
-
                 BlockAchievements = BlockAchievementsDeserializeJsonStreamAsync(CleanValue(data.AttributeDetails
                         .FirstOrDefault(attr => attr.ApplicationFormFieldID == "171353")?.ApplicationFormFieldValue)),
 
-                 DistrictAchievements = DistrictAchievementsDeserializeJsonStreamAsync(CleanValue(data.AttributeDetails
+                DistrictAchievements = DistrictAchievementsDeserializeJsonStreamAsync(CleanValue(data.AttributeDetails
                         .FirstOrDefault(attr => attr.ApplicationFormFieldID == "171373")?.ApplicationFormFieldValue)),
 
                 StateAchievements = StateAchievementsDeserializeJsonStreamAsync(CleanValue(data.AttributeDetails
@@ -3192,12 +3189,11 @@ string applicantEvent = null)
 
                 InterNationalAchievements = InterNationalAchievementsDeserializeJsonStreamAsync(CleanValue(data.AttributeDetails
                         .FirstOrDefault(attr => attr.ApplicationFormFieldID == "171403")?.ApplicationFormFieldValue))
-            }).ToList();
+            };
 
-
-            return Ok(result);
-
+            return Ok(result); // Returns a single object instead of an array
         }
+
         #endregion
 
 
