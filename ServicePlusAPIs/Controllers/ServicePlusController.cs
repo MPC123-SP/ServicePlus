@@ -2121,7 +2121,7 @@ namespace ServicePlusAPIs.Controllers
                         join taskDetails in _servicePlusContext.TaskDetails on initiatedData.ApplId equals taskDetails.ApplId
                         join officialFormDetails in _servicePlusContext.OfficialFormDetails on taskDetails.ExecutionDataId
                         equals officialFormDetails.ExecutionDataId into groupedOfficialFormDetails
-                        
+
                         where initiatedData.ServiceName.Contains("Punjab Sports Events Portal") && taskDetails.TaskId == 23005
                               && groupedOfficialFormDetails.Any(ofd => ofd.OfficalFormID == "171829") == false // Fixed condition
                         orderby initiatedData.InitiatedDataId descending
@@ -2318,14 +2318,14 @@ namespace ServicePlusAPIs.Controllers
             });
         }
 
-        
+
         private string CleanValue(string value)
         {
             return string.IsNullOrEmpty(value) ? null : Regex.Replace(value, @"^\d+~", "");
         }
 
         [HttpPost("GetPublicTeamSportsReport")]
-        public async Task<IActionResult> GetPublicTeamSportsReport( [FromBody] FilterParameter filterParameter)
+        public async Task<IActionResult> GetPublicTeamSportsReport([FromBody] FilterParameter filterParameter)
         {
             var query = from taskDetails in _servicePlusContext.TaskDetails
                         join initiatedData in _servicePlusContext.InitiatedDatas on taskDetails.ApplId equals initiatedData.ApplId
@@ -2534,7 +2534,7 @@ namespace ServicePlusAPIs.Controllers
                     MobileNumber = data.ContainsKey($"171832_{i}") ? data[$"171832_{i}"]?.ToString() : null,
                     Email = data.ContainsKey($"171833_{i}") ? data[$"171833_{i}"]?.ToString() : null,
                     ApplicationRefNo = data.ContainsKey($"171834_{i}") ? data[$"171834_{i}"]?.ToString() : null,
-                    Position = data.ContainsKey($"171835_{i}") ? data[$"171835_{i}"]?.ToString()?.Split('~')[1] : null
+                    Position = data.ContainsKey($"171835_{i}") ? data[$"171835_{i}"]?.ToString() : null
                 });
             }
 
@@ -2553,8 +2553,13 @@ namespace ServicePlusAPIs.Controllers
                 return new List<PlayerEducation>();
 
             var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
+
+            if (!data.ContainsKey("data"))
+                return new List<PlayerEducation>();
+
             var jsonData = data["data"];
             var result = new List<PlayerEducation>();
+
             var detectedKeys = jsonData.Keys
                 .Where(k => k.StartsWith("171648_") && int.TryParse(k.Split('_')[1], out _))
                 .Select(k => new { Key = k, Index = int.Parse(k.Split('_')[1]) })
@@ -2566,17 +2571,27 @@ namespace ServicePlusAPIs.Controllers
             {
                 result.Add(new PlayerEducation
                 {
-                    Qualification = jsonData.ContainsKey($"171648_{i}") ? jsonData[$"171648_{i}"]?.ToString() : null,
+                    Qualification = GetSafeValue(jsonData, $"171648_{i}"),
                     InstituteName = jsonData.ContainsKey($"171649_{i}") ? jsonData[$"171649_{i}"]?.ToString() : null,
                     PassingYear = jsonData.ContainsKey($"171650_{i}") ? jsonData[$"171650_{i}"]?.ToString() : null,
-                    //  Position = data.ContainsKey($"171835_{i}") ? data[$"171835_{i}"]?.ToString()?.Split('~')[1] : null
+
+                    // Position = GetSafeValue(jsonData, $"171835_{i}") // Uncomment if needed
                 });
             }
 
             return result;
         }
 
-      
+        private string GetSafeValue(Dictionary<string, string> jsonData, string key)
+        {
+            if (jsonData.ContainsKey(key) && jsonData[key] != null)
+            {
+                var parts = jsonData[key].Split('~');
+                return parts.Length > 1 ? parts[1] : null; // Ensure there is at least one '~'
+            }
+            return null;
+        }
+
         public static string DeserializeJsonStreamAsync(string? jsonStream)
         {
             if (jsonStream == null)
@@ -2677,7 +2692,7 @@ namespace ServicePlusAPIs.Controllers
                                    "169963", "169961", "169980", "169979", "169981",
                                    "169998", "169999", "169990", "169991", "170000",
                                    "169983", "171761", "169987", "169984", "169988",
-                                   "169985", "170308", "171647"
+                                   "169985", "170308", "171647",
                                        }.Contains(attr.ApplicationFormFieldID))
                                        .ToList()
                                }).FirstOrDefaultAsync();
@@ -2700,56 +2715,57 @@ namespace ServicePlusAPIs.Controllers
                 serviceId = query.ServiceId,
                 serviceName = query.ServiceName,
                 submissionDate = query.SubmissionDate,
-                applicantFirstName = GetValue(query.AttributeDetails, "169954"),
-                applicantFatherName = GetValue(query.AttributeDetails, "169955"),
-                applicantMotherName = GetValue(query.AttributeDetails, "169965"),
-                applicantDOB = GetValue(query.AttributeDetails, "169971"),
-                applicantAge = GetValue(query.AttributeDetails, "169960"),
-                stateOfBirth = GetValue(query.AttributeDetails, "169972"),
-                districtOfBirth = GetValue(query.AttributeDetails, "169969"),
+                applicantFirstName = GetValue(query.AttributeDetails, "169954")?.Split('~').Last(),
+                applicantFatherName = GetValue(query.AttributeDetails, "169955")?.Split('~').Last(),
+                applicantMotherName = GetValue(query.AttributeDetails, "169965")?.Split('~').Last(),
+                applicantDOB = GetValue(query.AttributeDetails, "169971")?.Split('~').Last(),
+                applicantAge = GetValue(query.AttributeDetails, "169960")?.Split('~').Last(),
+                stateOfBirth = GetValue(query.AttributeDetails, "169972")?.Split('~').Last(),
+                districtOfBirth = GetValue(query.AttributeDetails, "169969")?.Split('~').Last(),
                 panCardNumber = GetValue(query.AttributeDetails, "169970"),
-                applicantBloodGroup = GetValue(query.AttributeDetails, "169957"),
+                applicantBloodGroup = GetValue(query.AttributeDetails, "169957")?.Split('~').Last(),
                 applicantMobileNo = GetValue(query.AttributeDetails, "169958"),
-                applicantAlternateMobileNumber = GetValue(query.AttributeDetails, "171762"),
+                applicantAlternateMobileNumber = GetValue(query.AttributeDetails, "171762")?.Split('~').Last(),
                 applicantEmail = GetValue(query.AttributeDetails, "169959"),
-                applicantGender = GetValue(query.AttributeDetails, "169964") ?? GetValue(query.AttributeDetails, "171427"),
-                applicantGame = GetValue(query.AttributeDetails, "170094"),
-                level = GetValue(query.AttributeDetails, "170091") ?? GetValue(query.AttributeDetails, "170041"),
-                applicationType = GetValue(query.AttributeDetails, "170608"),
-                applicantAgeGroup = GetValue(query.AttributeDetails, "170202"),
+                applicantGender = GetValue(query.AttributeDetails, "169964") ?? GetValue(query.AttributeDetails, "171427")?.Split('~').Last(),
+                applicantGame = GetValue(query.AttributeDetails, "170094")?.Split('~').Last(),
+                level = GetValue(query.AttributeDetails, "170091") ?? GetValue(query.AttributeDetails, "170041")?.Split('~').Last(),
+                applicationType = GetValue(query.AttributeDetails, "170608")?.Split('~').Last(),
+                applicantAgeGroup = GetValue(query.AttributeDetails, "170202")?.Split('~').Last(),
                 applicantEvent = GetValue(query.AttributeDetails, "170203"),
-                applicantGameCategory = GetValue(query.AttributeDetails, "170246"),
-                isMedalist = GetValue(query.AttributeDetails, "170309"),
-                district = GetValue(query.AttributeDetails, "170093"),
-                block = GetValue(query.AttributeDetails, "170092"),
-                physicalDisability = GetValue(query.AttributeDetails, "169963"),
-                maritalStatus = GetValue(query.AttributeDetails, "169961"),
-                spouseName = GetValue(query.AttributeDetails, "169962"),
-                isEmployed = GetValue(query.AttributeDetails, "169980"),
-                employmentStatus = GetValue(query.AttributeDetails, "169979"),
-                jobDescription = GetValue(query.AttributeDetails, "169981"),
-                completeAddress = GetValue(query.AttributeDetails, "169998"),
-                region = GetValue(query.AttributeDetails, "169999"),
-                addState = GetValue(query.AttributeDetails, "169990"),
-                addDistrict = GetValue(query.AttributeDetails, "169991"),
-                addPincode = GetValue(query.AttributeDetails, "170000"),
-                accountNumber = GetValue(query.AttributeDetails, "169983"),
-                accountHolder = GetValue(query.AttributeDetails, "171761"),
-                ifscCode = GetValue(query.AttributeDetails, "169987"),
-                nameOnPassbook = GetValue(query.AttributeDetails, "169984"),
-                bankAddress = GetValue(query.AttributeDetails, "169988"),
-                bankName = GetValue(query.AttributeDetails, "169985"),
-                applicationToBeSubmitted = GetValue(query.AttributeDetails, "170308"),
+                applicantGameCategory = GetValue(query.AttributeDetails, "170246")?.Split('~').Last(),
+                isMedalist = GetValue(query.AttributeDetails, "170309")?.Split('~').Last(),
+                district = GetValue(query.AttributeDetails, "170093")?.Split('~').Last(),
+                block = GetValue(query.AttributeDetails, "170092")?.Split('~').Last(),
+                physicalDisability = GetValue(query.AttributeDetails, "169963")?.Split('~').Last(),
+                maritalStatus = GetValue(query.AttributeDetails, "169961")?.Split('~').Last(),
+                spouseName = GetValue(query.AttributeDetails, "169962")?.Split('~').Last(),
+                isEmployed = GetValue(query.AttributeDetails, "169980")?.Split('~').Last(),
+                employmentStatus = GetValue(query.AttributeDetails, "169979")?.Split('~').Last(),
+                jobDescription = GetValue(query.AttributeDetails, "169981")?.Split('~').Last(),
+                completeAddress = GetValue(query.AttributeDetails, "169998")?.Split('~').Last(),
+                region = GetValue(query.AttributeDetails, "169999")?.Split('~').Last(),
+                addState = GetValue(query.AttributeDetails, "169990")?.Split('~').Last(),
+                addDistrict = GetValue(query.AttributeDetails, "169991")?.Split('~').Last(),
+                addPincode = GetValue(query.AttributeDetails, "170000")?.Split('~').Last(),
+                accountNumber = GetValue(query.AttributeDetails, "169983")?.Split('~').Last(),
+                accountHolder = GetValue(query.AttributeDetails, "171761")?.Split('~').Last(),
+                ifscCode = GetValue(query.AttributeDetails, "169987")?.Split('~').Last(),
+                nameOnPassbook = GetValue(query.AttributeDetails, "169984")?.Split('~').Last(),
+                bankAddress = GetValue(query.AttributeDetails, "169988")?.Split('~').Last(),
+                bankName = GetValue(query.AttributeDetails, "169985")?.Split('~').Last(),
+                applicationToBeSubmitted = GetValue(query.AttributeDetails, "170308")?.Split('~').Last(),
                 playerEducations = PlayerEducationDeserializeJsonStreamAsync(GetValue(query.AttributeDetails, "171647"))
             };
 
             return Ok(result);
         }
 
-        private string GetValue(IEnumerable<AttributeDetail> attributes, string fieldId)
+        private string? GetValue(IEnumerable<AttributeDetail> attributes, string fieldId)
         {
-            return attributes.FirstOrDefault(attr => attr.ApplicationFormFieldID == fieldId)?.ApplicationFormFieldValue ?? string.Empty;
+            return attributes.FirstOrDefault(attr => attr.ApplicationFormFieldID == fieldId)?.ApplicationFormFieldValue;
         }
+
 
 
         private List<InterNationalAchievements> InterNationalAchievementsDeserializeJsonStreamAsync(string json)
@@ -2771,20 +2787,56 @@ namespace ServicePlusAPIs.Controllers
             {
                 result.Add(new InterNationalAchievements
                 {
-                    Game = jsonData.ContainsKey($"171412_{i}") ? jsonData[$"171412_{i}"]?.ToString() : null,
-                    GameCategory = jsonData.ContainsKey($"171413_{i}") ? jsonData[$"171413_{i}"]?.ToString() : null,
-                    GameType = jsonData.ContainsKey($"171414_{i}") ? jsonData[$"171414_{i}"]?.ToString() : null,
-                    AgeGroup = jsonData.ContainsKey($"171415_{i}") ? jsonData[$"171415_{i}"]?.ToString() : null,
-                    GameEvent = jsonData.ContainsKey($"171416_{i}") ? jsonData[$"171416_{i}"]?.ToString() : null,
+                    Game = GetSafeValueForAchievement(jsonData, $"171412_{i}"),
+                    GameCategory = GetSafeValueForAchievement(jsonData, $"171413_{i}"),
+                    GameType = GetSafeValueForAchievement(jsonData, $"171414_{i}"),
+                    AgeGroup = GetSafeValueForAchievement(jsonData, $"171415_{i}"),
+                    GameEvent = GetSafeValueForAchievement(jsonData, $"171416_{i}"),   
                     TournamentName = jsonData.ContainsKey($"171417_{i}") ? jsonData[$"171417_{i}"]?.ToString() : null,
                     TournamentFrom = jsonData.ContainsKey($"171418_{i}") ? jsonData[$"171418_{i}"]?.ToString() : null,
                     TournamentTo = jsonData.ContainsKey($"171646_{i}") ? jsonData[$"171646_{i}"]?.ToString() : null,
-                    Position = jsonData.ContainsKey($"171419_{i}") ? jsonData[$"171419_{i}"]?.ToString() : null,
+                    Position = GetSafeValueForAchievement(jsonData, $"171419_{i}")
                 });
             }
 
             return result;
         }
+
+
+
+        //private List<NationalAchievements> NationalAchievementsDeserializeJsonStreamAsync(string json)
+        //{
+        //    if (string.IsNullOrWhiteSpace(json) || json == "FieldSetValue")
+        //        return new List<NationalAchievements>();
+
+        //    var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
+        //    var jsonData = data["data"];
+        //    var result = new List<NationalAchievements>();
+        //    var detectedKeys = jsonData.Keys
+        //        .Where(k => k.StartsWith("171395_") && int.TryParse(k.Split('_')[1], out _))
+        //        .Select(k => new { Key = k, Index = int.Parse(k.Split('_')[1]) })
+        //        .ToList();
+
+        //    int maxIndex = detectedKeys.Select(k => k.Index).DefaultIfEmpty(0).Max();
+
+        //    for (int i = 1; i <= maxIndex; i++)
+        //    {
+        //        result.Add(new NationalAchievements
+        //        {
+        //            Game = jsonData.ContainsKey($"171395_{i}") ? jsonData[$"171395_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            GameCategory = jsonData.ContainsKey($"171396_{i}") ? jsonData[$"171396_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            GameType = jsonData.ContainsKey($"171397_{i}") ? jsonData[$"171397_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            AgeGroup = jsonData.ContainsKey($"171398_{i}") ? jsonData[$"171398_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            GameEvent = jsonData.ContainsKey($"171399_{i}") ? jsonData[$"171399_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            TournamentName = jsonData.ContainsKey($"171400_{i}") ? jsonData[$"171400_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            TournamentFrom = jsonData.ContainsKey($"171401_{i}") ? jsonData[$"171401_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            TournamentTo = jsonData.ContainsKey($"171645_{i}") ? jsonData[$"171645_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            Position = jsonData.ContainsKey($"171402_{i}") ? jsonData[$"171402_{i}"]?.ToString()?.Split('~')[1] : null,
+        //        });
+        //    }
+
+        //    return result;
+        //}
         private List<NationalAchievements> NationalAchievementsDeserializeJsonStreamAsync(string json)
         {
             if (string.IsNullOrWhiteSpace(json) || json == "FieldSetValue")
@@ -2793,32 +2845,67 @@ namespace ServicePlusAPIs.Controllers
             var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
             var jsonData = data["data"];
             var result = new List<NationalAchievements>();
+
             var detectedKeys = jsonData.Keys
                 .Where(k => k.StartsWith("171395_") && int.TryParse(k.Split('_')[1], out _))
-                .Select(k => new { Key = k, Index = int.Parse(k.Split('_')[1]) })
+                .Select(k => int.Parse(k.Split('_')[1]))
                 .ToList();
 
-            int maxIndex = detectedKeys.Select(k => k.Index).DefaultIfEmpty(0).Max();
+            int maxIndex = detectedKeys.DefaultIfEmpty(0).Max();
 
             for (int i = 1; i <= maxIndex; i++)
             {
                 result.Add(new NationalAchievements
                 {
-                    Game = jsonData.ContainsKey($"171395_{i}") ? jsonData[$"171395_{i}"]?.ToString() : null,
-                    GameCategory = jsonData.ContainsKey($"171396_{i}") ? jsonData[$"171396_{i}"]?.ToString() : null,
-                    GameType = jsonData.ContainsKey($"171397_{i}") ? jsonData[$"171397_{i}"]?.ToString() : null,
-                    AgeGroup = jsonData.ContainsKey($"171398_{i}") ? jsonData[$"171398_{i}"]?.ToString() : null,
-                    GameEvent = jsonData.ContainsKey($"171399_{i}") ? jsonData[$"171399_{i}"]?.ToString() : null,
-                    TournamentName = jsonData.ContainsKey($"171400_{i}") ? jsonData[$"171400_{i}"]?.ToString() : null,
-                    TournamentFrom = jsonData.ContainsKey($"171401_{i}") ? jsonData[$"171401_{i}"]?.ToString() : null,
-                    TournamentTo = jsonData.ContainsKey($"171645_{i}") ? jsonData[$"171645_{i}"]?.ToString() : null,
-                    Position = jsonData.ContainsKey($"171402_{i}") ? jsonData[$"171402_{i}"]?.ToString() : null,
+                    Game = GetSafeValueForAchievement(jsonData, $"171395_{i}"),
+                    GameCategory = GetSafeValueForAchievement(jsonData, $"171396_{i}"),
+                    GameType = GetSafeValueForAchievement(jsonData, $"171397_{i}"),
+                    AgeGroup = GetSafeValueForAchievement(jsonData, $"171398_{i}"),
+                    GameEvent = GetSafeValueForAchievement(jsonData, $"171399_{i}"),
+                    TournamentName = jsonData.ContainsKey($"171400_{i}") ? jsonData[$"171400_{i}"]?.ToString(): null,
+                    TournamentFrom = jsonData.ContainsKey($"171401_{i}") ? jsonData[$"171401_{i}"]?.ToString(): null,
+                    TournamentTo = jsonData.ContainsKey($"171645_{i}") ? jsonData[$"171645_{i}"]?.ToString(): null,
+                    Position = GetSafeValueForAchievement(jsonData, $"171402_{i}")
                 });
             }
 
             return result;
         }
 
+        //private List<StateAchievements> StateAchievementsDeserializeJsonStreamAsync(string json)
+        //{
+        //    if (string.IsNullOrEmpty(json) || json == "FieldSetValue")
+        //        return new List<StateAchievements>();
+
+        //    var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
+        //    var jsonData = data["data"];
+        //    var result = new List<StateAchievements>();
+        //    var detectedKeys = jsonData.Keys
+        //        .Where(k => k.StartsWith("171384_") && int.TryParse(k.Split('_')[1], out _))
+        //        .Select(k => new { Key = k, Index = int.Parse(k.Split('_')[1]) })
+        //        .ToList();
+
+        //    int maxIndex = detectedKeys.Select(k => k.Index).DefaultIfEmpty(0).Max();
+
+        //    for (int i = 1; i <= maxIndex; i++)
+        //    {
+        //        result.Add(new StateAchievements
+        //        {
+        //            State = jsonData.ContainsKey($"171384_{i}") ? jsonData[$"171384_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            Game = jsonData.ContainsKey($"171385_{i}") ? jsonData[$"171385_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            GameCategory = jsonData.ContainsKey($"171386_{i}") ? jsonData[$"171386_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            GameType = jsonData.ContainsKey($"171387_{i}") ? jsonData[$"171387_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            AgeGroup = jsonData.ContainsKey($"171388_{i}") ? jsonData[$"171388_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            GameEvent = jsonData.ContainsKey($"171389_{i}") ? jsonData[$"171389_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            TournamentName = jsonData.ContainsKey($"171390_{i}") ? jsonData[$"171390_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            TournamentFrom = jsonData.ContainsKey($"171391_{i}") ? jsonData[$"171391_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            TournamentTo = jsonData.ContainsKey($"171644_{i}") ? jsonData[$"171644_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            Position = jsonData.ContainsKey($"171392_{i}") ? jsonData[$"171392_{i}"]?.ToString()?.Split('~')[1] : null,
+        //        });
+        //    }
+
+        //    return result;
+        //}
         private List<StateAchievements> StateAchievementsDeserializeJsonStreamAsync(string json)
         {
             if (string.IsNullOrEmpty(json) || json == "FieldSetValue")
@@ -2827,33 +2914,68 @@ namespace ServicePlusAPIs.Controllers
             var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
             var jsonData = data["data"];
             var result = new List<StateAchievements>();
+
             var detectedKeys = jsonData.Keys
                 .Where(k => k.StartsWith("171384_") && int.TryParse(k.Split('_')[1], out _))
-                .Select(k => new { Key = k, Index = int.Parse(k.Split('_')[1]) })
+                .Select(k => int.Parse(k.Split('_')[1]))
                 .ToList();
 
-            int maxIndex = detectedKeys.Select(k => k.Index).DefaultIfEmpty(0).Max();
+            int maxIndex = detectedKeys.DefaultIfEmpty(0).Max();
 
             for (int i = 1; i <= maxIndex; i++)
             {
                 result.Add(new StateAchievements
                 {
-                    State = jsonData.ContainsKey($"171384_{i}") ? jsonData[$"171384_{i}"]?.ToString() : null,
-                    Game = jsonData.ContainsKey($"171385_{i}") ? jsonData[$"171385_{i}"]?.ToString() : null,
-                    GameCategory = jsonData.ContainsKey($"171386_{i}") ? jsonData[$"171386_{i}"]?.ToString() : null,
-                    GameType = jsonData.ContainsKey($"171387_{i}") ? jsonData[$"171387_{i}"]?.ToString() : null,
-                    AgeGroup = jsonData.ContainsKey($"171388_{i}") ? jsonData[$"171388_{i}"]?.ToString() : null,
-                    GameEvent = jsonData.ContainsKey($"171389_{i}") ? jsonData[$"171389_{i}"]?.ToString() : null,
-                    TournamentName = jsonData.ContainsKey($"171390_{i}") ? jsonData[$"171390_{i}"]?.ToString() : null,
-                    TournamentFrom = jsonData.ContainsKey($"171391_{i}") ? jsonData[$"171391_{i}"]?.ToString() : null,
-                    TournamentTo = jsonData.ContainsKey($"171644_{i}") ? jsonData[$"171644_{i}"]?.ToString() : null,
-                    Position = jsonData.ContainsKey($"171392_{i}") ? jsonData[$"171392_{i}"]?.ToString() : null,
+                    State = GetSafeValueForAchievement(jsonData, $"171384_{i}"),
+                    Game = GetSafeValueForAchievement(jsonData, $"171385_{i}"),
+                    GameCategory = GetSafeValueForAchievement(jsonData, $"171386_{i}"),
+                    GameType = GetSafeValueForAchievement(jsonData, $"171387_{i}"),
+                    AgeGroup = GetSafeValueForAchievement(jsonData, $"171388_{i}"),
+                    GameEvent = GetSafeValueForAchievement(jsonData, $"171389_{i}"),
+                    TournamentName = jsonData.ContainsKey($"171390_{i}") ? jsonData[$"171390_{i}"]?.ToString(): null,
+                    TournamentFrom = jsonData.ContainsKey($"171391_{i}") ? jsonData[$"171391_{i}"]?.ToString(): null,
+                    TournamentTo = jsonData.ContainsKey($"171644_{i}") ? jsonData[$"171644_{i}"]?.ToString(): null,
+                    Position = GetSafeValueForAchievement(jsonData, $"171392_{i}")
                 });
             }
 
             return result;
         }
 
+        //private List<DistrictAchievements> DistrictAchievementsDeserializeJsonStreamAsync(string json)
+        //{
+        //    if (string.IsNullOrWhiteSpace(json) || json == "FieldSetValue")
+        //        return new List<DistrictAchievements>();
+
+        //    var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
+        //    var jsonData = data["data"];
+        //    var result = new List<DistrictAchievements>();
+        //    var detectedKeys = jsonData.Keys
+        //        .Where(k => k.StartsWith("171374_") && int.TryParse(k.Split('_')[1], out _))
+        //        .Select(k => new { Key = k, Index = int.Parse(k.Split('_')[1]) })
+        //        .ToList();
+
+        //    int maxIndex = detectedKeys.Select(k => k.Index).DefaultIfEmpty(0).Max();
+
+        //    for (int i = 1; i <= maxIndex; i++)
+        //    {
+        //        result.Add(new DistrictAchievements
+        //        {
+        //            District = jsonData.ContainsKey($"171374_{i}") ? jsonData[$"171374_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            Game = jsonData.ContainsKey($"171375_{i}") ? jsonData[$"171375_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            GameCategory = jsonData.ContainsKey($"171376_{i}") ? jsonData[$"171376_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            GameType = jsonData.ContainsKey($"171377_{i}") ? jsonData[$"171377_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            AgeGroup = jsonData.ContainsKey($"171378_{i}") ? jsonData[$"171378_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            GameEvent = jsonData.ContainsKey($"171379_{i}") ? jsonData[$"171379_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            TournamentName = jsonData.ContainsKey($"171380_{i}") ? jsonData[$"171380_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            TournamentFrom = jsonData.ContainsKey($"171381_{i}") ? jsonData[$"171381_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            TournamentTo = jsonData.ContainsKey($"171643_{i}") ? jsonData[$"171643_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            Position = jsonData.ContainsKey($"171382_{i}") ? jsonData[$"171382_{i}"]?.ToString()?.Split('~')[1] : null,
+        //        });
+        //    }
+
+        //    return result;
+        //}
         private List<DistrictAchievements> DistrictAchievementsDeserializeJsonStreamAsync(string json)
         {
             if (string.IsNullOrWhiteSpace(json) || json == "FieldSetValue")
@@ -2862,33 +2984,69 @@ namespace ServicePlusAPIs.Controllers
             var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
             var jsonData = data["data"];
             var result = new List<DistrictAchievements>();
+
             var detectedKeys = jsonData.Keys
                 .Where(k => k.StartsWith("171374_") && int.TryParse(k.Split('_')[1], out _))
-                .Select(k => new { Key = k, Index = int.Parse(k.Split('_')[1]) })
+                .Select(k => int.Parse(k.Split('_')[1]))
                 .ToList();
 
-            int maxIndex = detectedKeys.Select(k => k.Index).DefaultIfEmpty(0).Max();
+            int maxIndex = detectedKeys.DefaultIfEmpty(0).Max();
 
             for (int i = 1; i <= maxIndex; i++)
             {
                 result.Add(new DistrictAchievements
                 {
-                    District = jsonData.ContainsKey($"171374_{i}") ? jsonData[$"171374_{i}"]?.ToString() : null,
-                    Game = jsonData.ContainsKey($"171375_{i}") ? jsonData[$"171375_{i}"]?.ToString() : null,
-                    GameCategory = jsonData.ContainsKey($"171376_{i}") ? jsonData[$"171376_{i}"]?.ToString() : null,
-                    GameType = jsonData.ContainsKey($"171377_{i}") ? jsonData[$"171377_{i}"]?.ToString() : null,
-                    AgeGroup = jsonData.ContainsKey($"171378_{i}") ? jsonData[$"171378_{i}"]?.ToString() : null,
-                    GameEvent = jsonData.ContainsKey($"171379_{i}") ? jsonData[$"171379_{i}"]?.ToString() : null,
-                    TournamentName = jsonData.ContainsKey($"171380_{i}") ? jsonData[$"171380_{i}"]?.ToString() : null,
-                    TournamentFrom = jsonData.ContainsKey($"171381_{i}") ? jsonData[$"171381_{i}"]?.ToString() : null,
-                    TournamentTo = jsonData.ContainsKey($"171643_{i}") ? jsonData[$"171643_{i}"]?.ToString() : null,
-                    Position = jsonData.ContainsKey($"171382_{i}") ? jsonData[$"171382_{i}"]?.ToString() : null,
+                    District = GetSafeValueForAchievement(jsonData, $"171374_{i}"),
+                    Game = GetSafeValueForAchievement(jsonData, $"171375_{i}"),
+                    GameCategory = GetSafeValueForAchievement(jsonData, $"171376_{i}"),
+                    GameType = GetSafeValueForAchievement(jsonData, $"171377_{i}"),
+                    AgeGroup = GetSafeValueForAchievement(jsonData, $"171378_{i}"),
+                    GameEvent = GetSafeValueForAchievement(jsonData, $"171379_{i}"),
+                    TournamentName = jsonData.ContainsKey($"171380_{i}") ? jsonData[$"171380_{i}"]?.ToString(): null,
+                    TournamentFrom = jsonData.ContainsKey($"171381_{i}") ? jsonData[$"171381_{i}"]?.ToString(): null,
+                    TournamentTo = jsonData.ContainsKey($"171643_{i}") ? jsonData[$"171643_{i}"]?.ToString(): null,
+                    Position = GetSafeValueForAchievement(jsonData, $"171382_{i}")
                 });
             }
 
             return result;
         }
 
+        //private List<BlockAchievements> BlockAchievementsDeserializeJsonStreamAsync(string json)
+        //{
+        //    if (string.IsNullOrWhiteSpace(json) || json == "FieldSetValue")
+        //        return new List<BlockAchievements>();
+
+        //    var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
+        //    var jsonData = data["data"];
+        //    var result = new List<BlockAchievements>();
+        //    var detectedKeys = jsonData.Keys
+        //        .Where(k => k.StartsWith("171363_") && int.TryParse(k.Split('_')[1], out _))
+        //        .Select(k => new { Key = k, Index = int.Parse(k.Split('_')[1]) })
+        //        .ToList();
+
+        //    int maxIndex = detectedKeys.Select(k => k.Index).DefaultIfEmpty(0).Max();
+
+        //    for (int i = 1; i <= maxIndex; i++)
+        //    {
+        //        result.Add(new BlockAchievements
+        //        {
+        //            District = jsonData.ContainsKey($"171363_{i}") ? jsonData[$"171363_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            Block = jsonData.ContainsKey($"171364_{i}") ? jsonData[$"171364_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            Game = jsonData.ContainsKey($"171365_{i}") ? jsonData[$"171365_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            GameCategory = jsonData.ContainsKey($"171366_{i}") ? jsonData[$"171366_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            GameType = jsonData.ContainsKey($"171367_{i}") ? jsonData[$"171367_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            AgeGroup = jsonData.ContainsKey($"171368_{i}") ? jsonData[$"171368_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            GameEvent = jsonData.ContainsKey($"171369_{i}") ? jsonData[$"171369_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            TournamentName = jsonData.ContainsKey($"171370_{i}") ? jsonData[$"171370_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            TournamentFrom = jsonData.ContainsKey($"171371_{i}") ? jsonData[$"171371_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            TournamentTo = jsonData.ContainsKey($"171641_{i}") ? jsonData[$"171641_{i}"]?.ToString()?.Split('~')[1] : null,
+        //            Position = jsonData.ContainsKey($"171372_{i}") ? jsonData[$"171372_{i}"]?.ToString()?.Split('~')[1] : null,
+        //        });
+        //    }
+
+        //    return result;
+        //}
         private List<BlockAchievements> BlockAchievementsDeserializeJsonStreamAsync(string json)
         {
             if (string.IsNullOrWhiteSpace(json) || json == "FieldSetValue")
@@ -2897,33 +3055,45 @@ namespace ServicePlusAPIs.Controllers
             var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
             var jsonData = data["data"];
             var result = new List<BlockAchievements>();
+
             var detectedKeys = jsonData.Keys
                 .Where(k => k.StartsWith("171363_") && int.TryParse(k.Split('_')[1], out _))
-                .Select(k => new { Key = k, Index = int.Parse(k.Split('_')[1]) })
+                .Select(k => int.Parse(k.Split('_')[1]))
                 .ToList();
 
-            int maxIndex = detectedKeys.Select(k => k.Index).DefaultIfEmpty(0).Max();
+            int maxIndex = detectedKeys.DefaultIfEmpty(0).Max();
 
             for (int i = 1; i <= maxIndex; i++)
             {
                 result.Add(new BlockAchievements
                 {
-                    District = jsonData.ContainsKey($"171363_{i}") ? jsonData[$"171363_{i}"]?.ToString() : null,
-                    Block = jsonData.ContainsKey($"171364_{i}") ? jsonData[$"171364_{i}"]?.ToString() : null,
-                    Game = jsonData.ContainsKey($"171365_{i}") ? jsonData[$"171365_{i}"]?.ToString() : null,
-                    GameCategory = jsonData.ContainsKey($"171366_{i}") ? jsonData[$"171366_{i}"]?.ToString() : null,
-                    GameType = jsonData.ContainsKey($"171367_{i}") ? jsonData[$"171367_{i}"]?.ToString() : null,
-                    AgeGroup = jsonData.ContainsKey($"171368_{i}") ? jsonData[$"171368_{i}"]?.ToString() : null,
-                    GameEvent = jsonData.ContainsKey($"171369_{i}") ? jsonData[$"171369_{i}"]?.ToString() : null,
-                    TournamentName = jsonData.ContainsKey($"171370_{i}") ? jsonData[$"171370_{i}"]?.ToString() : null,
+                    District = GetSafeValueForAchievement(jsonData, $"171363_{i}"),
+                    Block = GetSafeValueForAchievement(jsonData, $"171364_{i}"),
+                    Game = GetSafeValueForAchievement(jsonData, $"171365_{i}"),
+                    GameCategory = GetSafeValueForAchievement(jsonData, $"171366_{i}"),
+                    GameType = GetSafeValueForAchievement(jsonData, $"171367_{i}"),
+                    AgeGroup = GetSafeValueForAchievement(jsonData, $"171368_{i}"),
+                    GameEvent = GetSafeValueForAchievement(jsonData, $"171369_{i}"), 
+                    TournamentName = jsonData.ContainsKey($"171370_{i}") ? jsonData[$"171370_{i}"]?.ToString()  : null,
                     TournamentFrom = jsonData.ContainsKey($"171371_{i}") ? jsonData[$"171371_{i}"]?.ToString() : null,
                     TournamentTo = jsonData.ContainsKey($"171641_{i}") ? jsonData[$"171641_{i}"]?.ToString() : null,
-                    Position = jsonData.ContainsKey($"171372_{i}") ? jsonData[$"171372_{i}"]?.ToString() : null,
+                    Position = GetSafeValueForAchievement(jsonData, $"171372_{i}")
                 });
             }
 
             return result;
         }
+
+        private string GetSafeValueForAchievement(Dictionary<string, string> data, string key)
+        {
+            if (data.TryGetValue(key, out var value) && !string.IsNullOrEmpty(value))
+            {
+                var parts = value.Split('~');
+                return parts.Length > 1 ? parts[1] : null; // Ensure index [1] exists before accessing it
+            }
+            return null;
+        }
+
         #endregion
 
         [HttpGet("GetPlayerAchievementByAppRefNo")]
@@ -2998,9 +3168,9 @@ namespace ServicePlusAPIs.Controllers
             }
             SportSponsorDetail sportSponsorDetail = _mapper.Map<SportSponsorDetail>(sportSponsorDetailViewModel);
             if (sportSponsorDetail.Id is 0)
-            { 
-               await _servicePlusContext.SportSponsorDetails.AddAsync(sportSponsorDetail);
-                
+            {
+                await _servicePlusContext.SportSponsorDetails.AddAsync(sportSponsorDetail);
+
                 await _servicePlusContext.SponsorPlayers.AddRangeAsync(sportSponsorDetail.SponsorPlayers);
                 await _servicePlusContext.SaveChangesAsync();
             }
