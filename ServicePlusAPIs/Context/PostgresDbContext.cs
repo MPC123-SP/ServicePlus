@@ -6,15 +6,16 @@ using ServicePlusAPIs.Models.ExecutionModel;
 using ServicePlusAPIs.Models.InitiatedModel;
 using ServicePlusAPIs.Models.ServiceWiseModels.PSEB_Execution_OfficialFormDetails;
 using ServicePlusAPIs.Models.ServiceWiseModels.PSEB_Initiated_AttributeDetails;
+using ServicePlusAPIs.Models.SportsModel;
 using ServicePlusAPIs.ReportsModel;
 
 namespace ServicePlusAPIs.Context
 {
-    public class PostgresDbContext:DbContext
+    public class PostgresDbContext : DbContext
     {
         public PostgresDbContext(DbContextOptions<PostgresDbContext> options) : base(options)
         {
-            
+
         }
         public DbSet<InitiatedData> InitiatedDatas { get; set; }
         public DbSet<ExecutionData> ExecutionDatas { get; set; }
@@ -30,6 +31,7 @@ namespace ServicePlusAPIs.Context
 
         public DbSet<JSONReceived> JSONReceived { get; set; }
         public DbSet<CustomAttributeLabel> CustomAttributeLabel { get; set; }
+       
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

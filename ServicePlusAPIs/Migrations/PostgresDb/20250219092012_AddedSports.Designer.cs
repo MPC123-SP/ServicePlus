@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ServicePlusAPIs.Context;
@@ -11,9 +12,11 @@ using ServicePlusAPIs.Context;
 namespace ServicePlusAPIs.Migrations.PostgresDb
 {
     [DbContext(typeof(PostgresDbContext))]
-    partial class PostgresDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250219092012_AddedSports")]
+    partial class AddedSports
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -406,6 +409,67 @@ namespace ServicePlusAPIs.Migrations.PostgresDb
                     b.ToTable("AttributeDetails");
                 });
 
+            modelBuilder.Entity("ServicePlusAPIs.Models.SportsModel.SponsorPlayer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ApplRefNo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("SportSponsorDetailId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SportSponsorDetailId");
+
+                    b.ToTable("SponsorPlayers");
+                });
+
+            modelBuilder.Entity("ServicePlusAPIs.Models.SportsModel.SportSponsorDetail", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CashAward")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("KindAward")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SponsorType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SportSponsorDetails");
+                });
+
             modelBuilder.Entity("ServicePlusAPIs.ReportsModel.PendencyReport", b =>
                 {
                     b.Property<int>("PendencyReportId")
@@ -520,6 +584,17 @@ namespace ServicePlusAPIs.Migrations.PostgresDb
                     b.Navigation("InitiatedData");
                 });
 
+            modelBuilder.Entity("ServicePlusAPIs.Models.SportsModel.SponsorPlayer", b =>
+                {
+                    b.HasOne("ServicePlusAPIs.Models.SportsModel.SportSponsorDetail", "SportSponsorDetail")
+                        .WithMany("SponsorPlayers")
+                        .HasForeignKey("SportSponsorDetailId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SportSponsorDetail");
+                });
+
             modelBuilder.Entity("ServicePlusAPIs.HelperModels.CustomLGDDistrict", b =>
                 {
                     b.Navigation("CustomLGDTehsilSubTehsil");
@@ -542,6 +617,11 @@ namespace ServicePlusAPIs.Migrations.PostgresDb
                     b.Navigation("AttributeDetail");
 
                     b.Navigation("EnclosureDetails");
+                });
+
+            modelBuilder.Entity("ServicePlusAPIs.Models.SportsModel.SportSponsorDetail", b =>
+                {
+                    b.Navigation("SponsorPlayers");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using DocumentFormat.OpenXml.Drawing.Charts;
+using DocumentFormat.OpenXml.EMMA;
 using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Authorization;
@@ -18,10 +19,12 @@ using ServicePlusAPIs.Models.ExecutionModel;
 using ServicePlusAPIs.Models.InitiatedModel;
 using ServicePlusAPIs.Models.ServiceWiseModels.PSEB_Execution_OfficialFormDetails;
 using ServicePlusAPIs.Models.ServiceWiseModels.PSEB_Initiated_AttributeDetails;
+using ServicePlusAPIs.Models.SportsModel;
 using ServicePlusAPIs.ReportsModel;
 using ServicePlusAPIs.ReportsViewModel;
 using ServicePlusAPIs.ViewModels;
 using ServicePlusAPIs.ViewModels.PublicModel;
+using ServicePlusAPIs.ViewModels.SportsModel;
 using System.Buffers;
 using System.Data;
 using System.Drawing.Printing;
@@ -2130,6 +2133,7 @@ string block = null,
             var query = from initiatedData in _servicePlusContext.InitiatedDatas
                         join taskDetails in _servicePlusContext.TaskDetails on initiatedData.ApplId equals taskDetails.ApplId
                         join officialFormDetails in _servicePlusContext.OfficialFormDetails on taskDetails.ExecutionDataId equals officialFormDetails.ExecutionDataId into groupedOfficialFormDetails
+                        
                         where initiatedData.ServiceName.Contains("Punjab Sports Events Portal") && taskDetails.TaskId == 23005
                               && groupedOfficialFormDetails.Any(ofd => ofd.OfficalFormID == "171829") == false // Fixed condition
                         orderby initiatedData.InitiatedDataId descending
@@ -2683,7 +2687,7 @@ string applicantEvent = null)
         {
             if (string.IsNullOrWhiteSpace(json))
                 return new List<PlayerEducation>();
-             
+
             var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
             var jsonData = data["data"];
             var result = new List<PlayerEducation>();
@@ -2953,20 +2957,14 @@ string applicantEvent = null)
         }
 
 
-
-
-
-
-
-
         [HttpGet("GetPlayerDetailsByAppRefNo")]
         public async Task<IActionResult> GetPlayerDetailsByAppRefNo(string applRefNo)
         {
             // Build the base query
             var query = from initiatedData in _servicePlusContext.InitiatedDatas
                         where initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
-                              && initiatedData.ApplRefNo== applRefNo && initiatedData.InitiatedRecordInsertionFlag==1
-                         
+                              && initiatedData.ApplRefNo == applRefNo && initiatedData.InitiatedRecordInsertionFlag == 1
+
                         select new
                         {
                             InitiatedDataId = initiatedData.InitiatedDataId,
@@ -3126,7 +3124,7 @@ string applicantEvent = null)
                 ApplicationToBeSubmitted = CleanValue(data.AttributeDetails
                     .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170308")?.ApplicationFormFieldValue),
 
-                 
+
                 PlayerEducations = PlayerEducationDeserializeJsonStreamAsync(CleanValue(data.AttributeDetails
                         .FirstOrDefault(attr => attr.ApplicationFormFieldID == "171647")?.ApplicationFormFieldValue))
             }).ToList();
@@ -3145,6 +3143,8 @@ string applicantEvent = null)
             var query = from initiatedData in _servicePlusContext.InitiatedDatas
                         where initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
                               && initiatedData.ApplRefNo == applRefNo
+                        //&& initiatedData.InitiatedRecordInsertionFlag == 1
+
                         select new
                         {
                             InitiatedDataId = initiatedData.InitiatedDataId,
@@ -3190,13 +3190,57 @@ string applicantEvent = null)
                 InterNationalAchievements = InterNationalAchievementsDeserializeJsonStreamAsync(CleanValue(data.AttributeDetails
                         .FirstOrDefault(attr => attr.ApplicationFormFieldID == "171403")?.ApplicationFormFieldValue))
             };
-
             return Ok(result); // Returns a single object instead of an array
+        }
+
+
+        [HttpPost("AddSponsorPlayer")]
+        public async Task<IActionResult> AddSponsorPlayer(SportSponsorDetailViewModel sportSponsorDetailViewModel)
+        {
+            if (sportSponsorDetailViewModel is null)
+            {
+                throw new ArgumentNullException(nameof(sportSponsorDetailViewModel));
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            SportSponsorDetail sportSponsorDetail = _mapper.Map<SportSponsorDetail>(sportSponsorDetailViewModel);
+            if (sportSponsorDetail.Id is 0)
+            { 
+               await _servicePlusContext.SportSponsorDetails.AddAsync(sportSponsorDetail);
+                
+                await _servicePlusContext.SponsorPlayers.AddRangeAsync(sportSponsorDetail.SponsorPlayers);
+                await _servicePlusContext.SaveChangesAsync();
+            }
+            else
+            {
+                await _servicePlusContext.SponsorPlayers.AddRangeAsync(sportSponsorDetail.SponsorPlayers);
+                await _servicePlusContext.SaveChangesAsync();
+            }
+            return Ok(sportSponsorDetail);
+        }
+
+        [HttpGet("GetSponsorByPhoneNumber")]
+        public async Task<IActionResult> GetSponsorByPhoneNumber(string phoneNumber)
+        {
+            var sponsorDetails = await _servicePlusContext.SportSponsorDetails
+                .SingleOrDefaultAsync(x => x.PhoneNumber == phoneNumber);
+
+            if (sponsorDetails == null)
+            {
+                return NotFound("Phone Number Doesn't Exist");
+            }
+
+            return Ok(sponsorDetails);
         }
 
         #endregion
 
 
+
+        #region Under Development
         //    #region Dynamic Report using Service Name
 
         //    [HttpGet]
@@ -3316,7 +3360,7 @@ string applicantEvent = null)
 
             return Ok(result);
         }
-
+        #endregion
     }
 
 

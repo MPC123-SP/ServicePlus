@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ServicePlusAPIs.Context;
@@ -11,9 +12,11 @@ using ServicePlusAPIs.Context;
 namespace ServicePlusAPIs.Migrations.ServicePlus
 {
     [DbContext(typeof(ServicePlusContext))]
-    partial class ServicePlusContextModelSnapshot : ModelSnapshot
+    [Migration("20250219113848_ChangesSportsIds")]
+    partial class ChangesSportsIds
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -533,7 +536,7 @@ namespace ServicePlusAPIs.Migrations.ServicePlus
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime?>("DeletedAt")
+                    b.Property<DateTime>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Game")
@@ -559,7 +562,7 @@ namespace ServicePlusAPIs.Migrations.ServicePlus
                     b.Property<int>("SportSponsorDetailId")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime?>("UpdatedAt")
+                    b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
@@ -584,7 +587,7 @@ namespace ServicePlusAPIs.Migrations.ServicePlus
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime?>("DeletedAt")
+                    b.Property<DateTime>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Email")
@@ -602,7 +605,7 @@ namespace ServicePlusAPIs.Migrations.ServicePlus
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime?>("UpdatedAt")
+                    b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");

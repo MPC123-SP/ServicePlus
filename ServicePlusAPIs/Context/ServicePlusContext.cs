@@ -8,6 +8,7 @@ using ServicePlusAPIs.Models.ExecutionModel;
 using ServicePlusAPIs.Models.InitiatedModel;
 using ServicePlusAPIs.Models.ServiceWiseModels.PSEB_Execution_OfficialFormDetails;
 using ServicePlusAPIs.Models.ServiceWiseModels.PSEB_Initiated_AttributeDetails;
+using ServicePlusAPIs.Models.SportsModel;
 using ServicePlusAPIs.UserModels;
 using System;
 
@@ -33,7 +34,8 @@ namespace ServicePlusAPIs.Context
         public DbSet<RegisterUserDistrict> RegisterUserDistricts { get; set; }
         public DbSet<RegisterUserDepartment> RegisterUserDepartments { get; set; }
         public DbSet<RegisterUserService> RegisterUserServices { get; set; }
-
+        public DbSet<SportSponsorDetail> SportSponsorDetails { get; set; }
+        public DbSet<SponsorPlayer> SponsorPlayers { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // Configure primary keys for related entities
