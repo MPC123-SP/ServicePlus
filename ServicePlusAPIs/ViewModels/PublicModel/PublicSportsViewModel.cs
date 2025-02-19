@@ -208,6 +208,8 @@ namespace ServicePlusAPIs.ViewModels.PublicModel
 
     public class FilterParameter
     {
+        public int page { get; set; }
+        public int pageSize { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public string? SearchValue { get; set; }
