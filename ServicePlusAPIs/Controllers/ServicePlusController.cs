@@ -3156,7 +3156,12 @@ namespace ServicePlusAPIs.Controllers
 
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                var dataFalse = new
+                {
+                    IsSucced = false,
+                    Message = "Kindly Download your Slip"
+                };
+                return BadRequest(dataFalse);
             }
             SportSponsorDetail sportSponsorDetail = _mapper.Map<SportSponsorDetail>(sportSponsorDetailViewModel);
             if (sportSponsorDetail.Id is 0)
@@ -3171,7 +3176,12 @@ namespace ServicePlusAPIs.Controllers
                 await _servicePlusContext.SponsorPlayers.AddRangeAsync(sportSponsorDetail.SponsorPlayers);
                 await _servicePlusContext.SaveChangesAsync();
             }
-            return Ok(sportSponsorDetail);
+            var data =new 
+            {
+                IsSucced=true,
+                Message="Kindly Download your Slip"
+            };
+            return Ok(data);
         }
 
         [HttpGet("GetSponsorByPhoneNumber")]
