@@ -2571,7 +2571,9 @@ namespace ServicePlusAPIs.Controllers
             {
                 result.Add(new PlayerEducation
                 {
-                    Qualification = GetSafeValue(jsonData, $"171648_{i}"),
+                    Qualification = jsonData.ContainsKey($"171648_{i}") && jsonData[$"171648_{i}"] != null
+    ? jsonData[$"171648_{i}"].Split('~').ElementAtOrDefault(1)
+    : null,
                     InstituteName = jsonData.ContainsKey($"171649_{i}") ? jsonData[$"171649_{i}"]?.ToString() : null,
                     PassingYear = jsonData.ContainsKey($"171650_{i}") ? jsonData[$"171650_{i}"]?.ToString() : null,
 
@@ -2580,16 +2582,6 @@ namespace ServicePlusAPIs.Controllers
             }
 
             return result;
-        }
-
-        private string GetSafeValue(Dictionary<string, string> jsonData, string key)
-        {
-            if (jsonData.ContainsKey(key) && jsonData[key] != null)
-            {
-                var parts = jsonData[key].Split('~');
-                return parts.Length > 1 ? parts[1] : null; // Ensure there is at least one '~'
-            }
-            return null;
         }
 
         public static string DeserializeJsonStreamAsync(string? jsonStream)
@@ -2720,36 +2712,36 @@ namespace ServicePlusAPIs.Controllers
                 applicantMotherName = GetValue(query.AttributeDetails, "169965"),
                 applicantDOB = GetValue(query.AttributeDetails, "169971"),
                 applicantAge = GetValue(query.AttributeDetails, "169960"),
-                stateOfBirth = GetValue(query.AttributeDetails, "169972"),
-                districtOfBirth = GetValue(query.AttributeDetails, "169969"),
+                stateOfBirth = GetValue(query.AttributeDetails, "169972")?.Split('~').Last(),
+                districtOfBirth = GetValue(query.AttributeDetails, "169969")?.Split('~').Last(),
                 panCardNumber = GetValue(query.AttributeDetails, "169970"),
-                applicantBloodGroup = GetValue(query.AttributeDetails, "169957"),
+                applicantBloodGroup = GetValue(query.AttributeDetails, "169957")?.Split('~').Last(),
                 applicantMobileNo = GetValue(query.AttributeDetails, "169958"),
                 applicantAlternateMobileNumber = GetValue(query.AttributeDetails, "171762"),
                 applicantEmail = GetValue(query.AttributeDetails, "169959"),
-                applicantGender = GetValue(query.AttributeDetails, "169964") ?? GetValue(query.AttributeDetails, "171427"),
+                applicantGender = GetValue(query.AttributeDetails, "169964") ?? GetValue(query.AttributeDetails, "171427")?.Split('~').Last(),
                 applicantGame = GetValue(query.AttributeDetails, "170094"),
                 level = GetValue(query.AttributeDetails, "170091") ?? GetValue(query.AttributeDetails, "170041"),
-                applicationType = GetValue(query.AttributeDetails, "170608"),
+                applicationType = GetValue(query.AttributeDetails, "170608")?.Split('~').Last(),
                 applicantAgeGroup = GetValue(query.AttributeDetails, "170202"),
                 applicantEvent = GetValue(query.AttributeDetails, "170203"),
                 applicantGameCategory = GetValue(query.AttributeDetails, "170246"),
-                isMedalist = GetValue(query.AttributeDetails, "170309"),
+                isMedalist = GetValue(query.AttributeDetails, "170309")?.Split('~').Last(),
                 district = GetValue(query.AttributeDetails, "170093"),
                 block = GetValue(query.AttributeDetails, "170092"),
-                physicalDisability = GetValue(query.AttributeDetails, "169963"),
-                maritalStatus = GetValue(query.AttributeDetails, "169961"),
+                physicalDisability = GetValue(query.AttributeDetails, "169963")?.Split('~').Last(),
+                maritalStatus = GetValue(query.AttributeDetails, "169961")?.Split('~').Last(),
                 spouseName = GetValue(query.AttributeDetails, "169962"),
-                isEmployed = GetValue(query.AttributeDetails, "169980"),
+                isEmployed = GetValue(query.AttributeDetails, "169980")?.Split('~').Last(),
                 employmentStatus = GetValue(query.AttributeDetails, "169979"),
                 jobDescription = GetValue(query.AttributeDetails, "169981"),
                 completeAddress = GetValue(query.AttributeDetails, "169998"),
-                region = GetValue(query.AttributeDetails, "169999"),
-                addState = GetValue(query.AttributeDetails, "169990"),
-                addDistrict = GetValue(query.AttributeDetails, "169991"),
+                region = GetValue(query.AttributeDetails, "169999")?.Split('~').Last(),
+                addState = GetValue(query.AttributeDetails, "169990")?.Split('~').Last(),
+                addDistrict = GetValue(query.AttributeDetails, "169991")?.Split('~').Last(),
                 addPincode = GetValue(query.AttributeDetails, "170000"),
                 accountNumber = GetValue(query.AttributeDetails, "169983"),
-                accountHolder = GetValue(query.AttributeDetails, "171761"),
+                accountHolder = GetValue(query.AttributeDetails, "171761")?.Split('~').Last(),
                 ifscCode = GetValue(query.AttributeDetails, "169987"),
                 nameOnPassbook = GetValue(query.AttributeDetails, "169984"),
                 bankAddress = GetValue(query.AttributeDetails, "169988"),
