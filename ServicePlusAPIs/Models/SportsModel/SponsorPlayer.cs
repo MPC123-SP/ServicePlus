@@ -6,8 +6,7 @@ namespace ServicePlusAPIs.Models.SportsModel
     {
         public int Id { get; set; }
         public int InitiatedDataId { get; set; }
-        public string ApplRefNo { get; set; }
-        public string Game { get; set; }
+        public string ApplRefNo { get; set; } 
         /// <summary>
         /// Kind-> equipments,kit
         /// Cash->Cash/Bank

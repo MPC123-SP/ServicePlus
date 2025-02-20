@@ -3197,6 +3197,61 @@ namespace ServicePlusAPIs.Controllers
 
             return Ok(sponsorDetails);
         }
+        [HttpPost("GetSponsorPlayersByRefNo")]
+        public async Task<IActionResult> GetSponsorPlayersByRefNo([FromBody] List<string> applRefNos)
+        {
+            if (applRefNos == null || applRefNos.Count == 0)
+            {
+                return BadRequest(new { message = "No application reference numbers provided" });
+            }
+
+            // Convert to HashSet for faster lookup
+            var applRefNoSet = new HashSet<string>(applRefNos);
+
+            var query = await _servicePlusContext.InitiatedDatas
+                .Where(initiatedData =>
+                    initiatedData.ServiceName.Contains("Punjab Sports Events Portal") &&
+                    applRefNoSet.Contains(initiatedData.ApplRefNo) &&
+                    initiatedData.InitiatedRecordInsertionFlag == 1)
+                .Select(initiatedData => new
+                {
+                    initiatedData.InitiatedDataId,
+                    initiatedData.ServiceId,
+                    initiatedData.ServiceName,
+                    initiatedData.ApplId,
+                    initiatedData.ApplRefNo,
+                    initiatedData.SubmissionDate,
+                    AttributeDetails = initiatedData.AttributeDetail
+                        .Where(attr => new HashSet<string>
+                        {
+                    "169958", "169959", "169983", "171761", "169987",
+                    "169984", "169988", "169985"
+                        }.Contains(attr.ApplicationFormFieldID))
+                        .ToList()
+                })
+                .ToListAsync();
+
+            if (!query.Any())
+            {
+                return NotFound(new { message = "No records found" });
+            }
+
+            var result = query.Select(q => new
+            {
+                initiatedDataId = q.InitiatedDataId,
+                applRefNo = q.ApplRefNo,                 
+                applicantMobileNo = GetValue(q.AttributeDetails, "169958"),
+                applicantEmail = GetValue(q.AttributeDetails, "169959"),                
+                accountNumber = GetValue(q.AttributeDetails, "169983"),
+                accountHolder = GetValue(q.AttributeDetails, "171761")?.Split('~').Last(),
+                ifscCode = GetValue(q.AttributeDetails, "169987"),
+                nameOnPassbook = GetValue(q.AttributeDetails, "169984"),
+                bankAddress = GetValue(q.AttributeDetails, "169988"),
+                bankName = GetValue(q.AttributeDetails, "169985"),
+            }).ToList();
+
+            return Ok(result);
+        }
 
         #endregion
 

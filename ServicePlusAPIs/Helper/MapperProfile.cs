@@ -357,7 +357,6 @@ namespace ServicePlusAPIs.Helper
             CreateMap<SponsorPlayerViewModel, SponsorPlayer>() 
             .ForMember(dest => dest.InitiatedDataId, opt => opt.MapFrom(src => src.InitiatedDataId))
             .ForMember(dest => dest.ApplRefNo, opt => opt.MapFrom(src => src.ApplRefNo))
-            .ForMember(dest => dest.Game, opt => opt.MapFrom(src => src.Game))
             .ForMember(dest => dest.SponsorType, opt => opt.MapFrom(src => src.SponsorType))
             .ForMember(dest => dest.CashAward, opt => opt.MapFrom(src => src.CashAward))
             .ForMember(dest => dest.KindAward, opt => opt.MapFrom(src => src.KindAward))
