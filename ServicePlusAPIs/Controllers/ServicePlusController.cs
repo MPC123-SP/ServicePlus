@@ -2301,7 +2301,7 @@ namespace ServicePlusAPIs.Controllers
                     .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170092")?.ApplicationFormFieldValue),
 
                 ApplicantMedal = DeserializeJsonStreamAsync(data.TaskDetail?.OfficialFormDetails
-                    .FirstOrDefault()?.OfficalFormValue)
+                    .FirstOrDefault()?.OfficalFormValue)?.Split('~').Last()
             }).ToList();
 
             // Filter by medal if provided
@@ -2483,7 +2483,7 @@ namespace ServicePlusAPIs.Controllers
 
                     ApplicantGameCategory = CleanValue(data.AttributeDetail
                         .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170246")?.ApplicationFormFieldValue),
-                    ApplicantMedal = form.Position
+                    ApplicantMedal = form.Position?.Split('~').LastOrDefault() ?? string.Empty
                 });
             }))
             .Where(x => x != null) // Exclude null projections
@@ -2746,7 +2746,7 @@ namespace ServicePlusAPIs.Controllers
                 nameOnPassbook = GetValue(query.AttributeDetails, "169984"),
                 bankAddress = GetValue(query.AttributeDetails, "169988"),
                 bankName = GetValue(query.AttributeDetails, "169985"),
-                applicationToBeSubmitted = GetValue(query.AttributeDetails, "170308"),
+                applicationToBeSubmitted = GetValue(query.AttributeDetails, "170308")?.Split('~').Last(),
                 playerEducations = PlayerEducationDeserializeJsonStreamAsync(GetValue(query.AttributeDetails, "171647"))
             };
 
@@ -2783,7 +2783,7 @@ namespace ServicePlusAPIs.Controllers
                     GameCategory = GetSafeValueForAchievement(jsonData, $"171413_{i}"),
                     GameType = GetSafeValueForAchievement(jsonData, $"171414_{i}"),
                     AgeGroup = GetSafeValueForAchievement(jsonData, $"171415_{i}"),
-                    GameEvent = GetSafeValueForAchievement(jsonData, $"171416_{i}"),   
+                    GameEvent = GetSafeValueForAchievement(jsonData, $"171416_{i}"),
                     TournamentName = jsonData.ContainsKey($"171417_{i}") ? jsonData[$"171417_{i}"]?.ToString() : null,
                     TournamentFrom = jsonData.ContainsKey($"171418_{i}") ? jsonData[$"171418_{i}"]?.ToString() : null,
                     TournamentTo = jsonData.ContainsKey($"171646_{i}") ? jsonData[$"171646_{i}"]?.ToString() : null,
@@ -2854,9 +2854,9 @@ namespace ServicePlusAPIs.Controllers
                     GameType = GetSafeValueForAchievement(jsonData, $"171397_{i}"),
                     AgeGroup = GetSafeValueForAchievement(jsonData, $"171398_{i}"),
                     GameEvent = GetSafeValueForAchievement(jsonData, $"171399_{i}"),
-                    TournamentName = jsonData.ContainsKey($"171400_{i}") ? jsonData[$"171400_{i}"]?.ToString(): null,
-                    TournamentFrom = jsonData.ContainsKey($"171401_{i}") ? jsonData[$"171401_{i}"]?.ToString(): null,
-                    TournamentTo = jsonData.ContainsKey($"171645_{i}") ? jsonData[$"171645_{i}"]?.ToString(): null,
+                    TournamentName = jsonData.ContainsKey($"171400_{i}") ? jsonData[$"171400_{i}"]?.ToString() : null,
+                    TournamentFrom = jsonData.ContainsKey($"171401_{i}") ? jsonData[$"171401_{i}"]?.ToString() : null,
+                    TournamentTo = jsonData.ContainsKey($"171645_{i}") ? jsonData[$"171645_{i}"]?.ToString() : null,
                     Position = GetSafeValueForAchievement(jsonData, $"171402_{i}")
                 });
             }
@@ -2924,9 +2924,9 @@ namespace ServicePlusAPIs.Controllers
                     GameType = GetSafeValueForAchievement(jsonData, $"171387_{i}"),
                     AgeGroup = GetSafeValueForAchievement(jsonData, $"171388_{i}"),
                     GameEvent = GetSafeValueForAchievement(jsonData, $"171389_{i}"),
-                    TournamentName = jsonData.ContainsKey($"171390_{i}") ? jsonData[$"171390_{i}"]?.ToString(): null,
-                    TournamentFrom = jsonData.ContainsKey($"171391_{i}") ? jsonData[$"171391_{i}"]?.ToString(): null,
-                    TournamentTo = jsonData.ContainsKey($"171644_{i}") ? jsonData[$"171644_{i}"]?.ToString(): null,
+                    TournamentName = jsonData.ContainsKey($"171390_{i}") ? jsonData[$"171390_{i}"]?.ToString() : null,
+                    TournamentFrom = jsonData.ContainsKey($"171391_{i}") ? jsonData[$"171391_{i}"]?.ToString() : null,
+                    TournamentTo = jsonData.ContainsKey($"171644_{i}") ? jsonData[$"171644_{i}"]?.ToString() : null,
                     Position = GetSafeValueForAchievement(jsonData, $"171392_{i}")
                 });
             }
@@ -2994,9 +2994,9 @@ namespace ServicePlusAPIs.Controllers
                     GameType = GetSafeValueForAchievement(jsonData, $"171377_{i}"),
                     AgeGroup = GetSafeValueForAchievement(jsonData, $"171378_{i}"),
                     GameEvent = GetSafeValueForAchievement(jsonData, $"171379_{i}"),
-                    TournamentName = jsonData.ContainsKey($"171380_{i}") ? jsonData[$"171380_{i}"]?.ToString(): null,
-                    TournamentFrom = jsonData.ContainsKey($"171381_{i}") ? jsonData[$"171381_{i}"]?.ToString(): null,
-                    TournamentTo = jsonData.ContainsKey($"171643_{i}") ? jsonData[$"171643_{i}"]?.ToString(): null,
+                    TournamentName = jsonData.ContainsKey($"171380_{i}") ? jsonData[$"171380_{i}"]?.ToString() : null,
+                    TournamentFrom = jsonData.ContainsKey($"171381_{i}") ? jsonData[$"171381_{i}"]?.ToString() : null,
+                    TournamentTo = jsonData.ContainsKey($"171643_{i}") ? jsonData[$"171643_{i}"]?.ToString() : null,
                     Position = GetSafeValueForAchievement(jsonData, $"171382_{i}")
                 });
             }
@@ -3065,8 +3065,8 @@ namespace ServicePlusAPIs.Controllers
                     GameCategory = GetSafeValueForAchievement(jsonData, $"171366_{i}"),
                     GameType = GetSafeValueForAchievement(jsonData, $"171367_{i}"),
                     AgeGroup = GetSafeValueForAchievement(jsonData, $"171368_{i}"),
-                    GameEvent = GetSafeValueForAchievement(jsonData, $"171369_{i}"), 
-                    TournamentName = jsonData.ContainsKey($"171370_{i}") ? jsonData[$"171370_{i}"]?.ToString()  : null,
+                    GameEvent = GetSafeValueForAchievement(jsonData, $"171369_{i}"),
+                    TournamentName = jsonData.ContainsKey($"171370_{i}") ? jsonData[$"171370_{i}"]?.ToString() : null,
                     TournamentFrom = jsonData.ContainsKey($"171371_{i}") ? jsonData[$"171371_{i}"]?.ToString() : null,
                     TournamentTo = jsonData.ContainsKey($"171641_{i}") ? jsonData[$"171641_{i}"]?.ToString() : null,
                     Position = GetSafeValueForAchievement(jsonData, $"171372_{i}")
@@ -3156,32 +3156,47 @@ namespace ServicePlusAPIs.Controllers
 
             if (!ModelState.IsValid)
             {
-                var dataFalse = new
-                {
-                    IsSucced = false,
-                    Message = "Kindly Download your Slip"
-                };
-                return BadRequest(dataFalse);
+                return BadRequest(new { IsSucced = false, Message = "Kindly Download your Slip" });
             }
+
             SportSponsorDetail sportSponsorDetail = _mapper.Map<SportSponsorDetail>(sportSponsorDetailViewModel);
-            if (sportSponsorDetail.Id is 0)
+
+            if (sportSponsorDetail.Id == 0)
             {
+                // Check if Email or PhoneNumber already exist
+                bool emailExists = await _servicePlusContext.SportSponsorDetails
+                                         .AnyAsync(s => s.Email == sportSponsorDetailViewModel.Email);
+                bool phoneExists = await _servicePlusContext.SportSponsorDetails
+                                          .AnyAsync(s => s.PhoneNumber == sportSponsorDetailViewModel.PhoneNumber);
+
+                if (emailExists)
+                {
+                    return BadRequest(new { IsSucced = false, Message = "Email already exists." });
+                }
+
+                if (phoneExists)
+                {
+                    return BadRequest(new { IsSucced = false, Message = "Phone number already exists." });
+                }
+                // Save SportSponsorDetail first to generate an Id
                 await _servicePlusContext.SportSponsorDetails.AddAsync(sportSponsorDetail);
 
                 await _servicePlusContext.SponsorPlayers.AddRangeAsync(sportSponsorDetail.SponsorPlayers);
                 await _servicePlusContext.SaveChangesAsync();
+
             }
             else
             {
+                // Assign the correct SportSponsorDetailId to the players
+                sportSponsorDetail.SponsorPlayers.ToList().ForEach(player => player.SportSponsorDetailId = sportSponsorDetail.Id);
+
                 await _servicePlusContext.SponsorPlayers.AddRangeAsync(sportSponsorDetail.SponsorPlayers);
                 await _servicePlusContext.SaveChangesAsync();
+
             }
-            var data =new 
-            {
-                IsSucced=true,
-                Message="Kindly Download your Slip"
-            };
-            return Ok(data);
+
+
+            return Ok(new { IsSucced = true, Message = "Kindly Download your Slip" });
         }
 
         [HttpGet("GetSponsorByPhoneNumber")]
@@ -3239,9 +3254,9 @@ namespace ServicePlusAPIs.Controllers
             var result = query.Select(q => new
             {
                 initiatedDataId = q.InitiatedDataId,
-                applRefNo = q.ApplRefNo,                 
+                applRefNo = q.ApplRefNo,
                 applicantMobileNo = GetValue(q.AttributeDetails, "169958"),
-                applicantEmail = GetValue(q.AttributeDetails, "169959"),                
+                applicantEmail = GetValue(q.AttributeDetails, "169959"),
                 accountNumber = GetValue(q.AttributeDetails, "169983"),
                 accountHolder = GetValue(q.AttributeDetails, "171761")?.Split('~').Last(),
                 ifscCode = GetValue(q.AttributeDetails, "169987"),
