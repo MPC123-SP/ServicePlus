@@ -1587,22 +1587,23 @@ namespace ServicePlusAPIs.Controllers
                         var controllerName = controllerType.Name;
                         if (controllerName == "ServicePlusController")
                         {
-                            ApiNames apiName = new ApiNames()
-                            {
-                                ApiName = method.Name
-                            };
+
 
                             // Check if the apiName already exists in the database
-                            var existingApiName = _servicePlusContext.ApiNames.FirstOrDefault(an => an.ApiName == apiName.ApiName);
+                            var existingApiName = _servicePlusContext.ApiNames.FirstOrDefault(an => an.ApiName == method.Name);
                             if (existingApiName == null)
                             {
+                                ApiNames apiName = new ApiNames()
+                                {
+                                    ApiName = method.Name
+                                };
                                 apiNames.Add(apiName);
                             }
                         }
                     }
                 }
             }
-            if (apiNames.Count > 0)
+            if (apiNames.Count <= 0)
             {
                 return StatusCode(StatusCodes.Status200OK, new Response { Status = "No Content", Message = "No New API Found" });
 
@@ -2113,7 +2114,8 @@ namespace ServicePlusAPIs.Controllers
         #region Public Sports Report
 
 
-        [HttpPost("GetPublicIndividualSportsReport")]
+        [Route("GetPublicIndividualSportsReport")]
+        [HttpPost]
         public async Task<IActionResult> GetPublicIndividualSportsReport([FromBody] FilterParameter filterParameter)
         {
             // Build the base query
@@ -2324,7 +2326,8 @@ namespace ServicePlusAPIs.Controllers
             return string.IsNullOrEmpty(value) ? null : Regex.Replace(value, @"^\d+~", "");
         }
 
-        [HttpPost("GetPublicTeamSportsReport")]
+        [Route("GetPublicTeamSportsReport")]
+        [HttpPost]
         public async Task<IActionResult> GetPublicTeamSportsReport([FromBody] FilterParameter filterParameter)
         {
             var query = from taskDetails in _servicePlusContext.TaskDetails
@@ -2612,7 +2615,8 @@ namespace ServicePlusAPIs.Controllers
             return string.Empty; // Return empty string if no valid data
         }
 
-        [HttpGet("GetSportSupportDoc")]
+        [Route("GetSportSupportDoc")]
+        [HttpGet]
         public async Task<IActionResult> GetSportSupportDoc(int applId)
         {
             // Base URL where the documents are stored
@@ -2658,7 +2662,8 @@ namespace ServicePlusAPIs.Controllers
 
 
         #region PlayerDetail
-        [HttpGet("GetPlayerDetailsByAppRefNo")]
+        [Route("GetPlayerDetailsByAppRefNo")]
+        [HttpGet]
         public async Task<IActionResult> GetPlayerDetailsByAppRefNo(string applRefNo)
         {
             var query = await (from initiatedData in _servicePlusContext.InitiatedDatas
@@ -3088,7 +3093,8 @@ namespace ServicePlusAPIs.Controllers
 
         #endregion
 
-        [HttpGet("GetPlayerAchievementByAppRefNo")]
+        [Route("GetPlayerAchievementByAppRefNo")]
+        [HttpGet]
         public async Task<IActionResult> GetPlayerAchievementByAppRefNo(string applRefNo)
         {
             // Build the base query
@@ -3146,7 +3152,8 @@ namespace ServicePlusAPIs.Controllers
         }
 
 
-        [HttpPost("AddSponsorPlayer")]
+        [Route("AddSponsorPlayer")]
+        [HttpPost]
         public async Task<IActionResult> AddSponsorPlayer(SportSponsorDetailViewModel sportSponsorDetailViewModel)
         {
             if (sportSponsorDetailViewModel is null)
@@ -3199,7 +3206,9 @@ namespace ServicePlusAPIs.Controllers
             return Ok(new { IsSucced = true, Message = "Kindly Download your Slip" });
         }
 
-        [HttpGet("GetSponsorByPhoneNumber")]
+
+        [Route("GetSponsorByPhoneNumber")]
+        [HttpGet]
         public async Task<IActionResult> GetSponsorByPhoneNumber(string phoneNumber)
         {
             var sponsorDetails = await _servicePlusContext.SportSponsorDetails
@@ -3212,7 +3221,9 @@ namespace ServicePlusAPIs.Controllers
 
             return Ok(sponsorDetails);
         }
-        [HttpPost("GetSponsorPlayersByRefNo")]
+
+        [Route("GetSponsorPlayersByRefNo")]
+        [HttpPost]
         public async Task<IActionResult> GetSponsorPlayersByRefNo([FromBody] List<string> applRefNos)
         {
             if (applRefNos == null || applRefNos.Count == 0)

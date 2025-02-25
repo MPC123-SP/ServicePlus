@@ -1,42 +1,30 @@
-﻿namespace ServicePlusDashBoard.Middleware
+﻿using System.Net;
+
+public class FirstMiddleware
 {
-    // You may need to install the Microsoft.AspNetCore.Http.Abstractions package into your project
-    public class FirstMiddleware
+    private readonly RequestDelegate _next;
+    private readonly ILogger<FirstMiddleware> _logger;
+    public FirstMiddleware(RequestDelegate next, ILogger<FirstMiddleware> logger)
     {
-        private readonly RequestDelegate _next;
-
-        public FirstMiddleware(RequestDelegate next)
-        {
-            _next = next;
-        }
-
-        public async Task Invoke(HttpContext httpContext)
-        {
-            var jwtToken = httpContext.Request.Cookies["jwtToken"];
-            if (!string.IsNullOrWhiteSpace(jwtToken))
-            {
-                // Check if Authorization header already exists
-                if (!httpContext.Request.Headers.ContainsKey("Authorization"))
-                {
-                    httpContext.Request.Headers.Add("Authorization", "Bearer " + jwtToken);
-                }
-            }
-
-            // Log the Authorization header to check if it's being set
-            var authorizationHeader = httpContext.Request.Headers["Authorization"].ToString();
-            Console.WriteLine("Authorization Header: " + authorizationHeader);
-
-            await _next(httpContext);
-        }
+        _next = next;
+        _logger = logger;
     }
 
-    // Extension method used to add the middleware to the HTTP request pipeline.
-    public static class FirstMiddlewareExtensions
+    public async Task Invoke(HttpContext context)
     {
-        public static IApplicationBuilder UseFirstMiddleware(this IApplicationBuilder builder)
+        var token = context.Request.Headers["Authorization"].ToString();
+        if (string.IsNullOrEmpty(token))
         {
-            return builder.UseMiddleware<FirstMiddleware>();
+            _logger.LogWarning("Authorization header is missing or empty.");
         }
+        else
+        {
+            _logger.LogInformation($"Authorization header: {token}");
+        }
+
+
+        await _next(context);
+
+         
     }
 }
- 

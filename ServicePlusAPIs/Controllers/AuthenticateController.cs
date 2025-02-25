@@ -33,14 +33,14 @@ namespace ServicePlusAPIs.Controllers
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
         private readonly ServicePlusContext _servicePlusContext;
-
+        private readonly PostgresDbContext _postgresDbContext;
         private readonly ILogger<AuthenticateController> _logger;
 
         public AuthenticateController(
             UserManager<RegisterUser> userManager,
             RoleManager<IdentityRole> roleManager,
             IConfiguration configuration, IMapper mapper
-            , ServicePlusContext servicePlusContext, ILogger<AuthenticateController> logger)
+            , ServicePlusContext servicePlusContext, ILogger<AuthenticateController> logger ,PostgresDbContext postgresDbContext)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -48,6 +48,7 @@ namespace ServicePlusAPIs.Controllers
             _mapper = mapper;
             _servicePlusContext = servicePlusContext;
             _logger = logger;
+            _postgresDbContext = postgresDbContext;
         }
 
         #region Login & Generate Token
@@ -57,10 +58,7 @@ namespace ServicePlusAPIs.Controllers
         {
             var userLogin = _mapper.Map<UserLoginViewModel, UserLogin>(model);
             var user = await _userManager.FindByNameAsync(userLogin.Username);
-            var userRecord = _servicePlusContext.Users
-                         .Include(u => u.RegisterUserDistricts)
-                         .Include(u => u.RegisterUserServices)
-                         .Include(u => u.RegisterUserDepartments).Where(d => d.UserName == user.UserName).ToList();
+          
 
 
             if (user != null && await _userManager.CheckPasswordAsync(user, userLogin.Password))
@@ -78,6 +76,8 @@ namespace ServicePlusAPIs.Controllers
                         return Unauthorized(new Response { Status = "Error", Message = "User account is  locked." });
                     }
                 }
+            
+
                 var userRoles = await _userManager.GetRolesAsync(user);
                 var registerUserServices = await _servicePlusContext.RegisterUserServices.Where(d => d.UserId == user.Id).ToListAsync();
                 var rolePermissions = new List<RolePermission>();
@@ -88,10 +88,22 @@ namespace ServicePlusAPIs.Controllers
                     var rolePermissionsForUser = await GetRoleWisePemission(rolesId);
                     rolePermissions.AddRange(rolePermissionsForUser);
                 }
+                // Fetch all districts associated with the user
+                var userRecord = await _servicePlusContext.RegisterUserDistricts
+                                    .Where(d => d.UserId == user.Id)
+                                    .Select(d => d.DistrictName) // Select only DistrictId values
+                                    .ToListAsync();
 
+                // Fetch all CustomLGDDistricts where CustomLGDDistrictId is in userRecord
+                var userDistricts = await _postgresDbContext.CustomLGDDistricts
+                                    .Where(d => userRecord.Contains(d.CustomLGDDDistrictCode)).Select(d => d.CustomLGDDDistrictName)
+                                    .ToListAsync();
+
+                var districtNames = string.Join(",", userDistricts );
                 var authClaims = new List<Claim>
                                 {
                                     new Claim(ClaimTypes.Name, user.UserName),
+                                    new Claim("UserDistrict", districtNames),
                                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                                 };
 
@@ -99,7 +111,7 @@ namespace ServicePlusAPIs.Controllers
                 {
                     authClaims.Add(new Claim("Roles", userRole));
                 }
-
+                
                 foreach (var permission in rolePermissions)
                 {
                     authClaims.Add(new Claim("Permission", permission.Permission));
@@ -109,20 +121,24 @@ namespace ServicePlusAPIs.Controllers
                 {
                     authClaims.Add(new Claim("UserServices", userServices.ServiceName));
                 }
+                foreach(var userDistrict in userRecord)
+                {
 
+                }
 
                 var token = GetToken(authClaims);
 
                 return Ok(new
                 {
-                    token = new JwtSecurityTokenHandler().WriteToken(token),
-                    expiration = token.ValidTo
+                    token = token, // Token is already a string
+                    expiration = DateTime.UtcNow.AddHours(4)
                 });
+
             }
             return Unauthorized();
         }
 
-        private JwtSecurityToken GetToken(List<Claim> authClaims)
+        private string GetToken(List<Claim> authClaims)
         {
             var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]));
 
@@ -130,29 +146,20 @@ namespace ServicePlusAPIs.Controllers
             {
                 Issuer = _configuration["JWT:ValidIssuer"],
                 Audience = _configuration["JWT:ValidAudience"],
-                Expires = DateTime.Now.AddHours(4),
+                Expires = DateTime.UtcNow.AddHours(4), // Use UTC time
                 SigningCredentials = new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256),
                 Subject = new ClaimsIdentity(authClaims),
             };
 
-           
             var tokenHandler = new JwtSecurityTokenHandler();
-            var token = tokenHandler.CreateJwtSecurityToken(
-                issuer: tokenDescriptor.Issuer,
-                audience: tokenDescriptor.Audience,
-                subject: tokenDescriptor.Subject,
-                expires: tokenDescriptor.Expires,
-                signingCredentials: tokenDescriptor.SigningCredentials);
-
-
-
-            return token;
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token); // Return token as string
         }
+
 
         #endregion
 
-        #region Register
-        [CustomAuthorizeAttribute]
+        #region Register 
         [HttpPost]
         [Route("register")]
         public async Task<IActionResult> Register(RegisterUserViewModel registerUserViewModel)
@@ -234,8 +241,7 @@ namespace ServicePlusAPIs.Controllers
         }
         #endregion
 
-        #region Permanent Delete User By Name
-        [CustomAuthorizeAttribute]
+        #region Permanent Delete User By Name 
         [HttpPost]
         [Route("PermanentDeleteUserByUserName")]
         public async Task<IActionResult> DeleteUserByUserName(string username)
@@ -270,8 +276,7 @@ namespace ServicePlusAPIs.Controllers
 
         #endregion
 
-        #region Disable UserAccount User By Name
-        [CustomAuthorizeAttribute]
+        #region Disable UserAccount User By Name 
         [HttpPost]
         [Route("DisableUserAccountByUserName")]
         public async Task<IActionResult> DisableUserAccountByUserName(string username)
@@ -302,8 +307,7 @@ namespace ServicePlusAPIs.Controllers
         }
         #endregion
 
-        #region Enable UserAccount User By Name
-        [CustomAuthorizeAttribute]
+        #region Enable UserAccount User By Name 
         [HttpPost]
         [Route("EnableUserAccountByUserName")]
         public async Task<IActionResult> EnableUserAccountByUserName(string username)
@@ -363,8 +367,7 @@ namespace ServicePlusAPIs.Controllers
         }
         #endregion
 
-        #region Get User
-        [CustomAuthorizeAttribute]
+        #region Get User 
         [HttpGet]
         [Route("GetUser")]
         public async Task<IActionResult> GetUser(int page, int pageSize)
@@ -421,8 +424,7 @@ namespace ServicePlusAPIs.Controllers
 
         #endregion
 
-        #region Create Dynamic Roles 
-        [CustomAuthorizeAttribute]
+        #region Create Dynamic Roles  
         [HttpPost]
         [Route("CreateDynamicRoles")]
         public async Task<IActionResult> CreateDynamicRole(RolesViewModel roleViewModel)
@@ -464,8 +466,7 @@ namespace ServicePlusAPIs.Controllers
         }
         #endregion
 
-        #region Get Role 
-        [CustomAuthorizeAttribute]
+        #region Get Role  
         [HttpGet]
         [Route("GetRole")]
         public async Task<IActionResult> GetRole()
@@ -475,8 +476,7 @@ namespace ServicePlusAPIs.Controllers
         }
         #endregion
 
-        #region Delete Role
-        [CustomAuthorizeAttribute]
+        #region Delete Role 
         [HttpDelete]
         [Route("DeleteRoleById")]
         public async Task<IActionResult> DeleteRoleById(string id)
@@ -525,8 +525,7 @@ namespace ServicePlusAPIs.Controllers
 
         #endregion
 
-        #region EditRole 
-        [CustomAuthorizeAttribute]
+        #region EditRole  
         [HttpPut]
         [Route("EditRole")]
         public async Task<IActionResult> EditRole(string id, RolesViewModel roleViewModel)
@@ -570,8 +569,7 @@ namespace ServicePlusAPIs.Controllers
 
         #endregion
 
-        #region Get Role Permissions By Id
-        [CustomAuthorizeAttribute]
+        #region Get Role Permissions By Id 
         [Route("GetRolePermissionsById")]
         [HttpGet]
         public async Task<IActionResult> GetRolePermissionsById(string roleId)
@@ -616,10 +614,9 @@ namespace ServicePlusAPIs.Controllers
 
         #endregion
 
-        #region Update API Names & Get API Names && Add API Description
-        [CustomAuthorizeAttribute]
+        #region Update API Names & Get API Names && Add API Description 
         [Route("UpdateApiNames")]
-        [HttpPost]
+        [HttpGet]
         public async Task<IActionResult> UpdateApiNames()
         {
             // Step 1: Delete all existing records related to API names
@@ -641,24 +638,25 @@ namespace ServicePlusAPIs.Controllers
                         var controllerName = controllerType.Name;
                         if (controllerName == "ServicePlusController")
                         {
-                            ApiNames apiName = new ApiNames()
-                            {
-                                ApiName = method.Name
-                            };
+
 
                             // Check if the apiName already exists in the database
-                            var existingApiName = _servicePlusContext.ApiNames.FirstOrDefault(an => an.ApiName == apiName.ApiName);
+                            var existingApiName = _servicePlusContext.ApiNames.FirstOrDefault(an => an.ApiName == method.Name);
                             if (existingApiName == null)
                             {
+                                ApiNames apiName = new ApiNames()
+                                {
+                                    ApiName = method.Name
+                                };
                                 apiNames.Add(apiName);
                             }
                         }
                     }
                 }
             }
-            if (apiNames.Count > 0)
+            if (apiNames.Count <= 0)
             {
-                return StatusCode(StatusCodes.Status200OK, new Response { Status = "Message", Message = "No New API Found" });
+                return StatusCode(StatusCodes.Status200OK, new Response { Status = "No Content", Message = "No New API Found" });
 
             }
             else
@@ -670,9 +668,7 @@ namespace ServicePlusAPIs.Controllers
             return Ok();
         }
 
-
-
-        [CustomAuthorizeAttribute]
+         
         [Route("GetApiNames")]
         [HttpGet]
         public async Task<IActionResult> GetApiNames()
@@ -680,8 +676,7 @@ namespace ServicePlusAPIs.Controllers
             var getApiNames = await _servicePlusContext.ApiNames.ToListAsync();
             return Ok(getApiNames);
         }
-
-        [CustomAuthorizeAttribute]
+         
         [Route("AddEditApiDescription")]
         [HttpPost]
         public async Task<IActionResult> AddApiDescription(ApiNameViewModel apiViewModel)

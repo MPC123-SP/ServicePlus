@@ -1,16 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using ServicePlusDashBoard.AccountModels;
 using ServicePlusDashBoard.Helper;
-using ServicePlusDashBoard.Models;
 using System.Security.Authentication;
-using System.Text;
 
 namespace ServicePlusDashBoard.Controllers
-{ 
-    [CustomAuthorizeAttribute(role: "SuperAdmin")]
+{
     public class AdminController : Controller
     {
         private readonly HttpClient _httpClient;
@@ -21,6 +15,7 @@ namespace ServicePlusDashBoard.Controllers
             _httpClient = httpClientFactory.CreateClient("ServicePlusClient");
             _httpContextAccessor = httpContextAccessor;
         }
+        [Authorize]
         public IActionResult Index()
         {
             return View();
@@ -59,6 +54,12 @@ namespace ServicePlusDashBoard.Controllers
                     HttpResponseMessage response = await _httpClient.GetAsync($"{ApiEndPoints.JSONReceivedDatesEndPoint}?page={page}&pageSize={pageSize}");
                     if (response.IsSuccessStatusCode)
                     {
+                        Console.WriteLine($"Response headers: {string.Join(", ", response.Headers)}");
+                        foreach (var header in response.Headers)
+                        {
+                            // Print each header's name and its values
+                            Console.WriteLine($"{header.Key}: {string.Join(", ", header.Value)}");
+                        }
                         var content = await response.Content.ReadAsStringAsync();
                         return Content(content, "application/json");
                     }

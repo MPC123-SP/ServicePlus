@@ -56,19 +56,18 @@ builder.Services.AddDbContext<ServicePlusContext>(options =>
             // Adjust maxRetryCount and maxRetryDelay as needed.
         });
 });
-builder.Services.AddIdentity<RegisterUser, IdentityRole>(options => options.SignIn.RequireConfirmedAccount = true)
-                .AddEntityFrameworkStores<ServicePlusContext>(); 
+builder.Services.AddIdentity<RegisterUser, IdentityRole> ()
+                .AddEntityFrameworkStores<ServicePlusContext>().AddDefaultTokenProviders();
 
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-// Adding Jwt Bearer
+}) 
 .AddJwtBearer(options =>
  {
-   //  options.SaveToken = true;
+     options.SaveToken = true;
      options.RequireHttpsMetadata = false;
      options.TokenValidationParameters = new TokenValidationParameters()
      {
@@ -82,6 +81,7 @@ builder.Services.AddAuthentication(options =>
      };
  });
 
+builder.Services.AddAuthorization();
 builder.Services.AddSwaggerGen(opt =>
 {
     opt.SwaggerDoc("v1", new OpenApiInfo { Title = "ServicePlusAPI's", Version = "v1" });
