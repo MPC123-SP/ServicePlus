@@ -19,7 +19,7 @@ namespace ServicePlusDashBoard.Helper
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var context = _httpContextAccessor.HttpContext;
-            if (context != null && context.Request.Cookies.TryGetValue("CRSPortal", out var token))
+            if (context != null && context.Request.Cookies.TryGetValue("jwtToken", out var token))
             {
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
                
@@ -31,7 +31,8 @@ namespace ServicePlusDashBoard.Helper
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
-                context.Response.Cookies.Delete("CRSPortal"); // Delete invalid token
+                context.Response.Cookies.Delete("jwtToken"); // Delete invalid token
+                context.Response.Cookies.Delete("CRSPortal");  
                 context.Response.Redirect("/Account/Login");
             }
 

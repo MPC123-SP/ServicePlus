@@ -15,7 +15,7 @@ namespace ServicePlusDashBoard.Controllers
             _httpClient = httpClientFactory.CreateClient("ServicePlusClient");
             _httpContextAccessor = httpContextAccessor;
         }
-        [Authorize]
+        [Authorize(Roles ="SuperAdmin")]
         public IActionResult Index()
         {
             return View();

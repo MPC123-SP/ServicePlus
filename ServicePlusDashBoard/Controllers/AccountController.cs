@@ -92,7 +92,12 @@ namespace ServicePlusDashBoard.Controllers
 
             var claimsIdentity = new ClaimsIdentity(Newclaims, CookieAuthenticationDefaults.AuthenticationScheme);
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
-
+            Response.Cookies.Append("jwtToken", token.token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = false, // Set to true if using HTTPS
+                SameSite = SameSiteMode.Strict // Adjust based on your needs
+            });
 
 
 
@@ -140,7 +145,7 @@ namespace ServicePlusDashBoard.Controllers
         {
             // Clear cookies
             Response.Cookies.Delete("CRSPortal");
-
+            Response.Cookies.Delete("jwtToken"); // Delete invalid token 
             // Sign out of cookie authentication
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
@@ -154,7 +159,7 @@ namespace ServicePlusDashBoard.Controllers
         [HttpGet]
         public async Task<IActionResult> CreateUser()
         {
-            var jwtToken = Request.Cookies["jwtToken"];
+            var jwtToken = Request.Cookies["Token"];
             List<RolesViewModel> dataList = await SendHttpGetRequestAsync<RolesViewModel>(ApiAccountEndPoints.GetRoleEndPoint);
             SelectList roleSelectList = new SelectList(dataList, "Name", "Name");
             SelectList checkRoleSelectList = new SelectList(dataList, "Id", "Name");
@@ -293,104 +298,63 @@ namespace ServicePlusDashBoard.Controllers
 
         private async Task<List<T>> SendHttpGetRequestAsync<T>(string url)
         {
-            var jwtToken = Request.Cookies["jwtToken"];
-            var httpClientHandler = new HttpClientHandler
-            {
-                // Set TLS version 
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
 
-                // Ignore SSL certificate validation (not recommended for production)
-                ServerCertificateCustomValidationCallback =
-                    (sender, certificate, chain, sslPolicyErrors) => true
-            };
-
-            using (var httpClient = new HttpClient(httpClientHandler))
+            HttpResponseMessage response = await _httpClient.GetAsync(url);
+            if (response.IsSuccessStatusCode)
             {
-                httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
-                HttpResponseMessage response = await _httpClient.GetAsync(url);
-                if (response.IsSuccessStatusCode)
-                {
-                    string content = await response.Content.ReadAsStringAsync();
-                    return JsonConvert.DeserializeObject<List<T>>(content);
-                }
-                else
-                {
-                    // Handle the error here if needed
-                    return null;
-                }
+                string content = await response.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<List<T>>(content);
             }
+            else
+            {
+                // Handle the error here if needed
+                return null;
+            }
+
         }
         private async Task<List<string>> SendHttpGetRequest<T>(string url)
         {
 
-            var jwtToken = Request.Cookies["jwtToken"];
-            var httpClientHandler = new HttpClientHandler
+            HttpResponseMessage response = await _httpClient.GetAsync(url);
+            if (response.IsSuccessStatusCode)
             {
-                // Set TLS version 
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
-
-                // Ignore SSL certificate validation (not recommended for production)
-                ServerCertificateCustomValidationCallback =
-                    (sender, certificate, chain, sslPolicyErrors) => true
-            };
-
-            using (var httpClient = new HttpClient(httpClientHandler))
-            {
-                httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
-                HttpResponseMessage response = await _httpClient.GetAsync(url);
-                if (response.IsSuccessStatusCode)
-                {
-                    string content = await response.Content.ReadAsStringAsync();
-                    return JsonConvert.DeserializeObject<List<string>>(content);
-                }
-                else
-                {
-                    // Handle the error here if needed
-                    return null;
-                }
+                string content = await response.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<List<string>>(content);
             }
+            else
+            {
+                // Handle the error here if needed
+                return null;
+            }
+
         }
         private async Task<ApiResponse> SendHttpPostRequest<T>(string url, object data)
         {
-            var jwtToken = Request.Cookies["jwtToken"];
-            var httpClientHandler = new HttpClientHandler
+
+            // Serialize the data object to JSON and create a StringContent
+            var jsonContent = JsonConvert.SerializeObject(data);
+            var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+            HttpResponseMessage response = await _httpClient.PostAsync(url, content);
+
+            if (response.IsSuccessStatusCode)
             {
-                // Set TLS version
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                string responseContent = await response.Content.ReadAsStringAsync();
+                // Handle the response as needed
+                var apiResponse = JsonConvert.DeserializeObject<ApiResponse>(responseContent);
 
-                // Ignore SSL certificate validation (not recommended for production)
-                ServerCertificateCustomValidationCallback =
-                    (sender, certificate, chain, sslPolicyErrors) => true
-            };
-
-            using (var httpClient = new HttpClient(httpClientHandler))
-            {
-                httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
-
-                // Serialize the data object to JSON and create a StringContent
-                var jsonContent = JsonConvert.SerializeObject(data);
-                var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-
-                HttpResponseMessage response = await _httpClient.PostAsync(url, content);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    string responseContent = await response.Content.ReadAsStringAsync();
-                    // Handle the response as needed
-                    var apiResponse = JsonConvert.DeserializeObject<ApiResponse>(responseContent);
-
-                    return apiResponse;
-                }
-                else
-                {
-                    // Handle the error here if needed
-                    string responseContent = await response.Content.ReadAsStringAsync();
-                    // Handle the response as needed
-                    var apiResponse = JsonConvert.DeserializeObject<ApiResponse>(responseContent);
-
-                    return apiResponse;
-                }
+                return apiResponse;
             }
+            else
+            {
+                // Handle the error here if needed
+                string responseContent = await response.Content.ReadAsStringAsync();
+                // Handle the response as needed
+                var apiResponse = JsonConvert.DeserializeObject<ApiResponse>(responseContent);
+
+                return apiResponse;
+            }
+
         }
 
         public async Task<IActionResult> CreateRole()
@@ -598,9 +562,18 @@ namespace ServicePlusDashBoard.Controllers
         {
             ApiResponse response = await SendHttpPostRequest<string>(ApiAccountEndPoints.UpdateApiNamesEndPoint, "");
 
-            TempData["Response"] = response.Message;
+            if (response != null && response.Message != null)
+            {
+                TempData["Response"] = response.Message;
+            }
+            else
+            {
+                TempData["Response"] = "No response received.";
+            }
+
             return RedirectToAction("AddApiDescription");
         }
+
 
         [HttpGet]
         public async Task<IActionResult> DisableUserAccountByUserName(string userName)
