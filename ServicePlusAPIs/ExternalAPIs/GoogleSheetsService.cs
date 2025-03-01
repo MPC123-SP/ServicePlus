@@ -12,7 +12,7 @@ namespace ServicePlusAPIs.ExternalAPIs
     {
         private static readonly string[] Scopes = { SheetsService.Scope.SpreadsheetsReadonly };
         private static readonly string ApplicationName = "Sports Service";
-        private static readonly string SpreadsheetId = "1EJQ1YPh-lD9bihwXW2M_CCsETJMBzXbWZ5F4cBVnZbg"; // Your Google Sheet ID
+        private static readonly string SpreadsheetId = "1BuUjoz_01GH8PXdN1A02G54CMtiDBR5sZvWZgHq-Xnc"; // Your Google Sheet ID
         private static readonly string SheetName = "Sheet1"; // Adjust if needed
         private static readonly string CredentialsFilePath = "C:\\Users\\Mohit\\Documents\\GitHub\\ServicePlus\\ServicePlusAPIs\\ExternalAPIs\\SportsServiceAccount.json";
 
@@ -21,17 +21,27 @@ namespace ServicePlusAPIs.ExternalAPIs
         // Cache Key
         private const string PlayerCertificateCacheKey = "PlayerCertificateDetailsCache";
 
-        public static async Task<List<PlayerCertificateDetail>> GetFilteredPlayerCertificateDetails(
-            string playerName = null, string game = null, string ageGroup = null)
+        public static async Task<PlayerCertificateDetail?> GetFilteredPlayerCertificateDetails(
+    string dob = null, string game = null, string gameEvent = null, string ageGroup = null)
         {
-            // Try to get the cached records
+            // Ensure parameters are normalized
+            dob = dob?.Trim().ToLowerInvariant();
+            game = game?.Trim().ToLowerInvariant();
+            gameEvent = gameEvent?.Trim().ToLowerInvariant();
+            ageGroup = ageGroup?.Trim().ToLowerInvariant();
+
+            // Try to get cached records
             if (_cache.TryGetValue(PlayerCertificateCacheKey, out List<PlayerCertificateDetail> cachedRecords))
             {
-                // If cache is found, return it
-                return cachedRecords;
+                return cachedRecords.FirstOrDefault(d =>
+                    d.ApplicantDOB?.Trim().ToLowerInvariant() == dob &&
+                    d.ApplicantGame?.Trim().ToLowerInvariant() == game &&
+                    d.ApplicantEvent?.Trim().ToLowerInvariant() == gameEvent &&
+                    d.ApplicantAgeGroup?.Trim().ToLowerInvariant() == ageGroup
+                );
             }
 
-            // If cache is not found, call Google Sheets API to fetch data
+            // If cache is empty, fetch data from Google Sheets
             try
             {
                 GoogleCredential credential;
@@ -40,58 +50,55 @@ namespace ServicePlusAPIs.ExternalAPIs
                     credential = GoogleCredential.FromStream(stream).CreateScoped(Scopes);
                 }
 
-                var service = new SheetsService(new BaseClientService.Initializer()
+                var service = new SheetsService(new BaseClientService.Initializer
                 {
                     HttpClientInitializer = credential,
                     ApplicationName = ApplicationName,
                 });
 
-                // Define range to fetch all columns (A to M)
                 var range = $"'{SheetName}'!A1:M";
                 var request = service.Spreadsheets.Values.Get(SpreadsheetId, range);
                 ValueRange response = await request.ExecuteAsync();
                 var values = response.Values;
 
                 if (values == null || values.Count == 0)
-                    return new List<PlayerCertificateDetail>();
+                    return null;
 
-                var filteredRecords = new ConcurrentBag<PlayerCertificateDetail>(); // Thread-safe collection
-
-                // Use Parallel.ForEach for concurrent processing
-                await Task.WhenAll(values.Select(async row =>
-                {
-                    var record = new PlayerCertificateDetail
+                var records = values.Skip(1) // Assuming first row is headers
+                    .Select(row => new PlayerCertificateDetail
                     {
-                        ApplicantFullName = row.Count > 1 ? row[1]?.ToString() ?? "" : "",
-                        ApplicantFatherName = row.Count > 2 ? row[2]?.ToString() ?? "" : "",
-                        ApplicantDOB = row.Count > 3 ? row[3]?.ToString() ?? "" : "",
-                        ApplicantMobileNo = row.Count > 4 ? row[4]?.ToString() ?? "" : "",
-                        GameHeldDistrict = row.Count > 5 ? row[5]?.ToString() ?? "" : "",
-                        GameRepresentingDistrict = row.Count > 6 ? row[6]?.ToString() ?? "" : "",
-                        ApplicantGame = row.Count > 7 ? row[7]?.ToString() ?? "" : "",
-                        ApplicantEvent = row.Count > 8 ? row[8]?.ToString() ?? "" : "",
-                        ApplicantAgeGroup = row.Count > 9 ? row[9]?.ToString() ?? "" : "",
-                        Score = row.Count > 10 ? row[10]?.ToString() ?? "" : "",
-                        Position = row.Count > 11 ? row[11]?.ToString() ?? "" : "",
-                        ConveyorName = row.Count > 12 ? row[12]?.ToString() ?? "" : ""
-                    };
+                        ApplicantFullName = row.ElementAtOrDefault(1)?.ToString()?.Trim(),
+                        ApplicantFatherName = row.ElementAtOrDefault(2)?.ToString()?.Trim(),
+                        ApplicantDOB = row.ElementAtOrDefault(3)?.ToString()?.Trim(),
+                        ApplicantMobileNo = row.ElementAtOrDefault(4)?.ToString()?.Trim(),
+                        GameHeldDistrict = row.ElementAtOrDefault(5)?.ToString()?.Trim(),
+                        GameRepresentingDistrict = row.ElementAtOrDefault(6)?.ToString()?.Trim(),
+                        ApplicantGame = row.ElementAtOrDefault(7)?.ToString()?.Trim(),
+                        ApplicantEvent = row.ElementAtOrDefault(8)?.ToString()?.Trim(),
+                        ApplicantAgeGroup = row.ElementAtOrDefault(9)?.ToString()?.Trim(),
+                        Score = row.ElementAtOrDefault(10)?.ToString()?.Trim(),
+                        Position = row.ElementAtOrDefault(11)?.ToString()?.Trim(),
+                        ConveyorName = row.ElementAtOrDefault(12)?.ToString()?.Trim()
+                    })
+                    .ToList();
 
-                    // Add record to the collection
-                    filteredRecords.Add(record);
-                }));
+                // Store in cache for 30 minutes
+                _cache.Set(PlayerCertificateCacheKey, records, TimeSpan.FromMinutes(10));
 
-                // Convert to List and store in cache with expiration time (30 minutes)
-                var result = filteredRecords.ToList();
-                var cacheExpiration = DateTime.Now.AddMinutes(1);
-                _cache.Set(PlayerCertificateCacheKey, result, cacheExpiration);
-
-                return result;
+                // Filter and return only the matching record
+                return records.FirstOrDefault(d =>
+                    d.ApplicantDOB?.ToLowerInvariant() == dob &&
+                    d.ApplicantGame?.ToLowerInvariant() == game &&
+                    d.ApplicantEvent?.ToLowerInvariant() == gameEvent &&
+                    d.ApplicantAgeGroup?.ToLowerInvariant() == ageGroup
+                );
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error accessing Google Sheets API: {ex.Message}");
-                return new List<PlayerCertificateDetail>();
+                return null;
             }
         }
+
     }
 }

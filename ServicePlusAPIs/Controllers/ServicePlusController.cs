@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using PuppeteerSharp;
 using PuppeteerSharp.Media;
 using ServicePlusAPIs.AuthenticateModels;
@@ -2340,7 +2341,7 @@ namespace ServicePlusAPIs.Controllers
                         join officialFormDetails in _servicePlusContext.OfficialFormDetails on taskDetails.ExecutionDataId equals officialFormDetails.ExecutionDataId into groupedOfficialFormDetails
                         where taskDetails.TaskId == 23005
                               && initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
-                             // && groupedOfficialFormDetails.Any(ofd => ofd.OfficalFormID == "171829") // Check if at least one exists
+                        // && groupedOfficialFormDetails.Any(ofd => ofd.OfficalFormID == "171829") // Check if at least one exists
                         orderby initiatedData.InitiatedDataId descending
                         select new
                         {
@@ -3149,36 +3150,42 @@ namespace ServicePlusAPIs.Controllers
         #endregion
 
         #region GetPlayerCertificateDetail
+
         [Route("GetPlayerCertificateDetail")]
-        [HttpPost] 
+        [HttpPost]
         public async Task<IActionResult> GetPlayerCertificateDetail([FromBody] FilterParameterForPlayerCertificate filterParameterForPlayerCertificate)
         {
-            var query = await (from initiatedData in _servicePlusContext.InitiatedDatas
-                               join attributeDetail in _servicePlusContext.AttributeDetails
-                               on initiatedData.InitiatedDataId equals attributeDetail.InitiatedDataId
-                               where initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
-                                     && initiatedData.ApplRefNo == filterParameterForPlayerCertificate.ApplRefNo
+            var getPlayer = await (from initiatedData in _servicePlusContext.InitiatedDatas
+                                   join attributeDetail in _servicePlusContext.AttributeDetails
+                                   on initiatedData.InitiatedDataId equals attributeDetail.InitiatedDataId
+                                   join taskDetails in _servicePlusContext.TaskDetails on initiatedData.ApplId equals taskDetails.ApplId
 
-                                     && attributeDetail.ApplicationFormFieldID == "169971" // ApplicantDOB field ID
-                                     && attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantDOB
+                                   where initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
+                                         && initiatedData.ApplRefNo == filterParameterForPlayerCertificate.ApplRefNo
 
-                                     && attributeDetail.ApplicationFormFieldID == "170094" // ApplicantDOB field ID
-                                     && attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantGame
+                                         //&& attributeDetail.ApplicationFormFieldID == "169971" // ApplicantDOB field ID
+                                         //&& attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantDOB
 
-                                     && attributeDetail.ApplicationFormFieldID == "170203" // ApplicantDOB field ID
-                                     && attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantEvent
-                                     && initiatedData.InitiatedRecordInsertionFlag == 1
-                               select new
-                               {
-                                   initiatedData.InitiatedDataId,
-                                   initiatedData.ServiceId,
-                                   initiatedData.ServiceName,
-                                   initiatedData.ApplId,
-                                   initiatedData.ApplRefNo,
-                                   initiatedData.SubmissionDate,
-                                   AttributeDetails = initiatedData.AttributeDetail
-                                       .Where(attr => new[]
-                                       {
+                                         //&& attributeDetail.ApplicationFormFieldID == "170094" // ApplicantGame field ID
+                                         //&& attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantGame
+
+                                         //&& attributeDetail.ApplicationFormFieldID == "170203" // ApplicantEvent field ID
+                                         //&& attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantEvent
+                                         //&& attributeDetail.ApplicationFormFieldID == "170202" // ApplicantAgeGroup field ID
+                                         //&& attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantAgeGroup
+                                         && initiatedData.InitiatedRecordInsertionFlag == 1
+                                         && taskDetails.TaskId == 23005
+                                   select new
+                                   {
+                                       initiatedData.InitiatedDataId,
+                                       initiatedData.ServiceId,
+                                       initiatedData.ServiceName,
+                                       initiatedData.ApplId,
+                                       initiatedData.ApplRefNo,
+                                       initiatedData.SubmissionDate,
+                                       AttributeDetails = initiatedData.AttributeDetail
+                                           .Where(attr => new[]
+                                           {
                     "169954", "169955", "169957", "169958", "169964",
                     "170094", "170202", "170203", "170246", "170608",
                     "170091", "170608", "170041", "170309", "171427",
@@ -3188,43 +3195,35 @@ namespace ServicePlusAPIs.Controllers
                     "169998", "169999", "169990", "169991", "170000",
                     "169983", "171761", "169987", "169984", "169988",
                     "169985", "170308", "171647",
-                                       }.Contains(attr.ApplicationFormFieldID))
-                                       .ToList()
-                               }).FirstOrDefaultAsync();
+                                           }.Contains(attr.ApplicationFormFieldID))
+                                           .ToList()
+                                   }).FirstOrDefaultAsync();
 
-            if (query == null)
+            if (getPlayer == null)
             {
                 return NotFound(new { message = "No record found" });
             }
 
-            var result = new
-            {
-               
-                applId = query.ApplId,
-                applRefNo = query.ApplRefNo,
-                applicantFirstName = GetValue(query.AttributeDetails, "169954"),
-                applicantFatherName = GetValue(query.AttributeDetails, "169955"),
-                applicantDOB = GetValue(query.AttributeDetails, "169971"),
-                applicantMobileNo = GetValue(query.AttributeDetails, "169958"),
-                applicantAgeGroup = GetValue(query.AttributeDetails, "170202")?.Split('~').Last(),
-                applicantEvent = GetValue(query.AttributeDetails, "170203")?.Split('~').Last(),
-                
-            };
+
             var playerDetails = await GoogleSheetsService.GetFilteredPlayerCertificateDetails(
-                  playerName: result.applicantFirstName,
+                  dob: filterParameterForPlayerCertificate.ApplicantDOB,
           game: filterParameterForPlayerCertificate.ApplicantGame,
-                  ageGroup: result.applicantAgeGroup
+                  gameEvent: filterParameterForPlayerCertificate.ApplicantEvent,
+                  ageGroup: filterParameterForPlayerCertificate.ApplicantAgeGroup
               );
-            return Ok(result);
+            if (getPlayer is not null && playerDetails is not null)
+            {
+                var getCertificatePath = await GeneratePlayerCertificate(playerDetails);
+                return Ok(new { pdfPath = getCertificatePath });
+            }
+            else
+            {
+                return NotFound(new { message = "No record found" });
+            }
         }
-        public async Task<string> GeneratePlayerCertificate()
-        {
-            string participantName = await TranslateToPunjabi("Chaitanya");
-            string levelName = await TranslateToPunjabi("Level");
-            string districtName = await TranslateToPunjabi("Sangrur");
-            string sportName = await TranslateToPunjabi("Gatka");
-            string ageCategory = await TranslateToPunjabi("Gatka Category");
-            string eventName = await TranslateToPunjabi("Gatka Event");
+        private async Task<string> GeneratePlayerCertificate(PlayerCertificateDetail playerCertificateDetail)
+        { 
+            string levelName = await TranslateToPunjabi("Level");        
             string result = await TranslateToPunjabi("1st");
             string certificateNo = "789101";
             string startDate = "01-03-2025";
@@ -3274,18 +3273,20 @@ namespace ServicePlusAPIs.Controllers
                         ਸਰਟੀਫਿਕੇਟ ਨੰ. : <u>{certificateNo}</u>
                     </div>
                     <div class='text-bold' style=' font-size: 26px; font-weight: bold; padding-top: 2px;'>ਖੇਡਾਂ ਅਤੇ ਯੁਵਾ ਮਾਮਲੇ ਵਿਭਾਗ</div>
+<img style='width: 70%;height: 3%;margin-top: 6px;' src='http://10.147.24.36:8082/SSD/arrow.png'>
                     <div style='margin: 5px 0; font-size:28px;'>
-                        <span style='font-size:23px'><strong>ਖੇਡ ਵਤਨ ਪੰਜਾਬ ਦੀਆ</strong></span>
+                        <span style='font-size:23px'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ</strong></span>
                     </div>
                     <div style='margin: 8px 0; font-size: 25px; margin-top: 9px; font-weight: bold;'>ਸਰਟੀਫਿਕੇਟ</div>
+<img style='width: 74%;height: 14%;margin-top: 6px;' src='http://10.147.24.36:8082/SSD/ribbon.png'>
                     <div style='margin: 20px 0; font-size: 19px; font-weight: bold;'>
                         ਤੋਂ <strong>{startDate}</strong> ਨੂੰ <strong>{endDate}</strong>
                     </div>
                     <div style='margin: 10px 0; font-size: 21px; text-align: justify;'>
-                        ਇਹ ਪ੍ਰਮਾਣਿਤ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ <u>{participantName}</u>, ਨੇ ਜ਼ਿਲ੍ਹੇ ਦੀ ਨੁਮਾਇੰਦਗੀ ਕਰਨ ਵਾਲੀਆਂ <u>{levelName}</u> ਪੱਧਰੀ ਖੇਡਾਂ 2025 ਵਿੱਚ ਭਾਗ ਲਿਆ ਹੈ।
-                        ਉਮਰ ਵਰਗ ਵਿੱਚ <u>{districtName}</u> ਖੇਡ ਵਿੱਚ <strong><u>{sportName}</u></strong>
-                        ਇਵੈਂਟ <u><strong>{eventName}</strong></u> ਵਿੱਚ <strong><u>{ageCategory}</u></strong> 
-                        ਅਤੇ ਸੁਰੱਖਿਅਤ <u><strong>{result}</strong></u>.
+                        ਇਹ ਪ੍ਰਮਾਣਿਤ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ <u>{await TranslateToPunjabi(playerCertificateDetail.ApplicantFullName)}</u>, ਨੇ ਜ਼ਿਲ੍ਹੇ ਦੀ ਨੁਮਾਇੰਦਗੀ ਕਰਨ ਵਾਲੀਆਂ <u>{levelName}</u> ਪੱਧਰੀ ਖੇਡਾਂ 2025 ਵਿੱਚ ਭਾਗ ਲਿਆ ਹੈ।
+                        ਉਮਰ ਵਰਗ ਵਿੱਚ <u>{await TranslateToPunjabi(playerCertificateDetail.GameRepresentingDistrict)}</u> ਖੇਡ ਵਿੱਚ <strong><u>{await TranslateToPunjabi(playerCertificateDetail.ApplicantGame)}</u></strong>
+                        ਇਵੈਂਟ <u><strong>{await TranslateToPunjabi(playerCertificateDetail.ApplicantEvent)}</strong></u> ਵਿੱਚ <strong><u>{await TranslateToPunjabi(playerCertificateDetail.ApplicantAgeGroup)}</u></strong> 
+                        ਅਤੇ ਸੁਰੱਖਿਅਤ <u><strong>{playerCertificateDetail.Score}</strong></u>.
                     </div>
                     <div style='text-align: right; margin: 50px 5px; font-size:19px'>
                         <span style='font-size:18px'>ਨਿਰਦੇਸ਼ਕ ਖੇਡਾਂ<br />ਪੰਜਾਬ</span>
@@ -3308,16 +3309,31 @@ namespace ServicePlusAPIs.Controllers
             return filePath;
         }
 
-        private async Task<string> TranslateToPunjabi(string v)
+
+         
+
+        private async Task<string> TranslateToPunjabi(string text )
         {
-            TranslationClient client = TranslationClient.Create();
-            var response = await client.TranslateTextAsync(text, "pa"); // 'pa' is the language code for Punjabi
-            return response.TranslatedText;
+            using HttpClient client = new HttpClient();  
+            string url = $"https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pa&dt=t&q={text}";
+
+            var response = await client.GetStringAsync(url);
+            var jsonData = System.Text.Json.JsonSerializer.Deserialize<object[]>(response);
+            var translatedText = ((JsonElement)jsonData[0]).EnumerateArray().First().EnumerateArray().First().GetString();
+
+            
+            return translatedText;
         }
 
+        //private async Task<string> TranslateToPunjabi(string text )
+        //{
+        //    using HttpClient client = new HttpClient();  
+        //    string url = $"https://api.mymemory.translated.net/get?q={text}&langpair=en|pa&key=ae65e30bb21f9d5498cc";
 
-
-
+        //    var response = await client.GetStringAsync(url);
+        // var sd= JObject.Parse(response)["responseData"]["translatedText"].ToString();
+        //    return sd;
+        //}
         #endregion
 
         #region Under Development
