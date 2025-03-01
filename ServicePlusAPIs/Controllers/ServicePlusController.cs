@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using DocumentFormat.OpenXml.Drawing.Charts;
 using DocumentFormat.OpenXml.EMMA;
+using DocumentFormat.OpenXml.Office2010.Excel;
 using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Authorization;
@@ -13,6 +14,7 @@ using PuppeteerSharp;
 using PuppeteerSharp.Media;
 using ServicePlusAPIs.AuthenticateModels;
 using ServicePlusAPIs.Context;
+using ServicePlusAPIs.ExternalAPIs;
 using ServicePlusAPIs.HelperModels;
 using ServicePlusAPIs.HelperViewModel;
 using ServicePlusAPIs.Models;
@@ -3148,7 +3150,7 @@ namespace ServicePlusAPIs.Controllers
 
         #region GetPlayerCertificateDetail
         [Route("GetPlayerCertificateDetail")]
-        [HttpPost]
+        [HttpPost] 
         public async Task<IActionResult> GetPlayerCertificateDetail([FromBody] FilterParameterForPlayerCertificate filterParameterForPlayerCertificate)
         {
             var query = await (from initiatedData in _servicePlusContext.InitiatedDatas
@@ -3208,7 +3210,11 @@ namespace ServicePlusAPIs.Controllers
                 applicantEvent = GetValue(query.AttributeDetails, "170203")?.Split('~').Last(),
                 
             };
-
+            var playerDetails = await GoogleSheetsService.GetFilteredPlayerCertificateDetails(
+                  playerName: result.applicantFirstName,
+          game: filterParameterForPlayerCertificate.ApplicantGame,
+                  ageGroup: result.applicantAgeGroup
+              );
             return Ok(result);
         }
         private async Task<string> GeneratePlayerCertificate()
@@ -3321,6 +3327,8 @@ namespace ServicePlusAPIs.Controllers
             return filePath;
         }
 
+ 
+        
 
         #endregion
 

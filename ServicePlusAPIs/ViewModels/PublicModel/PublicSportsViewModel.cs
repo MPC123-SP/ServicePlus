@@ -252,9 +252,11 @@ namespace ServicePlusAPIs.ViewModels.PublicModel
     public class FilterParameterForPlayerCertificate
     {
         public string? ApplRefNo { get; set; }
+        public string? ApplicantName { get; set; }
         public string? ApplicantDOB { get; set; }
         public string? ApplicantGame { get; set; }
         public string? ApplicantEvent { get; set; }
+        public string? ApplicantAgeGroup { get; set; }
 
     }
 }
