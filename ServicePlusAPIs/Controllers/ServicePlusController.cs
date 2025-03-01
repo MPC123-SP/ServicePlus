@@ -2135,8 +2135,8 @@ namespace ServicePlusAPIs.Controllers
                                 {
                             "169954", "169955", "169957", "169958", "169964",
                             "170094", "170202", "170203", "170246", "170608",
-                            "170091", "170608", "170041", "170309", "171427",
-                            "170093","170092"
+                            "170091", "170041", "170309", "171427", "170093",
+                            "170092"
                                 }.Contains(attr.ApplicationFormFieldID))
                                 .ToList(),
                             initiatedData.ServiceId,
@@ -2335,7 +2335,7 @@ namespace ServicePlusAPIs.Controllers
                         join officialFormDetails in _servicePlusContext.OfficialFormDetails on taskDetails.ExecutionDataId equals officialFormDetails.ExecutionDataId into groupedOfficialFormDetails
                         where taskDetails.TaskId == 23005
                               && initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
-                              && groupedOfficialFormDetails.Any(ofd => ofd.OfficalFormID == "171829") // Check if at least one exists
+                             // && groupedOfficialFormDetails.Any(ofd => ofd.OfficalFormID == "171829") // Check if at least one exists
                         orderby initiatedData.InitiatedDataId descending
                         select new
                         {
@@ -2799,41 +2799,6 @@ namespace ServicePlusAPIs.Controllers
             return result;
         }
 
-
-
-        //private List<NationalAchievements> NationalAchievementsDeserializeJsonStreamAsync(string json)
-        //{
-        //    if (string.IsNullOrWhiteSpace(json) || json == "FieldSetValue")
-        //        return new List<NationalAchievements>();
-
-        //    var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
-        //    var jsonData = data["data"];
-        //    var result = new List<NationalAchievements>();
-        //    var detectedKeys = jsonData.Keys
-        //        .Where(k => k.StartsWith("171395_") && int.TryParse(k.Split('_')[1], out _))
-        //        .Select(k => new { Key = k, Index = int.Parse(k.Split('_')[1]) })
-        //        .ToList();
-
-        //    int maxIndex = detectedKeys.Select(k => k.Index).DefaultIfEmpty(0).Max();
-
-        //    for (int i = 1; i <= maxIndex; i++)
-        //    {
-        //        result.Add(new NationalAchievements
-        //        {
-        //            Game = jsonData.ContainsKey($"171395_{i}") ? jsonData[$"171395_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            GameCategory = jsonData.ContainsKey($"171396_{i}") ? jsonData[$"171396_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            GameType = jsonData.ContainsKey($"171397_{i}") ? jsonData[$"171397_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            AgeGroup = jsonData.ContainsKey($"171398_{i}") ? jsonData[$"171398_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            GameEvent = jsonData.ContainsKey($"171399_{i}") ? jsonData[$"171399_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            TournamentName = jsonData.ContainsKey($"171400_{i}") ? jsonData[$"171400_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            TournamentFrom = jsonData.ContainsKey($"171401_{i}") ? jsonData[$"171401_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            TournamentTo = jsonData.ContainsKey($"171645_{i}") ? jsonData[$"171645_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            Position = jsonData.ContainsKey($"171402_{i}") ? jsonData[$"171402_{i}"]?.ToString()?.Split('~')[1] : null,
-        //        });
-        //    }
-
-        //    return result;
-        //}
         private List<NationalAchievements> NationalAchievementsDeserializeJsonStreamAsync(string json)
         {
             if (string.IsNullOrWhiteSpace(json) || json == "FieldSetValue")
@@ -2869,40 +2834,6 @@ namespace ServicePlusAPIs.Controllers
             return result;
         }
 
-        //private List<StateAchievements> StateAchievementsDeserializeJsonStreamAsync(string json)
-        //{
-        //    if (string.IsNullOrEmpty(json) || json == "FieldSetValue")
-        //        return new List<StateAchievements>();
-
-        //    var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
-        //    var jsonData = data["data"];
-        //    var result = new List<StateAchievements>();
-        //    var detectedKeys = jsonData.Keys
-        //        .Where(k => k.StartsWith("171384_") && int.TryParse(k.Split('_')[1], out _))
-        //        .Select(k => new { Key = k, Index = int.Parse(k.Split('_')[1]) })
-        //        .ToList();
-
-        //    int maxIndex = detectedKeys.Select(k => k.Index).DefaultIfEmpty(0).Max();
-
-        //    for (int i = 1; i <= maxIndex; i++)
-        //    {
-        //        result.Add(new StateAchievements
-        //        {
-        //            State = jsonData.ContainsKey($"171384_{i}") ? jsonData[$"171384_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            Game = jsonData.ContainsKey($"171385_{i}") ? jsonData[$"171385_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            GameCategory = jsonData.ContainsKey($"171386_{i}") ? jsonData[$"171386_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            GameType = jsonData.ContainsKey($"171387_{i}") ? jsonData[$"171387_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            AgeGroup = jsonData.ContainsKey($"171388_{i}") ? jsonData[$"171388_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            GameEvent = jsonData.ContainsKey($"171389_{i}") ? jsonData[$"171389_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            TournamentName = jsonData.ContainsKey($"171390_{i}") ? jsonData[$"171390_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            TournamentFrom = jsonData.ContainsKey($"171391_{i}") ? jsonData[$"171391_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            TournamentTo = jsonData.ContainsKey($"171644_{i}") ? jsonData[$"171644_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            Position = jsonData.ContainsKey($"171392_{i}") ? jsonData[$"171392_{i}"]?.ToString()?.Split('~')[1] : null,
-        //        });
-        //    }
-
-        //    return result;
-        //}
         private List<StateAchievements> StateAchievementsDeserializeJsonStreamAsync(string json)
         {
             if (string.IsNullOrEmpty(json) || json == "FieldSetValue")
@@ -2939,40 +2870,6 @@ namespace ServicePlusAPIs.Controllers
             return result;
         }
 
-        //private List<DistrictAchievements> DistrictAchievementsDeserializeJsonStreamAsync(string json)
-        //{
-        //    if (string.IsNullOrWhiteSpace(json) || json == "FieldSetValue")
-        //        return new List<DistrictAchievements>();
-
-        //    var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
-        //    var jsonData = data["data"];
-        //    var result = new List<DistrictAchievements>();
-        //    var detectedKeys = jsonData.Keys
-        //        .Where(k => k.StartsWith("171374_") && int.TryParse(k.Split('_')[1], out _))
-        //        .Select(k => new { Key = k, Index = int.Parse(k.Split('_')[1]) })
-        //        .ToList();
-
-        //    int maxIndex = detectedKeys.Select(k => k.Index).DefaultIfEmpty(0).Max();
-
-        //    for (int i = 1; i <= maxIndex; i++)
-        //    {
-        //        result.Add(new DistrictAchievements
-        //        {
-        //            District = jsonData.ContainsKey($"171374_{i}") ? jsonData[$"171374_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            Game = jsonData.ContainsKey($"171375_{i}") ? jsonData[$"171375_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            GameCategory = jsonData.ContainsKey($"171376_{i}") ? jsonData[$"171376_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            GameType = jsonData.ContainsKey($"171377_{i}") ? jsonData[$"171377_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            AgeGroup = jsonData.ContainsKey($"171378_{i}") ? jsonData[$"171378_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            GameEvent = jsonData.ContainsKey($"171379_{i}") ? jsonData[$"171379_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            TournamentName = jsonData.ContainsKey($"171380_{i}") ? jsonData[$"171380_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            TournamentFrom = jsonData.ContainsKey($"171381_{i}") ? jsonData[$"171381_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            TournamentTo = jsonData.ContainsKey($"171643_{i}") ? jsonData[$"171643_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            Position = jsonData.ContainsKey($"171382_{i}") ? jsonData[$"171382_{i}"]?.ToString()?.Split('~')[1] : null,
-        //        });
-        //    }
-
-        //    return result;
-        //}
         private List<DistrictAchievements> DistrictAchievementsDeserializeJsonStreamAsync(string json)
         {
             if (string.IsNullOrWhiteSpace(json) || json == "FieldSetValue")
@@ -3009,41 +2906,6 @@ namespace ServicePlusAPIs.Controllers
             return result;
         }
 
-        //private List<BlockAchievements> BlockAchievementsDeserializeJsonStreamAsync(string json)
-        //{
-        //    if (string.IsNullOrWhiteSpace(json) || json == "FieldSetValue")
-        //        return new List<BlockAchievements>();
-
-        //    var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
-        //    var jsonData = data["data"];
-        //    var result = new List<BlockAchievements>();
-        //    var detectedKeys = jsonData.Keys
-        //        .Where(k => k.StartsWith("171363_") && int.TryParse(k.Split('_')[1], out _))
-        //        .Select(k => new { Key = k, Index = int.Parse(k.Split('_')[1]) })
-        //        .ToList();
-
-        //    int maxIndex = detectedKeys.Select(k => k.Index).DefaultIfEmpty(0).Max();
-
-        //    for (int i = 1; i <= maxIndex; i++)
-        //    {
-        //        result.Add(new BlockAchievements
-        //        {
-        //            District = jsonData.ContainsKey($"171363_{i}") ? jsonData[$"171363_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            Block = jsonData.ContainsKey($"171364_{i}") ? jsonData[$"171364_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            Game = jsonData.ContainsKey($"171365_{i}") ? jsonData[$"171365_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            GameCategory = jsonData.ContainsKey($"171366_{i}") ? jsonData[$"171366_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            GameType = jsonData.ContainsKey($"171367_{i}") ? jsonData[$"171367_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            AgeGroup = jsonData.ContainsKey($"171368_{i}") ? jsonData[$"171368_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            GameEvent = jsonData.ContainsKey($"171369_{i}") ? jsonData[$"171369_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            TournamentName = jsonData.ContainsKey($"171370_{i}") ? jsonData[$"171370_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            TournamentFrom = jsonData.ContainsKey($"171371_{i}") ? jsonData[$"171371_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            TournamentTo = jsonData.ContainsKey($"171641_{i}") ? jsonData[$"171641_{i}"]?.ToString()?.Split('~')[1] : null,
-        //            Position = jsonData.ContainsKey($"171372_{i}") ? jsonData[$"171372_{i}"]?.ToString()?.Split('~')[1] : null,
-        //        });
-        //    }
-
-        //    return result;
-        //}
         private List<BlockAchievements> BlockAchievementsDeserializeJsonStreamAsync(string json)
         {
             if (string.IsNullOrWhiteSpace(json) || json == "FieldSetValue")
@@ -3281,7 +3143,118 @@ namespace ServicePlusAPIs.Controllers
 
         #endregion
 
+        #region GetPlayerCertificateDetail
+        //[Route("GetPlayerCertificateDetail")]
+        //[HttpPost]
+        //public async Task<IActionResult> GetPlayerCertificateDetail([FromBody] FilterParameterForPlayerCertificate filterParameterForPlayerCertificate)
+        //{
+        //    var query = from initiatedData in _servicePlusContext.InitiatedDatas
+        //                join taskDetails in _servicePlusContext.TaskDetails on initiatedData.ApplId equals taskDetails.ApplId
+        //                join officialFormDetails in _servicePlusContext.OfficialFormDetails on taskDetails.ExecutionDataId
+        //                equals officialFormDetails.ExecutionDataId into groupedOfficialFormDetails
+        //                where initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
+        //                      && taskDetails.TaskId == 23005
+        //                      && !groupedOfficialFormDetails.Any(ofd => ofd.OfficalFormID == "171829")
+        //                orderby initiatedData.InitiatedDataId descending
+        //                select new
+        //                {
+        //                    InitiatedDataId = initiatedData.InitiatedDataId,
+        //                    AttributeDetails = initiatedData.AttributeDetail
+        //                        .Where(attr => new[]
+        //                        {
+        //                    "169954", "169955", "169957", "169958", "169964",
+        //                    "170094", "169971", "170203", "170246", "170608",
+        //                    "170091", "170041", "170309", "171427", "170093",
+        //                    "170092"
+        //                        }.Contains(attr.ApplicationFormFieldID))
+        //                        .ToList(),
+        //                    initiatedData.ServiceId,
+        //                    initiatedData.ServiceName,
+        //                    initiatedData.ApplId,
+        //                    initiatedData.ApplRefNo,
+        //                    initiatedData.SubmissionDate,
+        //                    TaskDetail = new
+        //                    {
+        //                        taskDetails.TaskDetailID,
+        //                        taskDetails.ExecutionDataId,
+        //                        taskDetails.TaskName,
+        //                        OfficialFormDetails = groupedOfficialFormDetails
+        //                            .Where(ofd => ofd.OfficalFormID == "170912")
+        //                            .ToList()
+        //                    }
+        //                };
 
+        //    // Apply filters
+        //    if (!string.IsNullOrWhiteSpace(filterParameterForPlayerCertificate.ApplRefNo))
+        //    {
+        //        query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "171943"
+        //            && attr.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplRefNo));
+        //    }
+
+        //    if (!string.IsNullOrWhiteSpace(filterParameterForPlayerCertificate.ApplicantDOB))
+        //    {
+        //        query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "169971"
+        //            && attr.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantDOB));
+        //    }
+
+        //    if (!string.IsNullOrWhiteSpace(filterParameterForPlayerCertificate.ApplicantGame))
+        //    {
+        //        query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170094"
+        //            && attr.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantGame));
+        //    }
+
+        //    if (!string.IsNullOrWhiteSpace(filterParameterForPlayerCertificate.ApplicantAgeGroup))
+        //    {
+        //        query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170202"
+        //            && attr.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantAgeGroup));
+        //    }
+
+        //    if (!string.IsNullOrWhiteSpace(filterParameterForPlayerCertificate.ApplicantGameCategory))
+        //    {
+        //        query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170246"
+        //            && attr.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantGameCategory));
+        //    }
+
+        //    // Get total count before pagination
+        //    var totalCount = await query.CountAsync();
+
+        //    // Apply pagination
+        //    var paginatedRecords = await query
+        //        .Skip((filterParameterForPlayerCertificate.page - 1) * filterParameterForPlayerCertificate.pageSize)
+        //        .Take(filterParameterForPlayerCertificate.pageSize)
+        //        .ToListAsync();
+
+        //    // Convert to ViewModel
+        //    var result = paginatedRecords.Select(data => new PlayerCertificateDetail
+        //    {
+
+        //        ApplicantFullName = data.AttributeDetails
+        //            .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169954")?.ApplicationFormFieldValue,
+        //        ApplicantFatherName = CleanValue(data.AttributeDetails
+        //            .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169955")?.ApplicationFormFieldValue),
+
+        //        ApplicantMobileNo = CleanValue(data.AttributeDetails
+        //            .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169958")?.ApplicationFormFieldValue),
+
+        //        ApplicantGame = CleanValue(data.AttributeDetails
+        //            .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170094")?.ApplicationFormFieldValue),
+
+        //        ApplicantAgeGroup = CleanValue(data.AttributeDetails
+        //            .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170202")?.ApplicationFormFieldValue),
+        //        ApplicantEvent = CleanValue(data.AttributeDetails
+        //            .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170203")?.ApplicationFormFieldValue)
+
+        //    }).ToList();
+
+        //    return Ok(new
+        //    {
+        //        TotalCount = totalCount,
+        //        Records = result
+        //    });
+        //}
+
+
+        #endregion
 
         #region Under Development
         //    #region Dynamic Report using Service Name

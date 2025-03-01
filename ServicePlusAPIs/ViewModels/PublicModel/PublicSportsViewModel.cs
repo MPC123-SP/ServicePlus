@@ -7,17 +7,17 @@ namespace ServicePlusAPIs.ViewModels.PublicModel
         public int? InitiatedDataId { get; set; }
         public int? AttributeDetailID { get; set; }
 
-        public int? TaskDetailID { get; set; }      
+        public int? TaskDetailID { get; set; }
         public int? ExecutionDataId { get; set; }
-        public int? OfficialFormDetailID { get; set; }     
+        public int? OfficialFormDetailID { get; set; }
         public int? ApplId { get; set; } //this field is available in InitiatedData and TaskDetail Table
         public string? ApplRefNo { get; set; }// this field is only available in InitiatedData Table
 
         public string? TaskName { get; set; }
         public int? TaskId { get; set; }
-        public string? ServiceId { get; set; } 
+        public string? ServiceId { get; set; }
         public string? ServiceName { get; set; }// this field is only available in InitiatedData Table
-        public DateTime? SubmissionDate { get; set; } 
+        public DateTime? SubmissionDate { get; set; }
         public string? ApplicantFirstName { get; set; }
         public string? ApplicantFatherName { get; set; }
         public string? ApplicantBloodGroup { get; set; }
@@ -89,9 +89,9 @@ namespace ServicePlusAPIs.ViewModels.PublicModel
         public string? CompleteAddress { get; set; }
         public string? Region { get; set; }
         public string? AddState { get; set; }
-        public string? AddDistrict  { get; set; }
+        public string? AddDistrict { get; set; }
         public string? AddPincode { get; set; }
-        public string? AccountNumber  { get; set; }
+        public string? AccountNumber { get; set; }
         public string? AccountHolder { get; set; }
         public string? IFSCCode { get; set; }
         public string? NameOnPassbook { get; set; }
@@ -116,7 +116,7 @@ namespace ServicePlusAPIs.ViewModels.PublicModel
 
         public string? CoachName { get; set; }
         public string? PhoneNumber { get; set; }
-        public string? Email{ get; set; }
+        public string? Email { get; set; }
         public string? CoachType { get; set; }//whether it is Private or GOVT
         public string? TrainingCenterName { get; set; }
         public string? Game { get; set; }
@@ -127,7 +127,7 @@ namespace ServicePlusAPIs.ViewModels.PublicModel
     }
     public class PlayerAchievements
     {
-        public string? CompetitionType { get ; set; }
+        public string? CompetitionType { get; set; }
         public List<InterNationalAchievements>? InterNationalAchievements { get; set; }
         public List<NationalAchievements>? NationalAchievements { get; set; }
         public List<StateAchievements>? StateAchievements { get; set; }
@@ -138,11 +138,11 @@ namespace ServicePlusAPIs.ViewModels.PublicModel
 
     public class InterNationalAchievements
     {
-        public string? Game { get; set; } 
-        public string? GameCategory { get; set; } 
-        public string? GameType { get; set; } 
-        public string? AgeGroup { get; set; } 
-        public string? GameEvent { get; set; } 
+        public string? Game { get; set; }
+        public string? GameCategory { get; set; }
+        public string? GameType { get; set; }
+        public string? AgeGroup { get; set; }
+        public string? GameEvent { get; set; }
         public string? TournamentName { get; set; }
         public string? TournamentFrom { get; set; }
         public string? TournamentTo { get; set; }
@@ -224,5 +224,37 @@ namespace ServicePlusAPIs.ViewModels.PublicModel
         public string? District { get; set; }
         public string? Block { get; set; }
         public string? ApplicantEvent { get; set; }
+    }
+
+    public class PlayerCertificateDetail
+    {
+        public string? ApplRefNo { get; set; }
+        public string? ApplicantFullName { get; set; }
+        public string? ApplicantFatherName { get; set; }
+        public string? ApplicantDOB { get; set; }
+        public string? ApplicantMobileNo { get; set; }
+        public string? GameHeldDistrict { get; set; }
+        public string? GameRepresentingDistrict { get; set; }
+        public string? ApplicantGame { get; set; }
+        public string? ApplicantEvent { get; set; }
+        public string? ApplicantAgeGroup { get; set; }
+        public string? Position { get; set; }
+        public string? Score { get; set; }//Time/Distance /Height/Weight/Score
+        public string? ConveyorName { get; set; }
+        public string? CertificatePath { get; set; }
+    }
+    public class Conveyor
+    {
+        public int Id { get; set; }
+        public string? ConveyorName { get; set; }
+        public string? SignPath { get; set; }//Signature
+    }
+    public class FilterParameterForPlayerCertificate
+    {
+        public string? ApplRefNo { get; set; }
+        public string? ApplicantDOB { get; set; }
+        public string? ApplicantGame { get; set; }
+        public string? ApplicantEvent { get; set; }
+
     }
 }
