@@ -5,9 +5,12 @@ using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using PuppeteerSharp;
+using PuppeteerSharp.Media;
 using ServicePlusAPIs.AuthenticateModels;
 using ServicePlusAPIs.Context;
 using ServicePlusAPIs.HelperModels;
@@ -3208,57 +3211,116 @@ namespace ServicePlusAPIs.Controllers
 
             return Ok(result);
         }
-        //[Route("GetPlayerCertificateDetail")]
-        //[HttpPost]
-        //public async Task<IActionResult> GetPlayerCertificateDetail([FromBody] FilterParameterForPlayerCertificate filterParameterForPlayerCertificate)
-        //{
-        //    var query = await (from initiatedData in _servicePlusContext.InitiatedDatas
-        //                       join dobAttribute in _servicePlusContext.AttributeDetails
-        //                           on initiatedData.InitiatedDataId equals dobAttribute.InitiatedDataId
-        //                       join gameAttribute in _servicePlusContext.AttributeDetails
-        //                           on initiatedData.InitiatedDataId equals gameAttribute.InitiatedDataId
-        //                       join eventAttribute in _servicePlusContext.AttributeDetails
-        //                           on initiatedData.InitiatedDataId equals eventAttribute.InitiatedDataId
-        //                       where initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
-        //                             && initiatedData.ApplRefNo == filterParameterForPlayerCertificate.ApplRefNo
-        //                             && dobAttribute.ApplicationFormFieldID == "169971" // ApplicantDOB field ID
-        //                             && dobAttribute.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantDOB
-        //                             && gameAttribute.ApplicationFormFieldID == "170094" // ApplicantGame field ID
-        //                             && gameAttribute.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantGame
-        //                             && eventAttribute.ApplicationFormFieldID == "170203" // ApplicantEvent field ID
-        //                             && eventAttribute.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantEvent
-        //                             && initiatedData.InitiatedRecordInsertionFlag == 1
-        //                       select new PlayerCertificateDetail
-        //                       {
-        //                           ApplRefNo = initiatedData.ApplRefNo,
-        //                           ApplicantFullName = initiatedData.AttributeDetail
-        //                               .Where(attr => attr.ApplicationFormFieldID == "169954").FirstOrDefault() != null
-        //                               ? initiatedData.AttributeDetail.FirstOrDefault(attr => attr.ApplicationFormFieldID == "169954").ApplicationFormFieldValue
-        //                               : null,
-        //                           ApplicantFatherName = initiatedData.AttributeDetail
-        //                               .Where(attr => attr.ApplicationFormFieldID == "169955").FirstOrDefault() != null
-        //                               ? initiatedData.AttributeDetail.FirstOrDefault(attr => attr.ApplicationFormFieldID == "169955").ApplicationFormFieldValue
-        //                               : null,
-        //                           ApplicantDOB = dobAttribute.ApplicationFormFieldValue,
-        //                           ApplicantMobileNo = initiatedData.AttributeDetail
-        //                               .Where(attr => attr.ApplicationFormFieldID == "169958").FirstOrDefault() != null
-        //                               ? initiatedData.AttributeDetail.FirstOrDefault(attr => attr.ApplicationFormFieldID == "169958").ApplicationFormFieldValue
-        //                               : null,
-        //                           ApplicantGame = gameAttribute.ApplicationFormFieldValue,
-        //                           ApplicantEvent = eventAttribute.ApplicationFormFieldValue,
-        //                           ApplicantAgeGroup = initiatedData.AttributeDetail
-        //                               .Where(attr => attr.ApplicationFormFieldID == "170202").FirstOrDefault() != null
-        //                               ? initiatedData.AttributeDetail.FirstOrDefault(attr => attr.ApplicationFormFieldID == "170202").ApplicationFormFieldValue
-        //                               : null
-        //                       }).ToListAsync();
+        private async Task<string> GeneratePlayerCertificate()
+        {
+            string participantName = "Chaitanya";
+            string levelName = "level";
+            string districtName = "sangrur";
+            string sportName = "gatka";
+            string ageCategory = "gatka category";
+            string eventName = " gatka event";
+            string result = "1st";
+            string certificateNo = "789101";
+            string startDate = "01-03-2025";
+            string endDate = "07-03-2025";
+            // Ensure Puppeteer Chromium is downloaded
+            await new BrowserFetcher().DownloadAsync();
 
-        //    if (query == null || !query.Any())
-        //    {
-        //        return NotFound(new { message = "No record found" });
-        //    }
+            // Launch Puppeteer in headless mode
+            await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions { Headless = true });
+            await using var page = await browser.NewPageAsync();
+            await page.EmulateMediaTypeAsync(PuppeteerSharp.Media.MediaType.Screen);
 
-        //    return Ok(query);
-        //}
+            // Define the storage path for the PDF
+            string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "GeneratedCertificates");
+
+            // Ensure the directory exists
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+            }
+
+            string imgPath = "C:\\Sports-Images\\SportsCertificate.png";
+
+
+            byte[] imageBytes = System.IO.File.ReadAllBytes(imgPath);
+            //  string base64Image = Convert.ToBase64String(imageBytes);
+            string base64Image = Convert.ToBase64String(imageBytes);
+            // Define the full PDF file path
+            string fileName = $"PlayerCertificate_{DateTime.UtcNow:yyyyMMdd_HHmmss}.pdf";
+            string filePath = Path.Combine(folderPath, fileName);
+
+            // Your provided HTML with variables
+            string htmlContent = $@"<html>
+        <head>
+            <style>
+        body {{ margin: 0; padding: 0; font-family: Arial, sans-serif; }}
+        #certificate-container {{
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }}
+        #background-img {{
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            z-index: -1;
+        }}
+        .text-bold {{ font-weight: bold; }}
+    </style>
+        </head>
+        <body>
+            <div id='certificate-container'>
+ <img id='background-img' src='{base64Image}' />
+                <div style='position: absolute; top: 15%; left: 10%; width: 80%; height:100%; padding: 20px; border-radius: 10px; box-sizing: border-box; text-align: center;'>
+                    <div style='margin: 8px 0; font-size: 14px; font-weight: bold; position: absolute; top:-12%; right:4%;'>
+                        CERTIFICATE NO. : <u>{certificateNo}</u>
+                    </div>
+                    <div class='text-bold'>DEPARTMENT OF SPORTS & YOUTH AFFAIRS</div>
+                    <div style='margin: 3px 0; font-size:28px;'>
+                        <span style='font-size:18px'><strong>KHEDAN WATAN PUNJAB DIA</strong></span>
+                    </div>
+                    <div style='margin: 8px 0; font-size: 18px; font-weight: bold;'>CERTIFICATE</div>
+                    <div style='margin: 8px 0; font-size: 18px; font-weight: bold;'>
+                        From <strong>{startDate}</strong> To <strong>{endDate}</strong>
+                    </div>
+                    <div style='margin: 10px 0; font-size: 20px; text-align: justify;'>
+                        It is hereby certified that <u>{participantName}</u>, participated in the <u>{levelName}</u> Level Games 2025 representing the district 
+                        <u>{districtName}</u> in the sport <strong><u>{sportName}</u></strong> in the age category 
+                        <strong><u>{ageCategory}</u></strong> in the event <u><strong>{eventName}</strong></u> and secured <u><strong>{result}</strong></u>.
+                    </div>
+                    <div style='text-align: right; margin: 50px 0 0; font-size:15px'>
+                        <span style='font-size:18px'>DIRECTOR SPORTS<br />PUNJAB</span>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>";
+
+            // Set the HTML content
+            await page.SetContentAsync(htmlContent);
+
+            // Generate and save the PDF in the specified path
+            await page.PdfAsync(filePath, new PdfOptions
+            {
+                PrintBackground = true,
+                Format = PaperFormat.Legal,
+                Landscape = true,
+
+                Width = "100%",
+
+
+            });
+
+            // Return the full path of the generated PDF
+            return filePath;
+        }
+
 
         #endregion
 
