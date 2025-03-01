@@ -4,6 +4,7 @@ using DocumentFormat.OpenXml.EMMA;
 using DocumentFormat.OpenXml.Office2010.Excel;
 using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Wordprocessing;
+using Google.Cloud.Translation.V2;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
@@ -51,8 +52,7 @@ namespace ServicePlusAPIs.Controllers
         private readonly ILogger<ServicePlusController> _logger;
         // Outside the action method, possibly in the controller or a service class.
         private readonly Dictionary<string, string> districtNameMap = new Dictionary<string, string>();
-
-
+        private string text;
 
         public ServicePlusController(IMapper mapper, ILogger<ServicePlusController> logger, PostgresDbContext postgresDbContext, ServicePlusContext servicePlusContext)
         {
@@ -3217,118 +3217,106 @@ namespace ServicePlusAPIs.Controllers
               );
             return Ok(result);
         }
-        private async Task<string> GeneratePlayerCertificate()
+        public async Task<string> GeneratePlayerCertificate()
         {
-            string participantName = "Chaitanya";
-            string levelName = "level";
-            string districtName = "sangrur";
-            string sportName = "gatka";
-            string ageCategory = "gatka category";
-            string eventName = " gatka event";
-            string result = "1st";
+            string participantName = await TranslateToPunjabi("Chaitanya");
+            string levelName = await TranslateToPunjabi("Level");
+            string districtName = await TranslateToPunjabi("Sangrur");
+            string sportName = await TranslateToPunjabi("Gatka");
+            string ageCategory = await TranslateToPunjabi("Gatka Category");
+            string eventName = await TranslateToPunjabi("Gatka Event");
+            string result = await TranslateToPunjabi("1st");
             string certificateNo = "789101";
             string startDate = "01-03-2025";
             string endDate = "07-03-2025";
-            // Ensure Puppeteer Chromium is downloaded
+
             await new BrowserFetcher().DownloadAsync();
 
-            // Launch Puppeteer in headless mode
             await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions { Headless = true });
             await using var page = await browser.NewPageAsync();
             await page.EmulateMediaTypeAsync(PuppeteerSharp.Media.MediaType.Screen);
 
-            // Define the storage path for the PDF
             string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "GeneratedCertificates");
-
-            // Ensure the directory exists
             if (!Directory.Exists(folderPath))
             {
                 Directory.CreateDirectory(folderPath);
             }
 
-            string imgPath = "C:\\Sports-Images\\SportsCertificate.png";
-
-
-            byte[] imageBytes = System.IO.File.ReadAllBytes(imgPath);
-            //  string base64Image = Convert.ToBase64String(imageBytes);
-            string base64Image = Convert.ToBase64String(imageBytes);
-            // Define the full PDF file path
             string fileName = $"PlayerCertificate_{DateTime.UtcNow:yyyyMMdd_HHmmss}.pdf";
             string filePath = Path.Combine(folderPath, fileName);
 
-            // Your provided HTML with variables
             string htmlContent = $@"<html>
         <head>
             <style>
-        body {{ margin: 0; padding: 0; font-family: Arial, sans-serif; }}
-        #certificate-container {{
-            position: relative;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }}
-        #background-img {{
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            z-index: -1;
-        }}
-        .text-bold {{ font-weight: bold; }}
-    </style>
+                body {{ margin: 0; padding: 0; font-family: Arial, sans-serif; }}
+                #certificate-container {{
+                    position: fixed;
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
+                }}
+                #background-img {{
+                    position: fixed;
+                    width: 100%;
+                    height: 100%;
+                }}
+                .text-bold {{ font-weight: bold; }}
+            </style>
         </head>
         <body>
+            <img id='background-img' src='http://10.147.24.36:8082/SSD/SportsCertificateBg.png' />
             <div id='certificate-container'>
- <img id='background-img' src='{base64Image}' />
-                <div style='position: absolute; top: 15%; left: 10%; width: 80%; height:100%; padding: 20px; border-radius: 10px; box-sizing: border-box; text-align: center;'>
-                    <div style='margin: 8px 0; font-size: 14px; font-weight: bold; position: absolute; top:-12%; right:4%;'>
-                        CERTIFICATE NO. : <u>{certificateNo}</u>
+                <div style='position: absolute; top: 16%; left: 10%; width: 80%; height:100%; padding: 20px; border-radius: 10px; box-sizing: border-box; text-align: center;'>
+                    <div style='margin: 8px 0; font-size: 14px; font-weight: bold; position: absolute; top: -3%; right: 2%;'>
+                        ਸਰਟੀਫਿਕੇਟ ਨੰ. : <u>{certificateNo}</u>
                     </div>
-                    <div class='text-bold'>DEPARTMENT OF SPORTS & YOUTH AFFAIRS</div>
-                    <div style='margin: 3px 0; font-size:28px;'>
-                        <span style='font-size:18px'><strong>KHEDAN WATAN PUNJAB DIA</strong></span>
+                    <div class='text-bold' style=' font-size: 26px; font-weight: bold; padding-top: 2px;'>ਖੇਡਾਂ ਅਤੇ ਯੁਵਾ ਮਾਮਲੇ ਵਿਭਾਗ</div>
+                    <div style='margin: 5px 0; font-size:28px;'>
+                        <span style='font-size:23px'><strong>ਖੇਡ ਵਤਨ ਪੰਜਾਬ ਦੀਆ</strong></span>
                     </div>
-                    <div style='margin: 8px 0; font-size: 18px; font-weight: bold;'>CERTIFICATE</div>
-                    <div style='margin: 8px 0; font-size: 18px; font-weight: bold;'>
-                        From <strong>{startDate}</strong> To <strong>{endDate}</strong>
+                    <div style='margin: 8px 0; font-size: 25px; margin-top: 9px; font-weight: bold;'>ਸਰਟੀਫਿਕੇਟ</div>
+                    <div style='margin: 20px 0; font-size: 19px; font-weight: bold;'>
+                        ਤੋਂ <strong>{startDate}</strong> ਨੂੰ <strong>{endDate}</strong>
                     </div>
-                    <div style='margin: 10px 0; font-size: 20px; text-align: justify;'>
-                        It is hereby certified that <u>{participantName}</u>, participated in the <u>{levelName}</u> Level Games 2025 representing the district 
-                        <u>{districtName}</u> in the sport <strong><u>{sportName}</u></strong> in the age category 
-                        <strong><u>{ageCategory}</u></strong> in the event <u><strong>{eventName}</strong></u> and secured <u><strong>{result}</strong></u>.
+                    <div style='margin: 10px 0; font-size: 21px; text-align: justify;'>
+                        ਇਹ ਪ੍ਰਮਾਣਿਤ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ <u>{participantName}</u>, ਨੇ ਜ਼ਿਲ੍ਹੇ ਦੀ ਨੁਮਾਇੰਦਗੀ ਕਰਨ ਵਾਲੀਆਂ <u>{levelName}</u> ਪੱਧਰੀ ਖੇਡਾਂ 2025 ਵਿੱਚ ਭਾਗ ਲਿਆ ਹੈ।
+                        ਉਮਰ ਵਰਗ ਵਿੱਚ <u>{districtName}</u> ਖੇਡ ਵਿੱਚ <strong><u>{sportName}</u></strong>
+                        ਇਵੈਂਟ <u><strong>{eventName}</strong></u> ਵਿੱਚ <strong><u>{ageCategory}</u></strong> 
+                        ਅਤੇ ਸੁਰੱਖਿਅਤ <u><strong>{result}</strong></u>.
                     </div>
-                    <div style='text-align: right; margin: 50px 0 0; font-size:15px'>
-                        <span style='font-size:18px'>DIRECTOR SPORTS<br />PUNJAB</span>
+                    <div style='text-align: right; margin: 50px 5px; font-size:19px'>
+                        <span style='font-size:18px'>ਨਿਰਦੇਸ਼ਕ ਖੇਡਾਂ<br />ਪੰਜਾਬ</span>
                     </div>
                 </div>
             </div>
         </body>
         </html>";
 
-            // Set the HTML content
             await page.SetContentAsync(htmlContent);
 
-            // Generate and save the PDF in the specified path
             await page.PdfAsync(filePath, new PdfOptions
             {
                 PrintBackground = true,
                 Format = PaperFormat.Legal,
                 Landscape = true,
-
                 Width = "100%",
-
-
             });
 
-            // Return the full path of the generated PDF
             return filePath;
         }
 
- 
-        
+        private async Task<string> TranslateToPunjabi(string v)
+        {
+            TranslationClient client = TranslationClient.Create();
+            var response = await client.TranslateTextAsync(text, "pa"); // 'pa' is the language code for Punjabi
+            return response.TranslatedText;
+        }
+
+
+
 
         #endregion
 
