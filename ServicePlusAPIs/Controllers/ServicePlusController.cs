@@ -3144,115 +3144,121 @@ namespace ServicePlusAPIs.Controllers
         #endregion
 
         #region GetPlayerCertificateDetail
+        [Route("GetPlayerCertificateDetail")]
+        [HttpPost]
+        public async Task<IActionResult> GetPlayerCertificateDetail([FromBody] FilterParameterForPlayerCertificate filterParameterForPlayerCertificate)
+        {
+            var query = await (from initiatedData in _servicePlusContext.InitiatedDatas
+                               join attributeDetail in _servicePlusContext.AttributeDetails
+                               on initiatedData.InitiatedDataId equals attributeDetail.InitiatedDataId
+                               where initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
+                                     && initiatedData.ApplRefNo == filterParameterForPlayerCertificate.ApplRefNo
+
+                                     && attributeDetail.ApplicationFormFieldID == "169971" // ApplicantDOB field ID
+                                     && attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantDOB
+
+                                     && attributeDetail.ApplicationFormFieldID == "170094" // ApplicantDOB field ID
+                                     && attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantGame
+
+                                     && attributeDetail.ApplicationFormFieldID == "170203" // ApplicantDOB field ID
+                                     && attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantEvent
+                                     && initiatedData.InitiatedRecordInsertionFlag == 1
+                               select new
+                               {
+                                   initiatedData.InitiatedDataId,
+                                   initiatedData.ServiceId,
+                                   initiatedData.ServiceName,
+                                   initiatedData.ApplId,
+                                   initiatedData.ApplRefNo,
+                                   initiatedData.SubmissionDate,
+                                   AttributeDetails = initiatedData.AttributeDetail
+                                       .Where(attr => new[]
+                                       {
+                    "169954", "169955", "169957", "169958", "169964",
+                    "170094", "170202", "170203", "170246", "170608",
+                    "170091", "170608", "170041", "170309", "171427",
+                    "170093", "170092", "169965", "169971", "169960",
+                    "169972", "169969", "169970", "169959", "171762",
+                    "169963", "169961", "169980", "169979", "169981",
+                    "169998", "169999", "169990", "169991", "170000",
+                    "169983", "171761", "169987", "169984", "169988",
+                    "169985", "170308", "171647",
+                                       }.Contains(attr.ApplicationFormFieldID))
+                                       .ToList()
+                               }).FirstOrDefaultAsync();
+
+            if (query == null)
+            {
+                return NotFound(new { message = "No record found" });
+            }
+
+            var result = new
+            {
+               
+                applId = query.ApplId,
+                applRefNo = query.ApplRefNo,
+                applicantFirstName = GetValue(query.AttributeDetails, "169954"),
+                applicantFatherName = GetValue(query.AttributeDetails, "169955"),
+                applicantDOB = GetValue(query.AttributeDetails, "169971"),
+                applicantMobileNo = GetValue(query.AttributeDetails, "169958"),
+                applicantAgeGroup = GetValue(query.AttributeDetails, "170202")?.Split('~').Last(),
+                applicantEvent = GetValue(query.AttributeDetails, "170203")?.Split('~').Last(),
+                
+            };
+
+            return Ok(result);
+        }
         //[Route("GetPlayerCertificateDetail")]
         //[HttpPost]
         //public async Task<IActionResult> GetPlayerCertificateDetail([FromBody] FilterParameterForPlayerCertificate filterParameterForPlayerCertificate)
         //{
-        //    var query = from initiatedData in _servicePlusContext.InitiatedDatas
-        //                join taskDetails in _servicePlusContext.TaskDetails on initiatedData.ApplId equals taskDetails.ApplId
-        //                join officialFormDetails in _servicePlusContext.OfficialFormDetails on taskDetails.ExecutionDataId
-        //                equals officialFormDetails.ExecutionDataId into groupedOfficialFormDetails
-        //                where initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
-        //                      && taskDetails.TaskId == 23005
-        //                      && !groupedOfficialFormDetails.Any(ofd => ofd.OfficalFormID == "171829")
-        //                orderby initiatedData.InitiatedDataId descending
-        //                select new
-        //                {
-        //                    InitiatedDataId = initiatedData.InitiatedDataId,
-        //                    AttributeDetails = initiatedData.AttributeDetail
-        //                        .Where(attr => new[]
-        //                        {
-        //                    "169954", "169955", "169957", "169958", "169964",
-        //                    "170094", "169971", "170203", "170246", "170608",
-        //                    "170091", "170041", "170309", "171427", "170093",
-        //                    "170092"
-        //                        }.Contains(attr.ApplicationFormFieldID))
-        //                        .ToList(),
-        //                    initiatedData.ServiceId,
-        //                    initiatedData.ServiceName,
-        //                    initiatedData.ApplId,
-        //                    initiatedData.ApplRefNo,
-        //                    initiatedData.SubmissionDate,
-        //                    TaskDetail = new
-        //                    {
-        //                        taskDetails.TaskDetailID,
-        //                        taskDetails.ExecutionDataId,
-        //                        taskDetails.TaskName,
-        //                        OfficialFormDetails = groupedOfficialFormDetails
-        //                            .Where(ofd => ofd.OfficalFormID == "170912")
-        //                            .ToList()
-        //                    }
-        //                };
+        //    var query = await (from initiatedData in _servicePlusContext.InitiatedDatas
+        //                       join dobAttribute in _servicePlusContext.AttributeDetails
+        //                           on initiatedData.InitiatedDataId equals dobAttribute.InitiatedDataId
+        //                       join gameAttribute in _servicePlusContext.AttributeDetails
+        //                           on initiatedData.InitiatedDataId equals gameAttribute.InitiatedDataId
+        //                       join eventAttribute in _servicePlusContext.AttributeDetails
+        //                           on initiatedData.InitiatedDataId equals eventAttribute.InitiatedDataId
+        //                       where initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
+        //                             && initiatedData.ApplRefNo == filterParameterForPlayerCertificate.ApplRefNo
+        //                             && dobAttribute.ApplicationFormFieldID == "169971" // ApplicantDOB field ID
+        //                             && dobAttribute.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantDOB
+        //                             && gameAttribute.ApplicationFormFieldID == "170094" // ApplicantGame field ID
+        //                             && gameAttribute.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantGame
+        //                             && eventAttribute.ApplicationFormFieldID == "170203" // ApplicantEvent field ID
+        //                             && eventAttribute.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantEvent
+        //                             && initiatedData.InitiatedRecordInsertionFlag == 1
+        //                       select new PlayerCertificateDetail
+        //                       {
+        //                           ApplRefNo = initiatedData.ApplRefNo,
+        //                           ApplicantFullName = initiatedData.AttributeDetail
+        //                               .Where(attr => attr.ApplicationFormFieldID == "169954").FirstOrDefault() != null
+        //                               ? initiatedData.AttributeDetail.FirstOrDefault(attr => attr.ApplicationFormFieldID == "169954").ApplicationFormFieldValue
+        //                               : null,
+        //                           ApplicantFatherName = initiatedData.AttributeDetail
+        //                               .Where(attr => attr.ApplicationFormFieldID == "169955").FirstOrDefault() != null
+        //                               ? initiatedData.AttributeDetail.FirstOrDefault(attr => attr.ApplicationFormFieldID == "169955").ApplicationFormFieldValue
+        //                               : null,
+        //                           ApplicantDOB = dobAttribute.ApplicationFormFieldValue,
+        //                           ApplicantMobileNo = initiatedData.AttributeDetail
+        //                               .Where(attr => attr.ApplicationFormFieldID == "169958").FirstOrDefault() != null
+        //                               ? initiatedData.AttributeDetail.FirstOrDefault(attr => attr.ApplicationFormFieldID == "169958").ApplicationFormFieldValue
+        //                               : null,
+        //                           ApplicantGame = gameAttribute.ApplicationFormFieldValue,
+        //                           ApplicantEvent = eventAttribute.ApplicationFormFieldValue,
+        //                           ApplicantAgeGroup = initiatedData.AttributeDetail
+        //                               .Where(attr => attr.ApplicationFormFieldID == "170202").FirstOrDefault() != null
+        //                               ? initiatedData.AttributeDetail.FirstOrDefault(attr => attr.ApplicationFormFieldID == "170202").ApplicationFormFieldValue
+        //                               : null
+        //                       }).ToListAsync();
 
-        //    // Apply filters
-        //    if (!string.IsNullOrWhiteSpace(filterParameterForPlayerCertificate.ApplRefNo))
+        //    if (query == null || !query.Any())
         //    {
-        //        query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "171943"
-        //            && attr.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplRefNo));
+        //        return NotFound(new { message = "No record found" });
         //    }
 
-        //    if (!string.IsNullOrWhiteSpace(filterParameterForPlayerCertificate.ApplicantDOB))
-        //    {
-        //        query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "169971"
-        //            && attr.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantDOB));
-        //    }
-
-        //    if (!string.IsNullOrWhiteSpace(filterParameterForPlayerCertificate.ApplicantGame))
-        //    {
-        //        query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170094"
-        //            && attr.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantGame));
-        //    }
-
-        //    if (!string.IsNullOrWhiteSpace(filterParameterForPlayerCertificate.ApplicantAgeGroup))
-        //    {
-        //        query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170202"
-        //            && attr.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantAgeGroup));
-        //    }
-
-        //    if (!string.IsNullOrWhiteSpace(filterParameterForPlayerCertificate.ApplicantGameCategory))
-        //    {
-        //        query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170246"
-        //            && attr.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantGameCategory));
-        //    }
-
-        //    // Get total count before pagination
-        //    var totalCount = await query.CountAsync();
-
-        //    // Apply pagination
-        //    var paginatedRecords = await query
-        //        .Skip((filterParameterForPlayerCertificate.page - 1) * filterParameterForPlayerCertificate.pageSize)
-        //        .Take(filterParameterForPlayerCertificate.pageSize)
-        //        .ToListAsync();
-
-        //    // Convert to ViewModel
-        //    var result = paginatedRecords.Select(data => new PlayerCertificateDetail
-        //    {
-
-        //        ApplicantFullName = data.AttributeDetails
-        //            .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169954")?.ApplicationFormFieldValue,
-        //        ApplicantFatherName = CleanValue(data.AttributeDetails
-        //            .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169955")?.ApplicationFormFieldValue),
-
-        //        ApplicantMobileNo = CleanValue(data.AttributeDetails
-        //            .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169958")?.ApplicationFormFieldValue),
-
-        //        ApplicantGame = CleanValue(data.AttributeDetails
-        //            .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170094")?.ApplicationFormFieldValue),
-
-        //        ApplicantAgeGroup = CleanValue(data.AttributeDetails
-        //            .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170202")?.ApplicationFormFieldValue),
-        //        ApplicantEvent = CleanValue(data.AttributeDetails
-        //            .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170203")?.ApplicationFormFieldValue)
-
-        //    }).ToList();
-
-        //    return Ok(new
-        //    {
-        //        TotalCount = totalCount,
-        //        Records = result
-        //    });
+        //    return Ok(query);
         //}
-
 
         #endregion
 
