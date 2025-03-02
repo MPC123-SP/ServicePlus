@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Folder Include="GeneratedCertificates\" />
     <Folder Include="Migrations\PostgresDb\" />
     <Folder Include="Models\CommonModel\InitiatedCommonModel\" />
     <Folder Include="wwwroot\" />

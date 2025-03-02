@@ -2,7 +2,7 @@
 
 namespace ServicePlusAPIs.Models.SportsModel
 {
-    public class PlayerCertificateIssued
+    public class PlayerCertificateDetails
     {
         [Key]
         public int Id { get; set; } 
@@ -20,8 +20,7 @@ namespace ServicePlusAPIs.Models.SportsModel
         public string? Position { get; set; }
         public string? Score { get; set; }//Time/Distance /Height/Weight/Score
         public string? ConveyorName { get; set; }
-        public DateTime? CertificateGeneratedTime { get; set; }
-        public string? CertificatePath { get; set; }
+    
 
     }
 }

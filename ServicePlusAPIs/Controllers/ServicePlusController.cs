@@ -3153,10 +3153,10 @@ namespace ServicePlusAPIs.Controllers
 
         [Route("GetPlayerCertificateDetail")]
         [HttpPost]
-        public async Task<IActionResult> GetPlayerCertificateDetail(  )
+        public async Task<IActionResult> GetPlayerCertificateDetail(string district, string gameName, string AgeGroup)
         {
 
-            await GeneratePlayerCertificate();
+            await GeneratePlayerCertificate(district, gameName, AgeGroup);
 
             return Ok();
 
@@ -3179,33 +3179,99 @@ namespace ServicePlusAPIs.Controllers
                 return BadRequest(new { message = "No record found" });
             }
         }
-        private async Task<string> GeneratePlayerCertificate( )
+        private async Task<string> GeneratePlayerCertificate(string districtName, string gameName, string ageGroup)
         {
-            var playerCertificateDetail = await _servicePlusContext.PlayerCertificateIssued
-     .FirstOrDefaultAsync();
+            // District-wise serial number prefixes
+            var districtPrefixes = new Dictionary<string, string>
+    {
+        { "PATIALA", "PAT000" },
+        { "AMRITSAR", "AMR000" },
+        { "BATHINDA", "BAT000" },
+        { "LUDHIANA", "LUD000" }
+        // Add more districts as needed
+    };
 
-            string levelName = await TranslateToPunjabi("Level");
-            string result = await TranslateToPunjabi("1st");
-            string certificateNo = "789101";
-            string startDate = "01-03-2025";
-            string endDate = "07-03-2025";
+            // Get the prefix for the given district, default to "GEN000" if not found
+            string randomDistrictSr = districtPrefixes.ContainsKey(districtName.ToUpper())
+                ? districtPrefixes[districtName.ToUpper()]
+                : "GEN000";
 
-            await new BrowserFetcher().DownloadAsync();
+            // Fetch issued certificates first (executed on DB)
+            var existingCertificates = await _servicePlusContext.PlayerIssuedCertificate
+                .Where(c => c.GameHeldDistrict == districtName
+                            && c.ApplicantGame == gameName
+                            && c.ApplicantAgeGroup == ageGroup
+                            && c.CertificateSerialNo != null)
+                .Select(c => new
+                {
+                    c.ApplicantFullName,
+                    c.ApplicantFatherName,
+                    c.ApplicantDOB,
+                    c.ApplicantGame,
+                    c.ApplicantEvent,
+                    c.ApplicantAgeGroup
+                })
+                .ToListAsync(); // Move data to memory
 
-            await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions { Headless = true });
-            await using var page = await browser.NewPageAsync();
-            await page.EmulateMediaTypeAsync(PuppeteerSharp.Media.MediaType.Screen);
+            // Fetch all players (executed on DB)
+            var allPlayers = await _servicePlusContext.PlayerCertificateDetails
+                .Where(d => d.GameHeldDistrict == districtName
+                            && d.ApplicantGame == gameName
+                            && d.ApplicantAgeGroup == ageGroup)
+                .ToListAsync(); // Move data to memory
 
-            string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "GeneratedCertificates");
-            if (!Directory.Exists(folderPath))
+            // Perform filtering in memory (LINQ to Objects)
+            var playerCertificateDetails = allPlayers
+                .Where(d => !existingCertificates.Any(c =>
+                    c.ApplicantFullName == d.ApplicantFullName &&
+                    c.ApplicantFatherName == d.ApplicantFatherName &&
+                    c.ApplicantDOB == d.ApplicantDOB &&
+                    c.ApplicantGame == d.ApplicantGame &&
+                    c.ApplicantEvent == d.ApplicantEvent &&
+                    c.ApplicantAgeGroup == d.ApplicantAgeGroup))
+                .ToList(); // Filtering done in memory
+
+
+
+            if (!playerCertificateDetails.Any())
             {
-                Directory.CreateDirectory(folderPath);
+                return "No new certificates to generate.";
             }
 
-            string fileName = $"PlayerCertificate_{DateTime.UtcNow:yyyyMMdd_HHmmss}.pdf";
-            string filePath = Path.Combine(folderPath, fileName);
+            // Get last serial number and generate a new one
+            var lastIssuedCertificate = await _servicePlusContext.PlayerIssuedCertificate
+                .Where(c => c.GameHeldDistrict == districtName)
+                .OrderByDescending(c => c.CertificateSerialNo)
+                .FirstOrDefaultAsync();
 
-            string htmlContent = $@"<html>
+            int newSerialNumber = lastIssuedCertificate != null && int.TryParse(lastIssuedCertificate.CertificateSerialNo, out int lastSerial)
+                ? lastSerial + 1
+                : 1;
+
+            foreach (var player in playerCertificateDetails)
+            {
+                // Ensure a unique 6-digit serial number
+                string certificateNo = newSerialNumber.ToString("D6");
+
+                // Define folder path
+                string folderName = $"{districtName}_{randomDistrictSr}_{gameName}_{ageGroup}";
+                string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "GeneratedCertificates", folderName);
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
+                string startDate= "01-01-2024";
+                string endDate = "31-12-2024";
+                // Define certificate filename
+                string fileName = $"{districtName}_{randomDistrictSr}_{gameName}_{player.ApplicantFullName}.pdf";
+                string filePath = Path.Combine(folderPath, fileName);
+
+                await new BrowserFetcher().DownloadAsync();
+                await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions { Headless = true });
+                await using var page = await browser.NewPageAsync();
+                await page.EmulateMediaTypeAsync(PuppeteerSharp.Media.MediaType.Screen);
+
+                string htmlContent = $@"<html>
         <head>
             <style>
                 body {{ margin: 0; padding: 0; font-family: Arial, sans-serif; }}
@@ -3249,7 +3315,7 @@ namespace ServicePlusAPIs.Controllers
                         ਮਿਤੀ ਤੋਂ <strong>{startDate}</strong> ਮਿਤੀ ਤੱਕ <strong>{endDate}</strong>
                     </div>
                     <div style='margin: 10px 0; font-size: 21px; text-align: justify;'>
-                            ਇਹ ਪ੍ਰਮਾਣਿਤ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ <u>{await TranslateToPunjabi(playerCertificateDetail.ApplicantFullName)}</u>, ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ <u>{await TranslateToPunjabi(playerCertificateDetail.ApplicantFatherName)}</u>, ਜਿਨ੍ਹਾਂ ਦੀ ਜਨਮ ਮਿਤੀ<u>{await TranslateToPunjabi(playerCertificateDetail.ApplicantDOB)}</u>ਹੈ, ਨੇ ਰਾਜ ਪੱਧਰੀ ਖੇਡਾਂ 2024 ਵਿੱਚ ਭਾਗ ਲਿਆ, ਜੋ ਜ਼ਿਲ੍ਹਾ <u>{await TranslateToPunjabi(playerCertificateDetail.GameHeldDistrict)}</u> ਵਿੱਚ ਆਯੋਜਿਤ ਹੋਈਆਂ। ਉਨ੍ਹਾਂ ਨੇ ਜ਼ਿਲ੍ਹਾ <u>{await TranslateToPunjabi(playerCertificateDetail.GameRepresentingDistrict)}</u> ਦੀ ਨੁਮਾਇੰਦਗੀ ਕਰਦਿਆਂ <strong><u>{await TranslateToPunjabi(playerCertificateDetail.ApplicantGame)}</u></strong> ਖੇਡ ਦੇ <u><strong>{await TranslateToPunjabi(playerCertificateDetail.ApplicantEvent)}</strong></u> ਇਵੈਂਟ ਸ਼੍ਰੇਣੀ (<strong><u>{await TranslateToPunjabi(playerCertificateDetail.ApplicantAgeGroup)}</u></strong> ਉਮਰ ਸਮੂਹ) ਵਿੱਚ ਭਾਗ ਲਿਆ। <u><strong>{playerCertificateDetail.Score}</strong></u> ਦੇ ਨਾਲ, <u><strong>{playerCertificateDetail.Position}</strong></u> ਸਥਾਨ ਹਾਸਲ ਕੀਤਾ।
+                            ਇਹ ਪ੍ਰਮਾਣਿਤ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ <u>{await TranslateToPunjabi(player.ApplicantFullName)}</u>, ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ <u>{await TranslateToPunjabi(player.ApplicantFatherName)}</u>, ਜਿਨ੍ਹਾਂ ਦੀ ਜਨਮ ਮਿਤੀ<u>{await TranslateToPunjabi(player.ApplicantDOB)}</u>ਹੈ, ਨੇ ਰਾਜ ਪੱਧਰੀ ਖੇਡਾਂ 2024 ਵਿੱਚ ਭਾਗ ਲਿਆ, ਜੋ ਜ਼ਿਲ੍ਹਾ <u>{await TranslateToPunjabi(player.GameHeldDistrict)}</u> ਵਿੱਚ ਆਯੋਜਿਤ ਹੋਈਆਂ। ਉਨ੍ਹਾਂ ਨੇ ਜ਼ਿਲ੍ਹਾ <u>{await TranslateToPunjabi(player.GameRepresentingDistrict)}</u> ਦੀ ਨੁਮਾਇੰਦਗੀ ਕਰਦਿਆਂ <strong><u>{await TranslateToPunjabi(player.ApplicantGame)}</u></strong> ਖੇਡ ਦੇ <u><strong>{await TranslateToPunjabi(player.ApplicantEvent)}</strong></u> ਇਵੈਂਟ ਸ਼੍ਰੇਣੀ (<strong><u>{await TranslateToPunjabi(player.ApplicantAgeGroup)}</u></strong> ਉਮਰ ਸਮੂਹ) ਵਿੱਚ ਭਾਗ ਲਿਆ। <u><strong>{player.Score}</strong></u> ਦੇ ਨਾਲ, <u><strong>{player.Position}</strong></u> ਸਥਾਨ ਹਾਸਲ ਕੀਤਾ।
  
                     </div> 
                     <div style='display: flex; justify-content: space-between; margin: 50px 0 0;'>
@@ -3273,17 +3339,17 @@ namespace ServicePlusAPIs.Controllers
         </body>
         </html>";
 
-            await page.SetContentAsync(htmlContent);
+                await page.SetContentAsync(htmlContent);
 
-            await page.PdfAsync(filePath, new PdfOptions
-            {
-                PrintBackground = true,
-                Format = PaperFormat.Legal,
-                Landscape = true,
-                Width = "100%",
-            });
-
-            return filePath;
+                await page.PdfAsync(filePath, new PdfOptions
+                {
+                    PrintBackground = true,
+                    Format = PaperFormat.Legal,
+                    Landscape = true,
+                    Width = "100%",
+                });
+            }
+            return null;
         }
 
 

@@ -55,7 +55,7 @@ namespace ServicePlusAPIs.ExternalAPIs
                     return false;
 
                 var records = values.Skip(1) // Assuming first row is headers
-                    .Select(row => new PlayerCertificateIssued
+                    .Select(row => new PlayerCertificateDetails
                     {
                         ApplicantFullName = row.ElementAtOrDefault(1)?.ToString()?.Trim(),
                         ApplicantFatherName = row.ElementAtOrDefault(2)?.ToString()?.Trim(),
@@ -71,8 +71,8 @@ namespace ServicePlusAPIs.ExternalAPIs
                         ConveyorName = row.ElementAtOrDefault(12)?.ToString()?.Trim()
                     })
                     .ToList();
-                _servicePlusContext.PlayerCertificateIssued.RemoveRange(_servicePlusContext.PlayerCertificateIssued);
-                await _servicePlusContext.PlayerCertificateIssued.AddRangeAsync(records);
+                _servicePlusContext.PlayerCertificateDetails.RemoveRange(_servicePlusContext.PlayerCertificateDetails);
+                await _servicePlusContext.PlayerCertificateDetails.AddRangeAsync(records);
                 await _servicePlusContext.SaveChangesAsync();
                 return true;
 
