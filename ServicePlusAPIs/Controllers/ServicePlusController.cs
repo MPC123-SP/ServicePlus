@@ -3295,40 +3295,35 @@ namespace ServicePlusAPIs.Controllers
             <img id='background-img' src='http://10.147.24.36:8082/SSD/SportsCertificateBg.png' />
             <div id='certificate-container'>
                 <div style='position: absolute; top: 16%; left: 10%; width: 80%; height:100%; padding: 20px; border-radius: 10px; box-sizing: border-box; text-align: center;'>
-                    <div style='margin: 8px 0; font-size: 14px; font-weight: bold; position: absolute; top: -3%; right: 2%;'>
+                    <div style='margin: 8px 0; font-size: 19px; font-weight: bold; position: absolute; top: -12%; right: 3%;'>
                         ਸਰਟੀਫਿਕੇਟ ਨੰ. : <u>{certificateNo}</u>
                     </div>
-                    <div class='text-bold' style=' font-size: 26px; font-weight: bold; padding-top: 2px;'>ਖੇਡਾਂ ਅਤੇ ਯੁਵਾ ਮਾਮਲੇ ਵਿਭਾਗ</div>
-<img style='width: 70%;height: 3%;margin-top: 6px;' src='http://10.147.24.36:8082/SSD/arrow.png'>
+                    <div class='text-bold' style=' font-size: 30px; font-weight: bold; padding-top: 2px;'>ਖੇਡਾਂ ਅਤੇ ਯੁਵਾ ਮਾਮਲੇ ਵਿਭਾਗ</div>
+<img style='width: 42%;height: 3%;' src='http://10.147.24.36:8082/SSD/arrow.png'>
                     <div style='margin: 5px 0; font-size:28px;'>
-                        <span style='font-size:23px'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ</strong></span>
+                        <span style='font-size:52px'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024</strong></span>
                     </div>
-                    <div style='margin: 8px 0; font-size: 25px; margin-top: 9px; font-weight: bold;'>ਸਰਟੀਫਿਕੇਟ</div>
- <div style='position: relative; display: inline-block;'  style='width: 70%; height: 4%; margin-top: 6px;'>
-              <img src='http://10.147.24.36:8082/SSD/ribbon.png' alt='Ribbon' style='width: 70%; height: 4%; margin-top: 6px;'>
-              <span style='position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: bold; font-size: 16px; white-space: nowrap;'>
-                  National Informatics Centre
-              </span>
-          </div>  
-                    <div style='margin: 20px 0; font-size: 19px; font-weight: bold;'>
+                    <div style='margin: 8px 0; font-size: 28px; margin-top: 9px; font-weight: bold;'>ਸਰਟੀਫਿਕੇਟ</div>
+              <img style='width: 88%; height: 13%; margin-top: 6px;' src='http://10.147.24.36:8082/SSD/ribbon.png' alt='Ribbon' >
+                    <div style='margin: 22px 0; font-size: 19px; font-weight: bold;'>
                         ਮਿਤੀ ਤੋਂ <strong>{startDate}</strong> ਮਿਤੀ ਤੱਕ <strong>{endDate}</strong>
                     </div>
-                    <div style='margin: 10px 0; font-size: 21px; text-align: justify;'>
-                            ਇਹ ਪ੍ਰਮਾਣਿਤ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ <u>{await TranslateToPunjabi(player.ApplicantFullName)}</u>, ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ <u>{await TranslateToPunjabi(player.ApplicantFatherName)}</u>, ਜਿਨ੍ਹਾਂ ਦੀ ਜਨਮ ਮਿਤੀ<u>{await TranslateToPunjabi(player.ApplicantDOB)}</u>ਹੈ, ਨੇ ਰਾਜ ਪੱਧਰੀ ਖੇਡਾਂ 2024 ਵਿੱਚ ਭਾਗ ਲਿਆ, ਜੋ ਜ਼ਿਲ੍ਹਾ <u>{await TranslateToPunjabi(player.GameHeldDistrict)}</u> ਵਿੱਚ ਆਯੋਜਿਤ ਹੋਈਆਂ। ਉਨ੍ਹਾਂ ਨੇ ਜ਼ਿਲ੍ਹਾ <u>{await TranslateToPunjabi(player.GameRepresentingDistrict)}</u> ਦੀ ਨੁਮਾਇੰਦਗੀ ਕਰਦਿਆਂ <strong><u>{await TranslateToPunjabi(player.ApplicantGame)}</u></strong> ਖੇਡ ਦੇ <u><strong>{await TranslateToPunjabi(player.ApplicantEvent)}</strong></u> ਇਵੈਂਟ ਸ਼੍ਰੇਣੀ (<strong><u>{await TranslateToPunjabi(player.ApplicantAgeGroup)}</u></strong> ਉਮਰ ਸਮੂਹ) ਵਿੱਚ ਭਾਗ ਲਿਆ। <u><strong>{player.Score}</strong></u> ਦੇ ਨਾਲ, <u><strong>{player.Position}</strong></u> ਸਥਾਨ ਹਾਸਲ ਕੀਤਾ।
+                    <div style='margin: 10px 0; font-size: 21px; text-align: justify;word-spacing: 5px;'>
+                            ਇਹ ਪ੍ਰਮਾਣਿਤ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ <strong>{await TranslateToPunjabi(player.ApplicantFullName)}</strong>, ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ <strong>{await TranslateToPunjabi(player.ApplicantFatherName)}</strong>, ਜਿਨ੍ਹਾਂ ਦੀ ਜਨਮ ਮਿਤੀ <strong>{await TranslateToPunjabi(player.ApplicantDOB)}</strong> ਹੈ, ਨੇ ਰਾਜ ਪੱਧਰੀ ਖੇਡਾਂ 2024 ਵਿੱਚ ਭਾਗ ਲਿਆ, ਜੋ ਜ਼ਿਲ੍ਹਾ <strong>{await TranslateToPunjabi(player.GameHeldDistrict)}</strong> ਵਿੱਚ ਆਯੋਜਿਤ ਹੋਈਆਂ। ਉਨ੍ਹਾਂ ਨੇ ਜ਼ਿਲ੍ਹਾ <strong>{await TranslateToPunjabi(player.GameRepresentingDistrict)}</strong> ਦੀ ਨੁਮਾਇੰਦਗੀ ਕਰਦਿਆਂ <strong>{await TranslateToPunjabi(player.ApplicantGame)}</strong> ਖੇਡ ਦੇ <strong>{await TranslateToPunjabi(player.ApplicantEvent)}</strong> ਇਵੈਂਟ ਸ਼੍ਰੇਣੀ (<strong>{await TranslateToPunjabi(player.ApplicantAgeGroup)}</strong> ਉਮਰ ਸਮੂਹ) ਵਿੱਚ ਭਾਗ ਲਿਆ। <strong>{player.Score}</strong> ਦੇ ਨਾਲ,<strong>{player.Position}</strong> ਸਥਾਨ ਹਾਸਲ ਕੀਤਾ।
  
                     </div> 
-                    <div style='display: flex; justify-content: space-between; margin: 50px 0 0;'>
-            <div style='text-align: right; font-size: 15px;'>
+                    <div style='display: flex; justify-content: space-between; margin: 50px 0 0;padding-top: 20px'>
+            <div style='text-align: right; font-size: 15px; '>
                 <img src='./images/director.png' style='margin-left: 10px;' />
-                <span style='font-size: 18px;'>ਨਿਰਦੇਸ਼ਕ ਖੇਡਾਂ<br />ਪੰਜਾਬ</span>
+                <span style='font-size: 18px;'>ਕਨਵੀਨਰ</span>
             </div>
             <div style='text-align: right; font-size: 15px;'>
                 <img src='./images/director.png' style='margin-left: 10px;' />
-                <span style='font-size: 18px;'>ਨਿਰਦੇਸ਼ਕ ਖੇਡਾਂ<br />ਪੰਜਾਬ</span>
+                <span style='font-size: 18px;'>ਜ਼ਿਲ੍ਹਾ ਖੇਡ ਅਫ਼ਸਰ</span>
             </div>
             <div style='text-align: right; font-size: 15px;'>
                 <img src='./images/director.png' style='margin-left: 10px;display: block; margin: auto; margin-bottom: 5px;' />
-                <span style='font-size: 18px;'>ਨਿਰਦੇਸ਼ਕ ਖੇਡਾਂ<br />ਪੰਜਾਬ</span>
+                <span style='font-size: 18px;'>ਡਾਇਰੈਕਟਰ ਸਪੋਰਟਸ <br />ਪੰਜਾਬ</span>
             </div>
           
             
@@ -3385,6 +3380,7 @@ namespace ServicePlusAPIs.Controllers
 
 
             return translatedText;
+           
         }
 
         //private async Task<string> TranslateToPunjabi(string text )
