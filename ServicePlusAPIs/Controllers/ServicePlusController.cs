@@ -3151,67 +3151,139 @@ namespace ServicePlusAPIs.Controllers
 
         #region GetPlayerCertificateDetail
 
+        //[Route("GetPlayerCertificateDetail")]
+        //[HttpPost]
+        //public async Task<IActionResult> GetPlayerCertificateDetail([FromBody] FilterParameterForPlayerCertificate filterParameterForPlayerCertificate)
+        //{
+        //    var getPlayer = await (from initiatedData in _servicePlusContext.InitiatedDatas
+        //                           join attributeDetail in _servicePlusContext.AttributeDetails
+        //                           on initiatedData.InitiatedDataId equals attributeDetail.InitiatedDataId
+        //                           join taskDetails in _servicePlusContext.TaskDetails on initiatedData.ApplId equals taskDetails.ApplId
+
+        //                           where initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
+        //                                 && initiatedData.ApplRefNo == filterParameterForPlayerCertificate.ApplRefNo
+
+        //                                 //&& attributeDetail.ApplicationFormFieldID == "169971" // ApplicantDOB field ID
+        //                                 //&& attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantDOB
+
+        //                                 //&& attributeDetail.ApplicationFormFieldID == "170094" // ApplicantGame field ID
+        //                                 //&& attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantGame
+
+        //                                 //&& attributeDetail.ApplicationFormFieldID == "170203" // ApplicantEvent field ID
+        //                                 //&& attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantEvent
+        //                                 //&& attributeDetail.ApplicationFormFieldID == "170202" // ApplicantAgeGroup field ID
+        //                                 //&& attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantAgeGroup
+        //                                 && initiatedData.InitiatedRecordInsertionFlag == 1
+        //                                 && taskDetails.TaskId == 23005
+        //                           select new
+        //                           {
+        //                               initiatedData.InitiatedDataId,
+        //                               initiatedData.ServiceId,
+        //                               initiatedData.ServiceName,
+        //                               initiatedData.ApplId,
+        //                               initiatedData.ApplRefNo,
+        //                               initiatedData.SubmissionDate,
+        //                               AttributeDetails = initiatedData.AttributeDetail
+        //                                   .Where(attr => new[]
+        //                                   {
+        //            "169954", "169955", "169957", "169958", "169964",
+        //            "170094", "170202", "170203", "170246", "170608",
+        //            "170091", "170608", "170041", "170309", "171427",
+        //            "170093", "170092", "169965", "169971", "169960",
+        //            "169972", "169969", "169970", "169959", "171762",
+        //            "169963", "169961", "169980", "169979", "169981",
+        //            "169998", "169999", "169990", "169991", "170000",
+        //            "169983", "171761", "169987", "169984", "169988",
+        //            "169985", "170308", "171647",
+        //                                   }.Contains(attr.ApplicationFormFieldID))
+        //                                   .ToList()
+        //                           }).FirstOrDefaultAsync();
+
+        //    if (getPlayer == null)
+        //    {
+        //        return NotFound(new { message = "No record found" });
+        //    }
+
+        //    var result = new
+        //    {
+
+        //        applId = getPlayer.ApplId,
+        //        applRefNo = getPlayer.ApplRefNo,
+        //        applicantFirstName = GetValue(getPlayer.AttributeDetails, "169954"),
+        //        applicantFatherName = GetValue(getPlayer.AttributeDetails, "169955"),
+        //        applicantMotherName = GetValue(getPlayer.AttributeDetails, "169965"),
+        //        applicantDOB = GetValue(getPlayer.AttributeDetails, "169971"),
+        //        applicantAge = GetValue(getPlayer.AttributeDetails, "169960"),
+        //        stateOfBirth = GetValue(getPlayer.AttributeDetails, "169972")?.Split('~').Last(),
+        //        districtOfBirth = GetValue(getPlayer.AttributeDetails, "169969")?.Split('~').Last(),
+        //        panCardNumber = GetValue(getPlayer.AttributeDetails, "169970"),
+        //        applicantBloodGroup = GetValue(getPlayer.AttributeDetails, "169957")?.Split('~').Last(),
+        //        applicantMobileNo = GetValue(getPlayer.AttributeDetails, "169958"),
+        //        applicantAlternateMobileNumber = GetValue(getPlayer.AttributeDetails, "171762"),
+        //        applicantEmail = GetValue(getPlayer.AttributeDetails, "169959"),
+        //        applicantGender = GetValue(getPlayer.AttributeDetails, "169964")?.Split('~').Last() ?? GetValue(getPlayer.AttributeDetails, "171427")?.Split('~').Last(),
+        //        applicantGame = GetValue(getPlayer.AttributeDetails, "170094")?.Split('~').Last(),
+        //        level = GetValue(getPlayer.AttributeDetails, "170091")?.Split('~').Last() ?? GetValue(getPlayer.AttributeDetails, "170041"),
+        //        applicationType = GetValue(getPlayer.AttributeDetails, "170608")?.Split('~').Last(),
+        //        applicantAgeGroup = GetValue(getPlayer.AttributeDetails, "170202")?.Split('~').Last(),
+        //        applicantEvent = GetValue(getPlayer.AttributeDetails, "170203")?.Split('~').Last(),
+        //        applicantGameCategory = GetValue(getPlayer.AttributeDetails, "170246"),
+        //        isMedalist = GetValue(getPlayer.AttributeDetails, "170309")?.Split('~').Last(),
+        //        district = GetValue(getPlayer.AttributeDetails, "170093"),
+        //        block = GetValue(getPlayer.AttributeDetails, "170092"),
+        //        physicalDisability = GetValue(getPlayer.AttributeDetails, "169963")?.Split('~').Last(),
+        //        maritalStatus = GetValue(getPlayer.AttributeDetails, "169961")?.Split('~').Last(),
+        //        spouseName = GetValue(getPlayer.AttributeDetails, "169962"),
+        //        isEmployed = GetValue(getPlayer.AttributeDetails, "169980")?.Split('~').Last(),
+        //        employmentStatus = GetValue(getPlayer.AttributeDetails, "169979"),
+        //        jobDescription = GetValue(getPlayer.AttributeDetails, "169981"),
+        //        completeAddress = GetValue(getPlayer.AttributeDetails, "169998"),
+        //        region = GetValue(getPlayer.AttributeDetails, "169999")?.Split('~').Last(),
+        //        addState = GetValue(getPlayer.AttributeDetails, "169990")?.Split('~').Last(),
+        //        addDistrict = GetValue(getPlayer.AttributeDetails, "169991")?.Split('~').Last(),
+        //        addPincode = GetValue(getPlayer.AttributeDetails, "170000"),
+        //        accountNumber = GetValue(getPlayer.AttributeDetails, "169983"),
+        //        accountHolder = GetValue(getPlayer.AttributeDetails, "171761")?.Split('~').Last(),
+        //        ifscCode = GetValue(getPlayer.AttributeDetails, "169987"),
+        //        nameOnPassbook = GetValue(getPlayer.AttributeDetails, "169984"),
+        //        bankAddress = GetValue(getPlayer.AttributeDetails, "169988"),
+        //        bankName = GetValue(getPlayer.AttributeDetails, "169985"),
+        //        applicationToBeSubmitted = GetValue(getPlayer.AttributeDetails, "170308")?.Split('~').Last(),
+        //        playerEducations = PlayerEducationDeserializeJsonStreamAsync(GetValue(getPlayer.AttributeDetails, "171647"))
+
+        //    };
+
+        //    var playerDetails = await GoogleSheetsService.GetFilteredPlayerCertificateDetails(
+        //          dob: filterParameterForPlayerCertificate.ApplicantDOB,
+        //  game: filterParameterForPlayerCertificate.ApplicantGame,
+        //          gameEvent: filterParameterForPlayerCertificate.ApplicantEvent,
+        //          ageGroup: filterParameterForPlayerCertificate.ApplicantAgeGroup
+        //      );
+        //    if (getPlayer is not null && playerDetails is not null)
+        //    {
+        //        var getCertificatePath = await GeneratePlayerCertificate(playerDetails);
+        //        return Ok(new { pdfPath = getCertificatePath });
+        //    }
+        //    else
+        //    {
+        //        return NotFound(new { message = "No record found" });
+        //    }
+        //}
+
         [Route("GetPlayerCertificateDetail")]
         [HttpPost]
         public async Task<IActionResult> GetPlayerCertificateDetail([FromBody] FilterParameterForPlayerCertificate filterParameterForPlayerCertificate)
         {
-            var getPlayer = await (from initiatedData in _servicePlusContext.InitiatedDatas
-                                   join attributeDetail in _servicePlusContext.AttributeDetails
-                                   on initiatedData.InitiatedDataId equals attributeDetail.InitiatedDataId
-                                   join taskDetails in _servicePlusContext.TaskDetails on initiatedData.ApplId equals taskDetails.ApplId
 
-                                   where initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
-                                         && initiatedData.ApplRefNo == filterParameterForPlayerCertificate.ApplRefNo
-
-                                         //&& attributeDetail.ApplicationFormFieldID == "169971" // ApplicantDOB field ID
-                                         //&& attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantDOB
-
-                                         //&& attributeDetail.ApplicationFormFieldID == "170094" // ApplicantGame field ID
-                                         //&& attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantGame
-
-                                         //&& attributeDetail.ApplicationFormFieldID == "170203" // ApplicantEvent field ID
-                                         //&& attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantEvent
-                                         //&& attributeDetail.ApplicationFormFieldID == "170202" // ApplicantAgeGroup field ID
-                                         //&& attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantAgeGroup
-                                         && initiatedData.InitiatedRecordInsertionFlag == 1
-                                         && taskDetails.TaskId == 23005
-                                   select new
-                                   {
-                                       initiatedData.InitiatedDataId,
-                                       initiatedData.ServiceId,
-                                       initiatedData.ServiceName,
-                                       initiatedData.ApplId,
-                                       initiatedData.ApplRefNo,
-                                       initiatedData.SubmissionDate,
-                                       AttributeDetails = initiatedData.AttributeDetail
-                                           .Where(attr => new[]
-                                           {
-                    "169954", "169955", "169957", "169958", "169964",
-                    "170094", "170202", "170203", "170246", "170608",
-                    "170091", "170608", "170041", "170309", "171427",
-                    "170093", "170092", "169965", "169971", "169960",
-                    "169972", "169969", "169970", "169959", "171762",
-                    "169963", "169961", "169980", "169979", "169981",
-                    "169998", "169999", "169990", "169991", "170000",
-                    "169983", "171761", "169987", "169984", "169988",
-                    "169985", "170308", "171647",
-                                           }.Contains(attr.ApplicationFormFieldID))
-                                           .ToList()
-                                   }).FirstOrDefaultAsync();
-
-            if (getPlayer == null)
-            {
-                return NotFound(new { message = "No record found" });
-            }
-
-
+            // Additional processing logic if required...
             var playerDetails = await GoogleSheetsService.GetFilteredPlayerCertificateDetails(
-                  dob: filterParameterForPlayerCertificate.ApplicantDOB,
-          game: filterParameterForPlayerCertificate.ApplicantGame,
-                  gameEvent: filterParameterForPlayerCertificate.ApplicantEvent,
-                  ageGroup: filterParameterForPlayerCertificate.ApplicantAgeGroup
-              );
-            if (getPlayer is not null && playerDetails is not null)
+                dob: filterParameterForPlayerCertificate.ApplicantDOB,
+                game: filterParameterForPlayerCertificate.ApplicantGame,
+                gameEvent: filterParameterForPlayerCertificate.ApplicantEvent,
+                ageGroup: filterParameterForPlayerCertificate.ApplicantAgeGroup
+            );
+
+            if (playerDetails != null)
             {
                 var getCertificatePath = await GeneratePlayerCertificate(playerDetails);
                 return Ok(new { pdfPath = getCertificatePath });
@@ -3221,9 +3293,11 @@ namespace ServicePlusAPIs.Controllers
                 return NotFound(new { message = "No record found" });
             }
         }
+
+
         private async Task<string> GeneratePlayerCertificate(PlayerCertificateDetail playerCertificateDetail)
-        { 
-            string levelName = await TranslateToPunjabi("Level");        
+        {
+            string levelName = await TranslateToPunjabi("Level");
             string result = await TranslateToPunjabi("1st");
             string certificateNo = "789101";
             string startDate = "01-03-2025";
@@ -3278,19 +3352,34 @@ namespace ServicePlusAPIs.Controllers
                         <span style='font-size:23px'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ</strong></span>
                     </div>
                     <div style='margin: 8px 0; font-size: 25px; margin-top: 9px; font-weight: bold;'>ਸਰਟੀਫਿਕੇਟ</div>
-<img style='width: 74%;height: 14%;margin-top: 6px;' src='http://10.147.24.36:8082/SSD/ribbon.png'>
+<div style=""position: relative; display: inline-block;"">
+              <img src='http://10.147.24.36:8082/SSD/ribbon.png' alt=""Ribbon"" style=""width: 70%; height: 4%; margin-top: 6px;"">
+              <span style=""position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: bold; font-size: 16px; white-space: nowrap;"">
+                  National Informatics Centre
+              </span>
+          </div>
                     <div style='margin: 20px 0; font-size: 19px; font-weight: bold;'>
                         ਤੋਂ <strong>{startDate}</strong> ਨੂੰ <strong>{endDate}</strong>
                     </div>
                     <div style='margin: 10px 0; font-size: 21px; text-align: justify;'>
-                        ਇਹ ਪ੍ਰਮਾਣਿਤ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ <u>{await TranslateToPunjabi(playerCertificateDetail.ApplicantFullName)}</u>, ਨੇ ਜ਼ਿਲ੍ਹੇ ਦੀ ਨੁਮਾਇੰਦਗੀ ਕਰਨ ਵਾਲੀਆਂ <u>{levelName}</u> ਪੱਧਰੀ ਖੇਡਾਂ 2025 ਵਿੱਚ ਭਾਗ ਲਿਆ ਹੈ।
-                        ਉਮਰ ਵਰਗ ਵਿੱਚ <u>{await TranslateToPunjabi(playerCertificateDetail.GameRepresentingDistrict)}</u> ਖੇਡ ਵਿੱਚ <strong><u>{await TranslateToPunjabi(playerCertificateDetail.ApplicantGame)}</u></strong>
-                        ਇਵੈਂਟ <u><strong>{await TranslateToPunjabi(playerCertificateDetail.ApplicantEvent)}</strong></u> ਵਿੱਚ <strong><u>{await TranslateToPunjabi(playerCertificateDetail.ApplicantAgeGroup)}</u></strong> 
-                        ਅਤੇ ਸੁਰੱਖਿਅਤ <u><strong>{playerCertificateDetail.Score}</strong></u>.
+                            ਇਹ ਪ੍ਰਮਾਣਿਤ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ <u>{await TranslateToPunjabi(playerCertificateDetail.ApplicantFullName)}</u>, ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ <u>{await TranslateToPunjabi(playerCertificateDetail.ApplicantFatherName)}</u>, ਜਿਨ੍ਹਾਂ ਦੀ ਜਨਮ ਮਿਤੀ<u>{await TranslateToPunjabi(playerCertificateDetail.ApplicantDOB)}</u>ਹੈ, ਨੇ ਰਾਜ ਪੱਧਰੀ ਖੇਡਾਂ 2024 ਵਿੱਚ ਭਾਗ ਲਿਆ, ਜੋ ਜ਼ਿਲ੍ਹਾ <u>{await TranslateToPunjabi(playerCertificateDetail.GameHeldDistrict)}</u> ਵਿੱਚ ਆਯੋਜਿਤ ਹੋਈਆਂ। ਉਨ੍ਹਾਂ ਨੇ ਜ਼ਿਲ੍ਹਾ <u>{await TranslateToPunjabi(playerCertificateDetail.GameRepresentingDistrict)}</u> ਦੀ ਨੁਮਾਇੰਦਗੀ ਕਰਦਿਆਂ <strong><u>{await TranslateToPunjabi(playerCertificateDetail.ApplicantGame)}</u></strong> ਖੇਡ ਦੇ <u><strong>{await TranslateToPunjabi(playerCertificateDetail.ApplicantEvent)}</strong></u> ਇਵੈਂਟ ਸ਼੍ਰੇਣੀ (<strong><u>{await TranslateToPunjabi(playerCertificateDetail.ApplicantAgeGroup)}</u></strong> ਉਮਰ ਸਮੂਹ) ਵਿੱਚ ਭਾਗ ਲਿਆ। <u><strong>{playerCertificateDetail.Score}</strong></u> ਦੇ ਨਾਲ, <u><strong>{playerCertificateDetail.Position}</strong></u> ਸਥਾਨ ਹਾਸਲ ਕੀਤਾ।
                     </div>
-                    <div style='text-align: right; margin: 50px 5px; font-size:19px'>
-                        <span style='font-size:18px'>ਨਿਰਦੇਸ਼ਕ ਖੇਡਾਂ<br />ਪੰਜਾਬ</span>
+                   <div style=""display: flex; justify-content: space-between; margin: 50px 0 0;"">
+                     <div style=""text-align: right; font-size: 15px;"">
+                        <img src=""./images/director.png"" style=""margin-left: 10px;"" />
+                        <span style=""font-size: 18px;"">ਨਿਰਦੇਸ਼ਕ ਖੇਡਾਂ<br />ਪੰਜਾਬ</span>
                     </div>
+                    <div style=""text-align: right; font-size: 15px;"">
+                        <img src=""./images/director.png"" style=""margin-left: 10px;"" />
+                        <span style=""font-size: 18px;"">ਨਿਰਦੇਸ਼ਕ ਖੇਡਾਂ<br />ਪੰਜਾਬ</span>
+                    </div>
+                    <div style=""text-align: right; font-size: 15px;"">
+                        <img src=""./images/director.png"" style=""margin-left: 10px;display: block; margin: auto; margin-bottom: 5px;"" />
+                        <span style=""font-size: 18px;"">ਨਿਰਦੇਸ਼ਕ ਖੇਡਾਂ<br />ਪੰਜਾਬ</span>
+                    </div>
+          
+            
+                </div>
                 </div>
             </div>
         </body>
@@ -3310,18 +3399,17 @@ namespace ServicePlusAPIs.Controllers
         }
 
 
-         
 
-        private async Task<string> TranslateToPunjabi(string text )
+        private async Task<string> TranslateToPunjabi(string text)
         {
-            using HttpClient client = new HttpClient();  
+            using HttpClient client = new HttpClient();
             string url = $"https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pa&dt=t&q={text}";
 
             var response = await client.GetStringAsync(url);
             var jsonData = System.Text.Json.JsonSerializer.Deserialize<object[]>(response);
             var translatedText = ((JsonElement)jsonData[0]).EnumerateArray().First().EnumerateArray().First().GetString();
 
-            
+
             return translatedText;
         }
 

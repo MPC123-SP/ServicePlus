@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Reflection;
 
 namespace ServicePlusAPIs.ViewModels.PublicModel
 {
@@ -236,12 +237,13 @@ namespace ServicePlusAPIs.ViewModels.PublicModel
         public string? GameHeldDistrict { get; set; }
         public string? GameRepresentingDistrict { get; set; }
         public string? ApplicantGame { get; set; }
+        public string? TournamentFrom { get; set; }
+        public string? TournamentTo { get; set; }
         public string? ApplicantEvent { get; set; }
         public string? ApplicantAgeGroup { get; set; }
         public string? Position { get; set; }
         public string? Score { get; set; }//Time/Distance /Height/Weight/Score
-        public string? ConveyorName { get; set; }
-        public string? CertificatePath { get; set; }
+        public string? ConveyorName { get; set; } 
     }
     public class Conveyor
     {
@@ -251,11 +253,35 @@ namespace ServicePlusAPIs.ViewModels.PublicModel
     }
     public class FilterParameterForPlayerCertificate
     {
+        public string? GameLevel { get; set; }//State,District,Block,National,International
         public string? ApplRefNo { get; set; } 
         public string? ApplicantDOB { get; set; }
         public string? ApplicantGame { get; set; }
         public string? ApplicantEvent { get; set; }
         public string? ApplicantAgeGroup { get; set; }
+
+    }
+    public class CertificateIssuedViewModel
+    { 
+        public string? ApplRefNo { get; set; }
+        public string? ApplicantFullName { get; set; }
+        public string? ApplicantFatherName { get; set; }
+        public string? ApplicantDOB { get; set; }
+        public string? ApplicantMobileNo { get; set; }
+        public string? GameHeldDistrict { get; set; }
+        public string? GameRepresentingDistrict { get; set; }
+        public string? ApplicantGame { get; set; }
+        public string? TournamentFrom { get; set; }
+        public string? TournamentTo { get; set; }
+        public string? ApplicantEvent { get; set; }
+        public string? ApplicantAgeGroup { get; set; }
+        public string? Position { get; set; }
+        public string? Score { get; set; }//Time/Distance /Height/Weight/Score
+        public string? ConveyorName { get; set; }
+        public string? TaskId { get; set; }
+        public string? ServiceId { get; set; }
+        public string? TaskName { get; set; }
+        public string? OfficialUserName { get; set; } 
 
     }
 }
