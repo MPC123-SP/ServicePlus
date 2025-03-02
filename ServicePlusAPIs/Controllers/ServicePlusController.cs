@@ -3153,29 +3153,38 @@ namespace ServicePlusAPIs.Controllers
 
         [Route("GetPlayerCertificateDetail")]
         [HttpPost]
-        public async Task<IActionResult> GetPlayerCertificateDetail([FromBody] FilterParameterForPlayerCertificate filterParameterForPlayerCertificate)
+        public async Task<IActionResult> GetPlayerCertificateDetail(  )
         {
-           
 
-            var playerDetails = await GoogleSheetsService.GetFilteredPlayerCertificateDetails(
-                  dob: filterParameterForPlayerCertificate.ApplicantDOB,
-          game: filterParameterForPlayerCertificate.ApplicantGame,
-                  gameEvent: filterParameterForPlayerCertificate.ApplicantEvent,
-                  ageGroup: filterParameterForPlayerCertificate.ApplicantAgeGroup
-              );
-            if ( playerDetails is not null)
+            await GeneratePlayerCertificate();
+
+            return Ok();
+
+        }
+        [Route("UpdateCertificatePlayers")]
+        [HttpPost]
+        public async Task<IActionResult> UpdateCertificatePlayers()
+        {
+
+            var googleSheetsService = new GoogleSheetsService(_servicePlusContext); // Pass the context here
+            var playerDetails = await googleSheetsService.GetFilteredPlayerCertificateDetails();
+
+            if (playerDetails)
             {
-                var getCertificatePath = await GeneratePlayerCertificate(playerDetails);
-                return Ok(new { pdfPath = getCertificatePath });
+
+                return Ok("Record Updated Successfully");
             }
             else
             {
-                return NotFound(new { message = "No record found" });
+                return BadRequest(new { message = "No record found" });
             }
         }
-        private async Task<string> GeneratePlayerCertificate(PlayerCertificateDetail playerCertificateDetail)
-        { 
-            string levelName = await TranslateToPunjabi("Level");        
+        private async Task<string> GeneratePlayerCertificate( )
+        {
+            var playerCertificateDetail = await _servicePlusContext.PlayerCertificateIssued
+     .FirstOrDefaultAsync();
+
+            string levelName = await TranslateToPunjabi("Level");
             string result = await TranslateToPunjabi("1st");
             string certificateNo = "789101";
             string startDate = "01-03-2025";
@@ -3241,7 +3250,8 @@ namespace ServicePlusAPIs.Controllers
                     </div>
                     <div style='margin: 10px 0; font-size: 21px; text-align: justify;'>
                             ਇਹ ਪ੍ਰਮਾਣਿਤ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ <u>{await TranslateToPunjabi(playerCertificateDetail.ApplicantFullName)}</u>, ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ <u>{await TranslateToPunjabi(playerCertificateDetail.ApplicantFatherName)}</u>, ਜਿਨ੍ਹਾਂ ਦੀ ਜਨਮ ਮਿਤੀ<u>{await TranslateToPunjabi(playerCertificateDetail.ApplicantDOB)}</u>ਹੈ, ਨੇ ਰਾਜ ਪੱਧਰੀ ਖੇਡਾਂ 2024 ਵਿੱਚ ਭਾਗ ਲਿਆ, ਜੋ ਜ਼ਿਲ੍ਹਾ <u>{await TranslateToPunjabi(playerCertificateDetail.GameHeldDistrict)}</u> ਵਿੱਚ ਆਯੋਜਿਤ ਹੋਈਆਂ। ਉਨ੍ਹਾਂ ਨੇ ਜ਼ਿਲ੍ਹਾ <u>{await TranslateToPunjabi(playerCertificateDetail.GameRepresentingDistrict)}</u> ਦੀ ਨੁਮਾਇੰਦਗੀ ਕਰਦਿਆਂ <strong><u>{await TranslateToPunjabi(playerCertificateDetail.ApplicantGame)}</u></strong> ਖੇਡ ਦੇ <u><strong>{await TranslateToPunjabi(playerCertificateDetail.ApplicantEvent)}</strong></u> ਇਵੈਂਟ ਸ਼੍ਰੇਣੀ (<strong><u>{await TranslateToPunjabi(playerCertificateDetail.ApplicantAgeGroup)}</u></strong> ਉਮਰ ਸਮੂਹ) ਵਿੱਚ ਭਾਗ ਲਿਆ। <u><strong>{playerCertificateDetail.Score}</strong></u> ਦੇ ਨਾਲ, <u><strong>{playerCertificateDetail.Position}</strong></u> ਸਥਾਨ ਹਾਸਲ ਕੀਤਾ।
-                    </div>
+ 
+                    </div> 
                     <div style='display: flex; justify-content: space-between; margin: 50px 0 0;'>
             <div style='text-align: right; font-size: 15px;'>
                 <img src='./images/director.png' style='margin-left: 10px;' />
@@ -3277,18 +3287,17 @@ namespace ServicePlusAPIs.Controllers
         }
 
 
-         
 
-        private async Task<string> TranslateToPunjabi(string text )
+        private async Task<string> TranslateToPunjabi(string text)
         {
-            using HttpClient client = new HttpClient();  
+            using HttpClient client = new HttpClient();
             string url = $"https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pa&dt=t&q={text}";
 
             var response = await client.GetStringAsync(url);
             var jsonData = System.Text.Json.JsonSerializer.Deserialize<object[]>(response);
             var translatedText = ((JsonElement)jsonData[0]).EnumerateArray().First().EnumerateArray().First().GetString();
 
-            
+
             return translatedText;
         }
 

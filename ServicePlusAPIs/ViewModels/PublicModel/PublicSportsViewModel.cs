@@ -256,7 +256,6 @@ namespace ServicePlusAPIs.ViewModels.PublicModel
         public string? District { get; set; }//State,District,Block,National,International
         public string? CertificateSerialNoFrom { get; set; } 
         public string? CertificateSerialNoTo { get; set; } 
-        public string? ApplicantDOB { get; set; }
         public string? ApplicantGame { get; set; }
         public string? ApplicantEvent { get; set; }
         public string? ApplicantAgeGroup { get; set; }

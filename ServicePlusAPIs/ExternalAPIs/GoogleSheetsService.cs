@@ -3,43 +3,33 @@ using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
 using Microsoft.Extensions.Caching.Memory;
+using ServicePlusAPIs.Context;
+using ServicePlusAPIs.Models.SportsModel;
 using ServicePlusAPIs.ViewModels.PublicModel;
 using System.Collections.Concurrent;
 
 namespace ServicePlusAPIs.ExternalAPIs
 {
+    /// <summary>
+    /// currently we are using google spreadsheet ,SheetName:FinalWinnerData  and Sheet 1 
+    /// sheet is created by akash sir 
+    /// </summary>
     public class GoogleSheetsService
     {
+        private readonly ServicePlusContext _servicePlusContext;
         private static readonly string[] Scopes = { SheetsService.Scope.SpreadsheetsReadonly };
         private static readonly string ApplicationName = "Sports Service";
         private static readonly string SpreadsheetId = "1BuUjoz_01GH8PXdN1A02G54CMtiDBR5sZvWZgHq-Xnc"; // Your Google Sheet ID
         private static readonly string SheetName = "Sheet1"; // Adjust if needed
-        private static readonly string CredentialsFilePath = "C:\\Users\\HP\\OneDrive\\Documents\\GitHub\\ServicePlus\\ServicePlusAPIs\\ExternalAPIs\\SportsServiceAccount.json";
+        private static readonly string CredentialsFilePath = "C:\\Users\\Mohit\\Documents\\GitHub\\ServicePlus\\ServicePlusAPIs\\ExternalAPIs\\SportsServiceAccount.json";
 
-        private static readonly MemoryCache _cache = new MemoryCache(new MemoryCacheOptions());
 
-        // Cache Key
-        private const string PlayerCertificateCacheKey = "PlayerCertificateDetailsCache";
-
-        public static async Task<PlayerCertificateDetail?> GetFilteredPlayerCertificateDetails(
-    string dob = null, string game = null, string gameEvent = null, string ageGroup = null)
+        public GoogleSheetsService(ServicePlusContext context)
         {
-            // Ensure parameters are normalized
-            dob = dob?.Trim().ToLowerInvariant();
-            game = game?.Trim().ToLowerInvariant();
-            gameEvent = gameEvent?.Trim().ToLowerInvariant();
-            ageGroup = ageGroup?.Trim().ToLowerInvariant();
-
-            // Try to get cached records
-            if (_cache.TryGetValue(PlayerCertificateCacheKey, out List<PlayerCertificateDetail> cachedRecords))
-            {
-                return cachedRecords.FirstOrDefault(d =>
-                    d.ApplicantDOB?.Trim().ToLowerInvariant() == dob &&
-                    d.ApplicantGame?.Trim().ToLowerInvariant() == game &&
-                    d.ApplicantEvent?.Trim().ToLowerInvariant() == gameEvent &&
-                    d.ApplicantAgeGroup?.Trim().ToLowerInvariant() == ageGroup
-                );
-            }
+            _servicePlusContext = context;
+        }
+        public async Task<bool> GetFilteredPlayerCertificateDetails()
+        {
 
             // If cache is empty, fetch data from Google Sheets
             try
@@ -62,10 +52,10 @@ namespace ServicePlusAPIs.ExternalAPIs
                 var values = response.Values;
 
                 if (values == null || values.Count == 0)
-                    return null;
+                    return false;
 
                 var records = values.Skip(1) // Assuming first row is headers
-                    .Select(row => new PlayerCertificateDetail
+                    .Select(row => new PlayerCertificateIssued
                     {
                         ApplicantFullName = row.ElementAtOrDefault(1)?.ToString()?.Trim(),
                         ApplicantFatherName = row.ElementAtOrDefault(2)?.ToString()?.Trim(),
@@ -81,23 +71,17 @@ namespace ServicePlusAPIs.ExternalAPIs
                         ConveyorName = row.ElementAtOrDefault(12)?.ToString()?.Trim()
                     })
                     .ToList();
+                _servicePlusContext.PlayerCertificateIssued.RemoveRange(_servicePlusContext.PlayerCertificateIssued);
+                await _servicePlusContext.PlayerCertificateIssued.AddRangeAsync(records);
+                await _servicePlusContext.SaveChangesAsync();
+                return true;
 
-                // Store in cache for 30 minutes
-                _cache.Set(PlayerCertificateCacheKey, records, TimeSpan.FromMinutes(10));
-
-                // Filter and return only the matching record
-                return records.FirstOrDefault(d =>
-                    d.ApplicantDOB?.ToLowerInvariant() == dob &&
-                    d.ApplicantGame?.ToLowerInvariant() == game &&
-                    d.ApplicantEvent?.ToLowerInvariant() == gameEvent &&
-                    d.ApplicantAgeGroup?.ToLowerInvariant() == ageGroup
-                );
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error accessing Google Sheets API: {ex.Message}");
-                return null;
-            }
+                return false;
+            } 
         }
 
     }
