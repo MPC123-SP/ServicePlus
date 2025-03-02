@@ -3155,55 +3155,7 @@ namespace ServicePlusAPIs.Controllers
         [HttpPost]
         public async Task<IActionResult> GetPlayerCertificateDetail([FromBody] FilterParameterForPlayerCertificate filterParameterForPlayerCertificate)
         {
-            var getPlayer = await (from initiatedData in _servicePlusContext.InitiatedDatas
-                                   join attributeDetail in _servicePlusContext.AttributeDetails
-                                   on initiatedData.InitiatedDataId equals attributeDetail.InitiatedDataId
-                                   join taskDetails in _servicePlusContext.TaskDetails on initiatedData.ApplId equals taskDetails.ApplId
-
-                                   where initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
-                                         && initiatedData.ApplRefNo == filterParameterForPlayerCertificate.ApplRefNo
-
-                                         //&& attributeDetail.ApplicationFormFieldID == "169971" // ApplicantDOB field ID
-                                         //&& attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantDOB
-
-                                         //&& attributeDetail.ApplicationFormFieldID == "170094" // ApplicantGame field ID
-                                         //&& attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantGame
-
-                                         //&& attributeDetail.ApplicationFormFieldID == "170203" // ApplicantEvent field ID
-                                         //&& attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantEvent
-                                         //&& attributeDetail.ApplicationFormFieldID == "170202" // ApplicantAgeGroup field ID
-                                         //&& attributeDetail.ApplicationFormFieldValue == filterParameterForPlayerCertificate.ApplicantAgeGroup
-                                         && initiatedData.InitiatedRecordInsertionFlag == 1
-                                         && taskDetails.TaskId == 23005
-                                   select new
-                                   {
-                                       initiatedData.InitiatedDataId,
-                                       initiatedData.ServiceId,
-                                       initiatedData.ServiceName,
-                                       initiatedData.ApplId,
-                                       initiatedData.ApplRefNo,
-                                       initiatedData.SubmissionDate,
-                                       AttributeDetails = initiatedData.AttributeDetail
-                                           .Where(attr => new[]
-                                           {
-                    "169954", "169955", "169957", "169958", "169964",
-                    "170094", "170202", "170203", "170246", "170608",
-                    "170091", "170608", "170041", "170309", "171427",
-                    "170093", "170092", "169965", "169971", "169960",
-                    "169972", "169969", "169970", "169959", "171762",
-                    "169963", "169961", "169980", "169979", "169981",
-                    "169998", "169999", "169990", "169991", "170000",
-                    "169983", "171761", "169987", "169984", "169988",
-                    "169985", "170308", "171647",
-                                           }.Contains(attr.ApplicationFormFieldID))
-                                           .ToList()
-                                   }).FirstOrDefaultAsync();
-
-            if (getPlayer == null)
-            {
-                return NotFound(new { message = "No record found" });
-            }
-
+           
 
             var playerDetails = await GoogleSheetsService.GetFilteredPlayerCertificateDetails(
                   dob: filterParameterForPlayerCertificate.ApplicantDOB,
@@ -3211,7 +3163,7 @@ namespace ServicePlusAPIs.Controllers
                   gameEvent: filterParameterForPlayerCertificate.ApplicantEvent,
                   ageGroup: filterParameterForPlayerCertificate.ApplicantAgeGroup
               );
-            if (getPlayer is not null && playerDetails is not null)
+            if ( playerDetails is not null)
             {
                 var getCertificatePath = await GeneratePlayerCertificate(playerDetails);
                 return Ok(new { pdfPath = getCertificatePath });
@@ -3278,7 +3230,7 @@ namespace ServicePlusAPIs.Controllers
                         <span style='font-size:23px'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ</strong></span>
                     </div>
                     <div style='margin: 8px 0; font-size: 25px; margin-top: 9px; font-weight: bold;'>ਸਰਟੀਫਿਕੇਟ</div>
- <div style='position: relative; display: inline-block;'>
+ <div style='position: relative; display: inline-block;'  style='width: 70%; height: 4%; margin-top: 6px;'>
               <img src='http://10.147.24.36:8082/SSD/ribbon.png' alt='Ribbon' style='width: 70%; height: 4%; margin-top: 6px;'>
               <span style='position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: bold; font-size: 16px; white-space: nowrap;'>
                   National Informatics Centre

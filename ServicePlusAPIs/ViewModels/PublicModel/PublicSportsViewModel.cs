@@ -253,8 +253,9 @@ namespace ServicePlusAPIs.ViewModels.PublicModel
     }
     public class FilterParameterForPlayerCertificate
     {
-        public string? GameLevel { get; set; }//State,District,Block,National,International
-        public string? ApplRefNo { get; set; } 
+        public string? District { get; set; }//State,District,Block,National,International
+        public string? CertificateSerialNoFrom { get; set; } 
+        public string? CertificateSerialNoTo { get; set; } 
         public string? ApplicantDOB { get; set; }
         public string? ApplicantGame { get; set; }
         public string? ApplicantEvent { get; set; }
