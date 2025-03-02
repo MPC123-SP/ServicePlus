@@ -3156,9 +3156,7 @@ namespace ServicePlusAPIs.Controllers
         public async Task<IActionResult> GetPlayerCertificateDetail(string district, string gameName, string AgeGroup)
         {
 
-            await GeneratePlayerCertificate(district, gameName, AgeGroup);
-
-            return Ok();
+            return Ok(await GeneratePlayerCertificate(district, gameName, AgeGroup) + " Record Updated Successfully");
 
         }
         [Route("UpdateCertificatePlayers")]
@@ -3181,7 +3179,7 @@ namespace ServicePlusAPIs.Controllers
         }
         private async Task<string> GeneratePlayerCertificate(string districtName, string gameName, string ageGroup)
         {
-            // District-wise serial number prefixes
+            // District-wise serial number prefixes to create Folder Name
             var districtPrefixes = new Dictionary<string, string>
     {
         { "PATIALA", "PAT000" },
@@ -3240,13 +3238,13 @@ namespace ServicePlusAPIs.Controllers
 
             // Get last serial number and generate a new one
             var lastIssuedCertificate = await _servicePlusContext.PlayerIssuedCertificate
-                .Where(c => c.GameHeldDistrict == districtName)
-                .OrderByDescending(c => c.CertificateSerialNo)
-                .FirstOrDefaultAsync();
+    .OrderByDescending(c => c.CertificateSerialNo).Select(d=>d.CertificateSerialNo)
+    .FirstOrDefaultAsync();
 
-            int newSerialNumber = lastIssuedCertificate != null && int.TryParse(lastIssuedCertificate.CertificateSerialNo, out int lastSerial)
+            int newSerialNumber = lastIssuedCertificate != null && int.TryParse(lastIssuedCertificate, out int lastSerial)
                 ? lastSerial + 1
                 : 1;
+            var newCertificates = new List<PlayerIssuedCertificate>();
 
             foreach (var player in playerCertificateDetails)
             {
@@ -3255,12 +3253,13 @@ namespace ServicePlusAPIs.Controllers
 
                 // Define folder path
                 string folderName = $"{districtName}_{randomDistrictSr}_{gameName}_{ageGroup}";
+                //  string folderPath = Path.Combine(@"C:\inetpub\wwwroot", "GeneratedCertificates", folderName);
                 string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "GeneratedCertificates", folderName);
                 if (!Directory.Exists(folderPath))
                 {
                     Directory.CreateDirectory(folderPath);
                 }
-                string startDate= "01-01-2024";
+                string startDate = "01-01-2024";
                 string endDate = "31-12-2024";
                 // Define certificate filename
                 string fileName = $"{districtName}_{randomDistrictSr}_{gameName}_{player.ApplicantFullName}.pdf";
@@ -3348,8 +3347,29 @@ namespace ServicePlusAPIs.Controllers
                     Landscape = true,
                     Width = "100%",
                 });
+
+                // Add the new record to the list
+                newCertificates.Add(new PlayerIssuedCertificate
+                {
+                    GameHeldDistrict = districtName,
+                    ApplicantGame = gameName,
+                    ApplicantAgeGroup = ageGroup,
+                    ApplicantFullName = player.ApplicantFullName,
+                    ApplicantFatherName = player.ApplicantFatherName,
+                    ApplicantDOB = player.ApplicantDOB,
+                    ApplicantEvent = player.ApplicantEvent,
+                    CertificateSerialNo = certificateNo,
+                    CertificatePath = filePath
+                });
+                newSerialNumber++; // Increment serial number for the next certificate
             }
-            return null;
+            // **Save all records at once**
+            if (newCertificates.Any())
+            {
+                await _servicePlusContext.PlayerIssuedCertificate.AddRangeAsync(newCertificates);
+                await _servicePlusContext.SaveChangesAsync();
+            }
+            return newCertificates.Count.ToString();
         }
 
 
