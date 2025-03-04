@@ -3421,53 +3421,19 @@ namespace ServicePlusAPIs.Controllers
                 .ToList(); // Filtering done in memory
 
 
-
             if (!playerCertificateDetails.Any())
             {
                 return "No new certificates to generate.";
             }
+            //  var getSigns = playerCertificateDetails.FirstOrDefault();
 
-            // Get last serial number and generate a new one
-            var lastIssuedCertificate = await _servicePlusContext.PlayerIssuedCertificate
-    .OrderByDescending(c => c.CertificateSerialNo).Select(d => d.CertificateSerialNo)
-    .FirstOrDefaultAsync();
+            // Signature For Convenor
+            // Define the base directory where images are stored
+            string baseDirectory = @"http://10.147.24.36:8082/SSD/SportsSignature";
 
-            int newSerialNumber = lastIssuedCertificate != null && int.TryParse(lastIssuedCertificate, out int lastSerial)
-                ? lastSerial + 1
-                : 1;
-            var newCertificates = new List<PlayerIssuedCertificate>();
-
-            foreach (var player in playerCertificateDetails)
-            {
-                // Ensure a unique 6-digit serial number
-                string certificateNo = newSerialNumber.ToString("D6");
-
-                // Define folder path
-                string folderName = $"{districtName}_{randomDistrictSr}_{gameName}_{ageGroup}";
-                //  string folderPath = Path.Combine(@"C:\inetpub\wwwroot", "GeneratedCertificates", folderName);
-                string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "GeneratedCertificates", folderName);
-                if (!Directory.Exists(folderPath))
-                {
-                    Directory.CreateDirectory(folderPath);
-                }
-                string startDate = "01-01-2024";
-                string endDate = "31-12-2024";
-                // Define certificate filename
-                string fileName = $"{districtName}_{randomDistrictSr}_{gameName}_{player.ApplicantFullName}.pdf";
-                string filePath = Path.Combine(folderPath, fileName);
-
-                await new BrowserFetcher().DownloadAsync();
-                await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions { Headless = true });
-                await using var page = await browser.NewPageAsync();
-                await page.EmulateMediaTypeAsync(PuppeteerSharp.Media.MediaType.Screen);
-
-                // Signature For Convenor
-                // Define the base directory where images are stored
-                string baseDirectory = @"C:\Users\HP\OneDrive\Desktop\Sports Signature";
-
-                // Dictionary to store (district, game) as key and image path as value
-                Dictionary<(string, string), string> gameSignatures = new Dictionary<(string, string), string>((IDictionary<(string, string), string>)StringComparer.OrdinalIgnoreCase)
-                {
+            // Dictionary to store (district, game) as key and image path as value
+            Dictionary<(string, string), string> gameSignatures = new Dictionary<(string, string), string>
+{
                     //Amritsar
                     { ("Amritsar", "Gatka"), $@"{baseDirectory}\Amritsar\Gatka Convenor Sign\dummy.png" },
                     { ("Amritsar", "Rugby"), $@"{baseDirectory}\Amritsar\Rugby Convenor Sign\dummy.png" },
@@ -3510,10 +3476,10 @@ namespace ServicePlusAPIs.Controllers
                     { ("Mansa", "Wrestling"), $@"{baseDirectory}\Mansa\Wrestling Convenor Sign\dummy.png" },
 
                     //Patiala
-                    { ("Patiala", "Archary"), $@"{baseDirectory}\Patiala\Archary Convenor Sign\ARCHERY-removebg-preview.png" },
-                    { ("Patiala", "Gymnastics"), $@"{baseDirectory}\Patiala\Gymnastics Convenor Sign\GYMNASTICS-removebg-preview.png" },
-                    { ("Patiala", "Kabbadi"), $@"{baseDirectory}\Patiala\Kabbadi circle style Convenor Sign\KABADDI_CS-removebg-preview.png" },
-                    { ("Patiala", "Kho-Kho"), $@"{baseDirectory}\Patiala\Kho-Kho Convenor Sign\KHO_KHO-removebg-preview.png" },
+                    { ("PATIALA", "Archary"), $@"{baseDirectory}\Patiala\Archary Convenor Sign\ARCHERY-removebg-preview.png" },
+                    { ("PATIALA", "Gymnastics"), $@"{baseDirectory}\Patiala\Gymnastics Convenor Sign\GYMNASTICS-removebg-preview.png" },
+                    { ("PATIALA", "KABADDI CIRCLE"), $@"{baseDirectory}\Patiala\Kabbadi circle style Convenor Sign\KABADDI_CS-removebg-preview.png" },
+                    { ("PATIALA", "Kho-Kho"), $@"{baseDirectory}\Patiala\Kho-Kho Convenor Sign\KHO_KHO-removebg-preview.png" },
 
                     //Rupnagar
                     { ("Rupnagar", "Handball"), $@"{baseDirectory}\Rupnagar\Handball Convenor Sign\dummy.png" },
@@ -3537,27 +3503,21 @@ namespace ServicePlusAPIs.Controllers
 
                 };
 
-                // Normalize input (Trim spaces and capitalize first letter)
-                districtName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(districtName.Trim().ToLower());
-                gameName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(gameName.Trim().ToLower());
+            // Normalize input (Trim spaces and capitalize first letter)
+            districtName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(districtName);
+            gameName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(gameName);
 
-                // Try to get the image path from the dictionary
-                if (!gameSignatures.TryGetValue((districtName, gameName), out string imagePath))
-                {
-                    imagePath = "./images/default-sign.png"; // Fallback image if not found
-                }
-                else
-                {
-                    // Convert absolute path to a relative path for HTML rendering
-                    imagePath = Path.GetFileName(imagePath);
-                    imagePath = $"./images/{imagePath}";
-                }
+            // Try to get the image path from the dictionary
+            if (!gameSignatures.TryGetValue((districtName, gameName), out string ConveyorImagePath))
+            {
+                ConveyorImagePath = "./images/default-sign.png"; // Fallback image if not found
+            }
 
 
 
-                // Dictionary to store district as key and DSO signature path as value
-                Dictionary<string, string> dsoSignatures = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-                    {
+
+            Dictionary<string, string> dsoSignatures = new Dictionary<string, string>
+{
                         { "Amritsar", $@"{baseDirectory}\Amritsar\DSO Sign\Dso_Amritsar_official_signature-remove.png" },
                         { "Barnala", $@"{baseDirectory}\Barnala\DSO Sign\dso_barnala_signs-remove.png" },
                         { "Bathinda", $@"{baseDirectory}\Bathinda\DSO Sign\dummy.png" },
@@ -3568,26 +3528,58 @@ namespace ServicePlusAPIs.Controllers
                         { "Ludhiana", $@"{baseDirectory}\Ludhiana\DSO Sign\Dso_Ludhiana_official_signature-remove.png" },
                         { "Malerkotla", $@"{baseDirectory}\Malerkotla\DSO Sign\dso_malerkotla_official_signature.png-removebg-preview.png" },
                         { "Mansa", $@"{baseDirectory}\Mansa\DSO Sign\dso_mansa_sign-removebg-preview.png" },
-                        { "Patiala", $@"{baseDirectory}\Patiala\DSO Sign\Dso_Patiala_Official_Signature-removebg-preview.png" },
+                        { "PATIALA", $@"{baseDirectory}\Patiala\DSO Sign\Dso_Patiala_Official_Signature-removebg-preview.png" },
                         { "Rupnagar", $@"{baseDirectory}\Rupnagar\DSO Sign\dummy.png" },
                         { "Sangrur", $@"{baseDirectory}\Sangrur\DSO Sign\dummy.png" },
                         { "SAS Nagar", $@"{baseDirectory}\SAS Nagar\DSO Sign\MOHALI-removebg-preview.png" },
                         { "SBS Nagar", $@"{baseDirectory}\SBS Nagar\DSO Sign\Dso_SBS_Nagar_official_signature-remove.png" }
                     };
 
-                districtName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(districtName.Trim().ToLower());
+            districtName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(districtName);
 
-                // Try to get the image path from the dictionary
-                if (!dsoSignatures.TryGetValue((districtName), out string dsoImagePath))
+            // Try to get the image path from the dictionary
+            if (!dsoSignatures.TryGetValue((districtName), out string dsoImagePath))
+            {
+                dsoImagePath = "./images/default-sign.png"; // Fallback image if not found
+            }
+
+            // Get last serial number and generate a new one
+            var lastIssuedCertificate = await _servicePlusContext.PlayerIssuedCertificate
+    .OrderByDescending(c => c.CertificateSerialNo).Select(d => d.CertificateSerialNo)
+    .FirstOrDefaultAsync();
+
+            int newSerialNumber = lastIssuedCertificate != null && int.TryParse(lastIssuedCertificate, out int lastSerial)
+                ? lastSerial + 1
+                : 1;
+
+
+            var newCertificates = new List<PlayerIssuedCertificate>();
+
+            foreach (var player in playerCertificateDetails)
+            {
+                // Ensure a unique 6-digit serial number
+                string certificateNo = newSerialNumber.ToString("D6");
+
+                // Define folder path
+                string folderName = $"{districtName}_{randomDistrictSr}_{gameName}_{ageGroup}";
+                //  string folderPath = Path.Combine(@"C:\inetpub\wwwroot", "GeneratedCertificates", folderName);
+                string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "GeneratedCertificates", folderName);
+                if (!Directory.Exists(folderPath))
                 {
-                    dsoImagePath = "./images/default-sign.png"; // Fallback image if not found
+                    Directory.CreateDirectory(folderPath);
                 }
-                else
-                {
-                    // Convert absolute path to a relative path for HTML rendering
-                    dsoImagePath = Path.GetFileName(dsoImagePath);
-                    dsoImagePath = $"./images/{dsoImagePath}";
-                }
+                string startDate = "01-01-2024";
+                string endDate = "31-12-2024";
+                // Define certificate filename
+                string fileName = $"{districtName}_{randomDistrictSr}_{gameName}_{player.ApplicantFullName}.pdf";
+                string filePath = Path.Combine(folderPath, fileName);
+
+                await new BrowserFetcher().DownloadAsync();
+                await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions { Headless = true });
+                await using var page = await browser.NewPageAsync();
+                await page.EmulateMediaTypeAsync(PuppeteerSharp.Media.MediaType.Screen);
+
+
 
                 string htmlContent = $@"<html>
         <head>
@@ -3626,27 +3618,29 @@ namespace ServicePlusAPIs.Controllers
               <img style='width: 88%; height: 13%; margin-top: 6px;' src='http://10.147.24.36:8082/SSD/ribbon.png' alt='Ribbon' >
                     <div style='margin: 22px 0; font-size: 19px; font-weight: bold;'>
                         ਮਿਤੀ ਤੋਂ <strong>{startDate}</strong> ਮਿਤੀ ਤੱਕ <strong>{endDate}</strong>
-                    </div>
-                    <div style='margin: 10px 0; font-size: 21px; text-align: justify;word-spacing: 5px; line-height:0.3;'>
+                    </div> 
+                    <div style='margin: 10px 0; font-size: 21px; text-align: justify;word-spacing: 5px; line-height:1.8;'>
                             ਇਹ ਪ੍ਰਮਾਣਿਤ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ <strong>{await TranslateToPunjabi(player.ApplicantFullName)}</strong>, ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ <strong>{await TranslateToPunjabi(player.ApplicantFatherName)}</strong>, ਜਿਨ੍ਹਾਂ ਦੀ ਜਨਮ ਮਿਤੀ <strong>{await TranslateToPunjabi(player.ApplicantDOB)}</strong> ਹੈ, ਨੇ ਰਾਜ ਪੱਧਰੀ ਖੇਡਾਂ 2024 ਵਿੱਚ ਭਾਗ ਲਿਆ, ਜੋ ਜ਼ਿਲ੍ਹਾ <strong>{await TranslateToPunjabi(player.GameHeldDistrict)}</strong> ਵਿੱਚ ਆਯੋਜਿਤ ਹੋਈਆਂ। ਉਨ੍ਹਾਂ ਨੇ ਜ਼ਿਲ੍ਹਾ <strong>{await TranslateToPunjabi(player.GameRepresentingDistrict)}</strong> ਦੀ ਨੁਮਾਇੰਦਗੀ ਕਰਦਿਆਂ <strong>{await TranslateToPunjabi(player.ApplicantGame)}</strong> ਖੇਡ ਦੇ <strong>{await TranslateToPunjabi(player.ApplicantEvent)}</strong> ਇਵੈਂਟ ਸ਼੍ਰੇਣੀ (<strong>{await TranslateToPunjabi(player.ApplicantAgeGroup)}</strong> ਉਮਰ ਸਮੂਹ) ਵਿੱਚ ਭਾਗ ਲਿਆ। <strong>{player.Score}</strong> ਦੇ ਨਾਲ,<strong>{player.Position}</strong> ਸਥਾਨ ਹਾਸਲ ਕੀਤਾ।
  
                     </div> 
-                    <div style='display: flex; justify-content: space-between; margin: 50px 0 0;padding-top: 20px'>
-            <div style='text-align: right; font-size: 15px; '>
-                <img src='{imagePath}' style='margin-left: 10px;' />
-                <span style='font-size: 18px;'>ਕਨਵੀਨਰ</span>
-            </div>
-            <div style='text-align: right; font-size: 15px;'>
-                <img src='{dsoImagePath}' style='margin-left: 10px;' />
-                <span style='font-size: 18px;'>ਜ਼ਿਲ੍ਹਾ ਖੇਡ ਅਫ਼ਸਰ</span>
-            </div>
-            <div style='text-align: right; font-size: 15px;'>
-                <img src='C:\Users\HP\OneDrive\Desktop\Sports Signature\Director Sign' style='margin-left: 10px;display: block; margin: auto; margin-bottom: 5px;' />
-                <span style='font-size: 18px;'>ਡਾਇਰੈਕਟਰ ਸਪੋਰਟਸ <br />ਪੰਜਾਬ</span>
-            </div>
+
+                    <div style='display: flex; justify-content: space-between; margin: 30px 0 0;align-items: center;'>
+
+                        <div style='text-align: left; width:35%;'>
+                            <img src='{ConveyorImagePath}' style='height: auto; width:30%;'/>
+                            <span style='font-size: 18px;'>ਕਨਵੀਨਰ</span>
+                        </div>
+                            <div  style='text-align: center; width:35%;' >
+                                <img src='{dsoImagePath}' style='height: auto; width:30%;' />
+                                <span style='font-size: 18px;'>ਜ਼ਿਲ੍ਹਾ ਖੇਡ ਅਫ਼ਸਰ</span>
+                            </div>
+                        <div style='text-align: right;width:35%;'>
+                            <img src='{dsoImagePath}' style='height: auto; width:30%;' />
+                            <span style='font-size: 18px;'>ਡਾਇਰੈਕਟਰ ਸਪੋਰਟਸ <br />ਪੰਜਾਬ</span>
+                        </div>
           
             
-        </div>
+                    </div>
                 </div>
             </div>
         </body>
