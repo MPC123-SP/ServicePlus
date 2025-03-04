@@ -3177,6 +3177,197 @@ namespace ServicePlusAPIs.Controllers
                 return BadRequest(new { message = "No record found" });
             }
         }
+        //        private async Task<string> GeneratePlayerCertificate(string districtName, string gameName, string ageGroup)
+        //        {
+        //            // District-wise serial number prefixes to create Folder Name
+        //            var districtPrefixes = new Dictionary<string, string>
+        //    {
+        //        { "PATIALA", "PAT000" },
+        //        { "AMRITSAR", "AMR000" },
+        //        { "BATHINDA", "BAT000" },
+        //        { "LUDHIANA", "LUD000" }
+        //        // Add more districts as needed
+        //    };
+
+        //            // Get the prefix for the given district, default to "GEN000" if not found
+        //            string randomDistrictSr = districtPrefixes.ContainsKey(districtName.ToUpper())
+        //                ? districtPrefixes[districtName.ToUpper()]
+        //                : "GEN000";
+
+        //            // Fetch issued certificates first (executed on DB)
+        //            var existingCertificates = await _servicePlusContext.PlayerIssuedCertificate
+        //                .Where(c => c.GameHeldDistrict == districtName
+        //                            && c.ApplicantGame == gameName
+        //                            && c.ApplicantAgeGroup == ageGroup
+        //                            && c.CertificateSerialNo != null)
+        //                .Select(c => new
+        //                {
+        //                    c.ApplicantFullName,
+        //                    c.ApplicantFatherName,
+        //                    c.ApplicantDOB,
+        //                    c.ApplicantGame,
+        //                    c.ApplicantEvent,
+        //                    c.ApplicantAgeGroup
+        //                })
+        //                .ToListAsync(); // Move data to memory
+
+        //            // Fetch all players (executed on DB)
+        //            var allPlayers = await _servicePlusContext.PlayerCertificateDetails
+        //                .Where(d => d.GameHeldDistrict == districtName
+        //                            && d.ApplicantGame == gameName
+        //                            && d.ApplicantAgeGroup == ageGroup)
+        //                .ToListAsync(); // Move data to memory
+
+        //            // Perform filtering in memory (LINQ to Objects)
+        //            var playerCertificateDetails = allPlayers
+        //                .Where(d => !existingCertificates.Any(c =>
+        //                    c.ApplicantFullName == d.ApplicantFullName &&
+        //                    c.ApplicantFatherName == d.ApplicantFatherName &&
+        //                    c.ApplicantDOB == d.ApplicantDOB &&
+        //                    c.ApplicantGame == d.ApplicantGame &&
+        //                    c.ApplicantEvent == d.ApplicantEvent &&
+        //                    c.ApplicantAgeGroup == d.ApplicantAgeGroup))
+        //                .ToList(); // Filtering done in memory
+
+
+
+        //            if (!playerCertificateDetails.Any())
+        //            {
+        //                return "No new certificates to generate.";
+        //            }
+
+        //            // Get last serial number and generate a new one
+        //            var lastIssuedCertificate = await _servicePlusContext.PlayerIssuedCertificate
+        //    .OrderByDescending(c => c.CertificateSerialNo).Select(d=>d.CertificateSerialNo)
+        //    .FirstOrDefaultAsync();
+
+        //            int newSerialNumber = lastIssuedCertificate != null && int.TryParse(lastIssuedCertificate, out int lastSerial)
+        //                ? lastSerial + 1
+        //                : 1;
+        //            var newCertificates = new List<PlayerIssuedCertificate>();
+
+        //            foreach (var player in playerCertificateDetails)
+        //            {
+        //                // Ensure a unique 6-digit serial number
+        //                string certificateNo = newSerialNumber.ToString("D6");
+
+        //                // Define folder path
+        //                string folderName = $"{districtName}_{randomDistrictSr}_{gameName}_{ageGroup}";
+        //                //  string folderPath = Path.Combine(@"C:\inetpub\wwwroot", "GeneratedCertificates", folderName);
+        //                string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "GeneratedCertificates", folderName);
+        //                if (!Directory.Exists(folderPath))
+        //                {
+        //                    Directory.CreateDirectory(folderPath);
+        //                }
+        //                string startDate = "01-01-2024";
+        //                string endDate = "31-12-2024";
+        //                // Define certificate filename
+        //                string fileName = $"{districtName}_{randomDistrictSr}_{gameName}_{player.ApplicantFullName}.pdf";
+        //                string filePath = Path.Combine(folderPath, fileName);
+
+        //                await new BrowserFetcher().DownloadAsync();
+        //                await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions { Headless = true });
+        //                await using var page = await browser.NewPageAsync();
+        //                await page.EmulateMediaTypeAsync(PuppeteerSharp.Media.MediaType.Screen);
+
+        //                string htmlContent = $@"<html>
+        //        <head>
+        //            <style>
+        //                body {{ margin: 0; padding: 0; font-family: Arial, sans-serif; }}
+        //                #certificate-container {{
+        //                    position: fixed;
+        //                    width: 100%;
+        //                    height: 100%;
+        //                    display: flex;
+        //                    align-items: center;
+        //                    justify-content: center;
+        //                    text-align: center;
+        //                }}
+        //                #background-img {{
+        //                    position: fixed;
+        //                    width: 100%;
+        //                    height: 100%;
+        //                }}
+        //                .text-bold {{ font-weight: bold; }}
+        //            </style>
+        //        </head>
+        //        <body>
+        //            <img id='background-img' src='http://10.147.24.36:8082/SSD/SportsCertificateBg.png' />
+        //            <div id='certificate-container'>
+        //                <div style='position: absolute; top: 16%; left: 10%; width: 80%; height:100%; padding: 20px; border-radius: 10px; box-sizing: border-box; text-align: center;'>
+        //                    <div style='margin: 8px 0; font-size: 19px; font-weight: bold; position: absolute; top: -12%; right: 3%;'>
+        //                        ਸਰਟੀਫਿਕੇਟ ਨੰ. : <u>{certificateNo}</u>
+        //                    </div>
+        //                    <div class='text-bold' style=' font-size: 30px; font-weight: bold; padding-top: 2px;'>ਖੇਡਾਂ ਅਤੇ ਯੁਵਾ ਮਾਮਲੇ ਵਿਭਾਗ</div>
+        //<img style='width: 42%;height: 3%;' src='http://10.147.24.36:8082/SSD/arrow.png'>
+        //                    <div style='margin: 5px 0; font-size:28px;'>
+        //                        <span style='font-size:52px'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024</strong></span>
+        //                    </div>
+        //                    <div style='margin: 8px 0; font-size: 28px; margin-top: 9px; font-weight: bold;'>ਸਰਟੀਫਿਕੇਟ</div>
+        //              <img style='width: 88%; height: 13%; margin-top: 6px;' src='http://10.147.24.36:8082/SSD/ribbon.png' alt='Ribbon' >
+        //                    <div style='margin: 22px 0; font-size: 19px; font-weight: bold;'>
+        //                        ਮਿਤੀ ਤੋਂ <strong>{startDate}</strong> ਮਿਤੀ ਤੱਕ <strong>{endDate}</strong>
+        //                    </div>
+        //                    <div style='margin: 10px 0; font-size: 21px; text-align: justify;word-spacing: 5px;'>
+        //                            ਇਹ ਪ੍ਰਮਾਣਿਤ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ <strong>{await TranslateToPunjabi(player.ApplicantFullName)}</strong>, ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ <strong>{await TranslateToPunjabi(player.ApplicantFatherName)}</strong>, ਜਿਨ੍ਹਾਂ ਦੀ ਜਨਮ ਮਿਤੀ <strong>{await TranslateToPunjabi(player.ApplicantDOB)}</strong> ਹੈ, ਨੇ ਰਾਜ ਪੱਧਰੀ ਖੇਡਾਂ 2024 ਵਿੱਚ ਭਾਗ ਲਿਆ, ਜੋ ਜ਼ਿਲ੍ਹਾ <strong>{await TranslateToPunjabi(player.GameHeldDistrict)}</strong> ਵਿੱਚ ਆਯੋਜਿਤ ਹੋਈਆਂ। ਉਨ੍ਹਾਂ ਨੇ ਜ਼ਿਲ੍ਹਾ <strong>{await TranslateToPunjabi(player.GameRepresentingDistrict)}</strong> ਦੀ ਨੁਮਾਇੰਦਗੀ ਕਰਦਿਆਂ <strong>{await TranslateToPunjabi(player.ApplicantGame)}</strong> ਖੇਡ ਦੇ <strong>{await TranslateToPunjabi(player.ApplicantEvent)}</strong> ਇਵੈਂਟ ਸ਼੍ਰੇਣੀ (<strong>{await TranslateToPunjabi(player.ApplicantAgeGroup)}</strong> ਉਮਰ ਸਮੂਹ) ਵਿੱਚ ਭਾਗ ਲਿਆ। <strong>{player.Score}</strong> ਦੇ ਨਾਲ,<strong>{player.Position}</strong> ਸਥਾਨ ਹਾਸਲ ਕੀਤਾ।
+
+        //                    </div> 
+        //                    <div style='display: flex; justify-content: space-between; margin: 50px 0 0;padding-top: 20px'>
+        //            <div style='text-align: right; font-size: 15px; '>
+        //                <img src='./images/director.png' style='margin-left: 10px;' />
+        //                <span style='font-size: 18px;'>ਕਨਵੀਨਰ</span>
+        //            </div>
+        //            <div style='text-align: right; font-size: 15px;'>
+        //                <img src='./images/director.png' style='margin-left: 10px;' />
+        //                <span style='font-size: 18px;'>ਜ਼ਿਲ੍ਹਾ ਖੇਡ ਅਫ਼ਸਰ</span>
+        //            </div>
+        //            <div style='text-align: right; font-size: 15px;'>
+        //                <img src='C:\Users\HP\OneDrive\Desktop\Sports Signature\Director Sign' style='margin-left: 10px;display: block; margin: auto; margin-bottom: 5px;' />
+        //                <span style='font-size: 18px;'>ਡਾਇਰੈਕਟਰ ਸਪੋਰਟਸ <br />ਪੰਜਾਬ</span>
+        //            </div>
+
+
+        //        </div>
+        //                </div>
+        //            </div>
+        //        </body>
+        //        </html>";
+
+        //                await page.SetContentAsync(htmlContent);
+
+        //                await page.PdfAsync(filePath, new PdfOptions
+        //                {
+        //                    PrintBackground = true,
+        //                    Format = PaperFormat.Legal,
+        //                    Landscape = true,
+        //                    Width = "100%",
+        //                });
+
+        //                // Add the new record to the list
+        //                newCertificates.Add(new PlayerIssuedCertificate
+        //                {
+        //                    GameHeldDistrict = districtName,
+        //                    ApplicantGame = gameName,
+        //                    ApplicantAgeGroup = ageGroup,
+        //                    ApplicantFullName = player.ApplicantFullName,
+        //                    ApplicantFatherName = player.ApplicantFatherName,
+        //                    ApplicantDOB = player.ApplicantDOB,
+        //                    ApplicantEvent = player.ApplicantEvent,
+        //                    CertificateSerialNo = certificateNo,
+        //                    CertificatePath = filePath
+        //                });
+        //                newSerialNumber++; // Increment serial number for the next certificate
+        //            }
+        //            // **Save all records at once**
+        //            if (newCertificates.Any())
+        //            {
+        //                await _servicePlusContext.PlayerIssuedCertificate.AddRangeAsync(newCertificates);
+        //                await _servicePlusContext.SaveChangesAsync();
+        //            }
+        //            return newCertificates.Count.ToString();
+        //        }
+
+
         private async Task<string> GeneratePlayerCertificate(string districtName, string gameName, string ageGroup)
         {
             // District-wise serial number prefixes to create Folder Name
@@ -3238,7 +3429,7 @@ namespace ServicePlusAPIs.Controllers
 
             // Get last serial number and generate a new one
             var lastIssuedCertificate = await _servicePlusContext.PlayerIssuedCertificate
-    .OrderByDescending(c => c.CertificateSerialNo).Select(d=>d.CertificateSerialNo)
+    .OrderByDescending(c => c.CertificateSerialNo).Select(d => d.CertificateSerialNo)
     .FirstOrDefaultAsync();
 
             int newSerialNumber = lastIssuedCertificate != null && int.TryParse(lastIssuedCertificate, out int lastSerial)
@@ -3269,6 +3460,134 @@ namespace ServicePlusAPIs.Controllers
                 await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions { Headless = true });
                 await using var page = await browser.NewPageAsync();
                 await page.EmulateMediaTypeAsync(PuppeteerSharp.Media.MediaType.Screen);
+
+                // Signature For Convenor
+                // Define the base directory where images are stored
+                string baseDirectory = @"C:\Users\HP\OneDrive\Desktop\Sports Signature";
+
+                // Dictionary to store (district, game) as key and image path as value
+                Dictionary<(string, string), string> gameSignatures = new Dictionary<(string, string), string>((IDictionary<(string, string), string>)StringComparer.OrdinalIgnoreCase)
+                {
+                    //Amritsar
+                    { ("Amritsar", "Gatka"), $@"{baseDirectory}\Amritsar\Gatka Convenor Sign\dummy.png" },
+                    { ("Amritsar", "Rugby"), $@"{baseDirectory}\Amritsar\Rugby Convenor Sign\dummy.png" },
+
+                    //Barnala
+                    { ("Barnala", "Netball"), $@"{baseDirectory}\Barnala\Netball Convenor Sign\NET-remove.png" },
+                    { ("Patiala", "Table Tennis"), $@"{baseDirectory}\Barnala\Table Tennis Convenor Sign\TT-remove.png" },
+
+                    //Bathinda
+                    { ("Bathinda", "Hockey"), $@"{baseDirectory}\Bathinda\Hocky Convenor Sign\HOCKEY-remove.png" },
+                    { ("Bathinda", "Powerlifting"), $@"{baseDirectory}\Bathinda\Powerlifting Convenor Sign\POWERLIFTING-remove.png" },
+
+                    //Faridkot
+                    { ("Faridkot", "Basketball"), $@"{baseDirectory}\Faridkot\Basketball Convenor Sign\dummy.png" },
+                    { ("Faridkot", "Taekwondo"), $@"{baseDirectory}\Faridkot\Taekwondo Convenor Sign\dummy.png" },
+
+                    //Fatehgarh Sahib
+                    { ("Fatehgarh Sahib", "Fencing"), $@"{baseDirectory}\Fatehgarh Sahib\Fencing Convenor Sign\FENCING-remove.png" },
+                    { ("Fatehgarh Sahib", "Softball"), $@"{baseDirectory}\Fatehgarh Sahib\Softball Convenor Sign\SOFT-removebg.png" },
+
+                    //Hoshiarpur
+                    { ("Hoshiarpur", "Football"), $@"{baseDirectory}\Hoshiarpur\Football Convenor Sign\dummy.png" },
+
+                    //Jalandhar
+                    { ("Jalandhar", "Chess"), $@"{baseDirectory}\Jalandhar\Chess Convenor Sign\Chess_Convener-remove.png" },
+                    { ("Jalandhar", "Volleyball Smashing"), $@"{baseDirectory}\Jalandhar\Volleyball Smashing Convenor Sign\Volleyball_Smashing_Convener_sign-remove.png" },
+
+                    //Ludhiana
+                    { ("Ludhiana", "Athletics"), $@"{baseDirectory}\Ludhiana\Athletics Convenor Sign\ATHLETICS-removebg-preview.png" },
+                    { ("Ludhiana", "Baseball"), $@"{baseDirectory}\Ludhiana\Baseball Convenor Sign\BASEBALL-removebg-preview.png" },
+                    { ("Ludhiana", "Cycling"), $@"{baseDirectory}\Ludhiana\Cycling Convenor Sign\CYCLING-removebg-preview.png" },
+                    { ("Ludhiana", "Kick Boxing"), $@"{baseDirectory}\Ludhiana\Kick Boxing Convenor Sign\KICKBOXING-removebg-preview.png" },
+                    { ("Ludhiana", "Lawn Tennis"), $@"{baseDirectory}\Ludhiana\Lawn Tennis Convenor Sign\LAWN_TENNIS-removebg-preview.png" },
+
+                    //Malerkotla
+                    { ("Malerkotla", "Volleyball Shooting"), $@"{baseDirectory}\Malerkotla\Volleyball Shooting Convenor Sign\dummy.png" },
+
+                    //Mansa
+                    { ("Mansa", "Judo"), $@"{baseDirectory}\Mansa\Judo Convenor Sign\JUDO-removebg-preview.png" },
+                    { ("Mansa", "Wrestling"), $@"{baseDirectory}\Mansa\Wrestling Convenor Sign\dummy.png" },
+
+                    //Patiala
+                    { ("Patiala", "Archary"), $@"{baseDirectory}\Patiala\Archary Convenor Sign\ARCHERY-removebg-preview.png" },
+                    { ("Patiala", "Gymnastics"), $@"{baseDirectory}\Patiala\Gymnastics Convenor Sign\GYMNASTICS-removebg-preview.png" },
+                    { ("Patiala", "Kabbadi"), $@"{baseDirectory}\Patiala\Kabbadi circle style Convenor Sign\KABADDI_CS-removebg-preview.png" },
+                    { ("Patiala", "Kho-Kho"), $@"{baseDirectory}\Patiala\Kho-Kho Convenor Sign\KHO_KHO-removebg-preview.png" },
+
+                    //Rupnagar
+                    { ("Rupnagar", "Handball"), $@"{baseDirectory}\Rupnagar\Handball Convenor Sign\dummy.png" },
+                    { ("Rupnagar", "Kayking"), $@"{baseDirectory}\Rupnagar\Kayking Convenor Sign\dummy.png" },
+                    { ("Rupnagar", "Rowing"), $@"{baseDirectory}\Rupnagar\Rowing Convenor Sign\dummy.png" },
+                    
+                    //Sangrur
+                    { ("Sangrur", "Kabaddi"), $@"{baseDirectory}\Sangrur\Kabaddi National Style Convenor Sign\dummy.png" },
+                    { ("Sangrur", "Roller Skating"), $@"{baseDirectory}\Sangrur\Roller Skating Convenor Sign\RS-removebg-preview.png" },
+                    { ("Sangrur", "Roller Skating Speed Skating"), $@"{baseDirectory}\Sangrur\Roller Skating Speed Skating Convenor Sign\dummy.png" },
+                    { ("Sangrur", "Weightlifting"), $@"{baseDirectory}\Sangrur\Weightlifting Convenor SIgn\WL-removebg-preview.png" },
+                    { ("Sangrur", "Wushu"), $@"{baseDirectory}\Sangrur\Wushu Convenor Sign\WUSHU-removebg-preview.png" },
+
+                    //SAS Nagar
+                    { ("SAS Nagar", "Equestrian"), $@"{baseDirectory}\SAS Nagar\Equestrian Convenor Sign\dummy.png" },
+                    { ("SAS Nagar", "Shooting"), $@"{baseDirectory}\SAS Nagar\Shooting Convenor Sign\dummy.png" },
+                    { ("SAS Nagar", "Swimming"), $@"{baseDirectory}\SAS Nagar\Swimming Convenor Sign\dummy.png" },
+
+                    //SAS Nagar
+                    { ("SBS Nagar", "Boxing"), $@"{baseDirectory}\SBS Nagar\Boxing Convenor Sign\dummy.png" },
+
+                };
+
+                // Normalize input (Trim spaces and capitalize first letter)
+                districtName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(districtName.Trim().ToLower());
+                gameName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(gameName.Trim().ToLower());
+
+                // Try to get the image path from the dictionary
+                if (!gameSignatures.TryGetValue((districtName, gameName), out string imagePath))
+                {
+                    imagePath = "./images/default-sign.png"; // Fallback image if not found
+                }
+                else
+                {
+                    // Convert absolute path to a relative path for HTML rendering
+                    imagePath = Path.GetFileName(imagePath);
+                    imagePath = $"./images/{imagePath}";
+                }
+
+
+
+                // Dictionary to store district as key and DSO signature path as value
+                Dictionary<string, string> dsoSignatures = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        { "Amritsar", $@"{baseDirectory}\Amritsar\DSO Sign\Dso_Amritsar_official_signature-remove.png" },
+                        { "Barnala", $@"{baseDirectory}\Barnala\DSO Sign\dso_barnala_signs-remove.png" },
+                        { "Bathinda", $@"{baseDirectory}\Bathinda\DSO Sign\dummy.png" },
+                        { "Faridkot", $@"{baseDirectory}\Faridkot\DSO Sign\Dso_Faridkot_Official_Signature-remove.png" },
+                        { "Fatehgarh Sahib", $@"{baseDirectory}\Fatehgarh Sahib\DSO Sign\dummy.png" },
+                        { "Hoshiarpur", $@"{baseDirectory}\Hoshiarpur\DSO Sign\dummy.png" },
+                        { "Jalandhar", $@"{baseDirectory}\Jalandhar\DSO Sign\dso_jalandhar_signs-remove.png" },
+                        { "Ludhiana", $@"{baseDirectory}\Ludhiana\DSO Sign\Dso_Ludhiana_official_signature-remove.png" },
+                        { "Malerkotla", $@"{baseDirectory}\Malerkotla\DSO Sign\dso_malerkotla_official_signature.png-removebg-preview.png" },
+                        { "Mansa", $@"{baseDirectory}\Mansa\DSO Sign\dso_mansa_sign-removebg-preview.png" },
+                        { "Patiala", $@"{baseDirectory}\Patiala\DSO Sign\Dso_Patiala_Official_Signature-removebg-preview.png" },
+                        { "Rupnagar", $@"{baseDirectory}\Rupnagar\DSO Sign\dummy.png" },
+                        { "Sangrur", $@"{baseDirectory}\Sangrur\DSO Sign\dummy.png" },
+                        { "SAS Nagar", $@"{baseDirectory}\SAS Nagar\DSO Sign\MOHALI-removebg-preview.png" },
+                        { "SBS Nagar", $@"{baseDirectory}\SBS Nagar\DSO Sign\Dso_SBS_Nagar_official_signature-remove.png" }
+                    };
+
+                districtName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(districtName.Trim().ToLower());
+
+                // Try to get the image path from the dictionary
+                if (!dsoSignatures.TryGetValue((districtName), out string dsoImagePath))
+                {
+                    dsoImagePath = "./images/default-sign.png"; // Fallback image if not found
+                }
+                else
+                {
+                    // Convert absolute path to a relative path for HTML rendering
+                    dsoImagePath = Path.GetFileName(dsoImagePath);
+                    dsoImagePath = $"./images/{dsoImagePath}";
+                }
 
                 string htmlContent = $@"<html>
         <head>
@@ -3308,21 +3627,21 @@ namespace ServicePlusAPIs.Controllers
                     <div style='margin: 22px 0; font-size: 19px; font-weight: bold;'>
                         ਮਿਤੀ ਤੋਂ <strong>{startDate}</strong> ਮਿਤੀ ਤੱਕ <strong>{endDate}</strong>
                     </div>
-                    <div style='margin: 10px 0; font-size: 21px; text-align: justify;word-spacing: 5px;'>
+                    <div style='margin: 10px 0; font-size: 21px; text-align: justify;word-spacing: 5px; line-height:0.3;'>
                             ਇਹ ਪ੍ਰਮਾਣਿਤ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ <strong>{await TranslateToPunjabi(player.ApplicantFullName)}</strong>, ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ <strong>{await TranslateToPunjabi(player.ApplicantFatherName)}</strong>, ਜਿਨ੍ਹਾਂ ਦੀ ਜਨਮ ਮਿਤੀ <strong>{await TranslateToPunjabi(player.ApplicantDOB)}</strong> ਹੈ, ਨੇ ਰਾਜ ਪੱਧਰੀ ਖੇਡਾਂ 2024 ਵਿੱਚ ਭਾਗ ਲਿਆ, ਜੋ ਜ਼ਿਲ੍ਹਾ <strong>{await TranslateToPunjabi(player.GameHeldDistrict)}</strong> ਵਿੱਚ ਆਯੋਜਿਤ ਹੋਈਆਂ। ਉਨ੍ਹਾਂ ਨੇ ਜ਼ਿਲ੍ਹਾ <strong>{await TranslateToPunjabi(player.GameRepresentingDistrict)}</strong> ਦੀ ਨੁਮਾਇੰਦਗੀ ਕਰਦਿਆਂ <strong>{await TranslateToPunjabi(player.ApplicantGame)}</strong> ਖੇਡ ਦੇ <strong>{await TranslateToPunjabi(player.ApplicantEvent)}</strong> ਇਵੈਂਟ ਸ਼੍ਰੇਣੀ (<strong>{await TranslateToPunjabi(player.ApplicantAgeGroup)}</strong> ਉਮਰ ਸਮੂਹ) ਵਿੱਚ ਭਾਗ ਲਿਆ। <strong>{player.Score}</strong> ਦੇ ਨਾਲ,<strong>{player.Position}</strong> ਸਥਾਨ ਹਾਸਲ ਕੀਤਾ।
  
                     </div> 
                     <div style='display: flex; justify-content: space-between; margin: 50px 0 0;padding-top: 20px'>
             <div style='text-align: right; font-size: 15px; '>
-                <img src='./images/director.png' style='margin-left: 10px;' />
+                <img src='{imagePath}' style='margin-left: 10px;' />
                 <span style='font-size: 18px;'>ਕਨਵੀਨਰ</span>
             </div>
             <div style='text-align: right; font-size: 15px;'>
-                <img src='./images/director.png' style='margin-left: 10px;' />
+                <img src='{dsoImagePath}' style='margin-left: 10px;' />
                 <span style='font-size: 18px;'>ਜ਼ਿਲ੍ਹਾ ਖੇਡ ਅਫ਼ਸਰ</span>
             </div>
             <div style='text-align: right; font-size: 15px;'>
-                <img src='./images/director.png' style='margin-left: 10px;display: block; margin: auto; margin-bottom: 5px;' />
+                <img src='C:\Users\HP\OneDrive\Desktop\Sports Signature\Director Sign' style='margin-left: 10px;display: block; margin: auto; margin-bottom: 5px;' />
                 <span style='font-size: 18px;'>ਡਾਇਰੈਕਟਰ ਸਪੋਰਟਸ <br />ਪੰਜਾਬ</span>
             </div>
           
@@ -3367,8 +3686,6 @@ namespace ServicePlusAPIs.Controllers
             return newCertificates.Count.ToString();
         }
 
-
-
         private async Task<string> TranslateToPunjabi(string text)
         {
             using HttpClient client = new HttpClient();
@@ -3380,7 +3697,7 @@ namespace ServicePlusAPIs.Controllers
 
 
             return translatedText;
-           
+
         }
 
         //private async Task<string> TranslateToPunjabi(string text )
