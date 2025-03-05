@@ -6,6 +6,7 @@ namespace ServicePlusAPIs.Models.SportsModel
     {
         [Key]
         public int Id { get; set; } 
+        public int? SrNo { get; set; }
         public string? ApplicantFullName { get; set; }
         public string? ApplicantFatherName { get; set; }
         public string? ApplicantDOB { get; set; }

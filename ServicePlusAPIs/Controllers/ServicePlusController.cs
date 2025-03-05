@@ -3177,197 +3177,7 @@ namespace ServicePlusAPIs.Controllers
                 return BadRequest(new { message = "No record found" });
             }
         }
-        //        private async Task<string> GeneratePlayerCertificate(string districtName, string gameName, string ageGroup)
-        //        {
-        //            // District-wise serial number prefixes to create Folder Name
-        //            var districtPrefixes = new Dictionary<string, string>
-        //    {
-        //        { "PATIALA", "PAT000" },
-        //        { "AMRITSAR", "AMR000" },
-        //        { "BATHINDA", "BAT000" },
-        //        { "LUDHIANA", "LUD000" }
-        //        // Add more districts as needed
-        //    };
-
-        //            // Get the prefix for the given district, default to "GEN000" if not found
-        //            string randomDistrictSr = districtPrefixes.ContainsKey(districtName.ToUpper())
-        //                ? districtPrefixes[districtName.ToUpper()]
-        //                : "GEN000";
-
-        //            // Fetch issued certificates first (executed on DB)
-        //            var existingCertificates = await _servicePlusContext.PlayerIssuedCertificate
-        //                .Where(c => c.GameHeldDistrict == districtName
-        //                            && c.ApplicantGame == gameName
-        //                            && c.ApplicantAgeGroup == ageGroup
-        //                            && c.CertificateSerialNo != null)
-        //                .Select(c => new
-        //                {
-        //                    c.ApplicantFullName,
-        //                    c.ApplicantFatherName,
-        //                    c.ApplicantDOB,
-        //                    c.ApplicantGame,
-        //                    c.ApplicantEvent,
-        //                    c.ApplicantAgeGroup
-        //                })
-        //                .ToListAsync(); // Move data to memory
-
-        //            // Fetch all players (executed on DB)
-        //            var allPlayers = await _servicePlusContext.PlayerCertificateDetails
-        //                .Where(d => d.GameHeldDistrict == districtName
-        //                            && d.ApplicantGame == gameName
-        //                            && d.ApplicantAgeGroup == ageGroup)
-        //                .ToListAsync(); // Move data to memory
-
-        //            // Perform filtering in memory (LINQ to Objects)
-        //            var playerCertificateDetails = allPlayers
-        //                .Where(d => !existingCertificates.Any(c =>
-        //                    c.ApplicantFullName == d.ApplicantFullName &&
-        //                    c.ApplicantFatherName == d.ApplicantFatherName &&
-        //                    c.ApplicantDOB == d.ApplicantDOB &&
-        //                    c.ApplicantGame == d.ApplicantGame &&
-        //                    c.ApplicantEvent == d.ApplicantEvent &&
-        //                    c.ApplicantAgeGroup == d.ApplicantAgeGroup))
-        //                .ToList(); // Filtering done in memory
-
-
-
-        //            if (!playerCertificateDetails.Any())
-        //            {
-        //                return "No new certificates to generate.";
-        //            }
-
-        //            // Get last serial number and generate a new one
-        //            var lastIssuedCertificate = await _servicePlusContext.PlayerIssuedCertificate
-        //    .OrderByDescending(c => c.CertificateSerialNo).Select(d=>d.CertificateSerialNo)
-        //    .FirstOrDefaultAsync();
-
-        //            int newSerialNumber = lastIssuedCertificate != null && int.TryParse(lastIssuedCertificate, out int lastSerial)
-        //                ? lastSerial + 1
-        //                : 1;
-        //            var newCertificates = new List<PlayerIssuedCertificate>();
-
-        //            foreach (var player in playerCertificateDetails)
-        //            {
-        //                // Ensure a unique 6-digit serial number
-        //                string certificateNo = newSerialNumber.ToString("D6");
-
-        //                // Define folder path
-        //                string folderName = $"{districtName}_{randomDistrictSr}_{gameName}_{ageGroup}";
-        //                //  string folderPath = Path.Combine(@"C:\inetpub\wwwroot", "GeneratedCertificates", folderName);
-        //                string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "GeneratedCertificates", folderName);
-        //                if (!Directory.Exists(folderPath))
-        //                {
-        //                    Directory.CreateDirectory(folderPath);
-        //                }
-        //                string startDate = "01-01-2024";
-        //                string endDate = "31-12-2024";
-        //                // Define certificate filename
-        //                string fileName = $"{districtName}_{randomDistrictSr}_{gameName}_{player.ApplicantFullName}.pdf";
-        //                string filePath = Path.Combine(folderPath, fileName);
-
-        //                await new BrowserFetcher().DownloadAsync();
-        //                await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions { Headless = true });
-        //                await using var page = await browser.NewPageAsync();
-        //                await page.EmulateMediaTypeAsync(PuppeteerSharp.Media.MediaType.Screen);
-
-        //                string htmlContent = $@"<html>
-        //        <head>
-        //            <style>
-        //                body {{ margin: 0; padding: 0; font-family: Arial, sans-serif; }}
-        //                #certificate-container {{
-        //                    position: fixed;
-        //                    width: 100%;
-        //                    height: 100%;
-        //                    display: flex;
-        //                    align-items: center;
-        //                    justify-content: center;
-        //                    text-align: center;
-        //                }}
-        //                #background-img {{
-        //                    position: fixed;
-        //                    width: 100%;
-        //                    height: 100%;
-        //                }}
-        //                .text-bold {{ font-weight: bold; }}
-        //            </style>
-        //        </head>
-        //        <body>
-        //            <img id='background-img' src='http://10.147.24.36:8082/SSD/SportsCertificateBg.png' />
-        //            <div id='certificate-container'>
-        //                <div style='position: absolute; top: 16%; left: 10%; width: 80%; height:100%; padding: 20px; border-radius: 10px; box-sizing: border-box; text-align: center;'>
-        //                    <div style='margin: 8px 0; font-size: 19px; font-weight: bold; position: absolute; top: -12%; right: 3%;'>
-        //                        ਸਰਟੀਫਿਕੇਟ ਨੰ. : <u>{certificateNo}</u>
-        //                    </div>
-        //                    <div class='text-bold' style=' font-size: 30px; font-weight: bold; padding-top: 2px;'>ਖੇਡਾਂ ਅਤੇ ਯੁਵਾ ਮਾਮਲੇ ਵਿਭਾਗ</div>
-        //<img style='width: 42%;height: 3%;' src='http://10.147.24.36:8082/SSD/arrow.png'>
-        //                    <div style='margin: 5px 0; font-size:28px;'>
-        //                        <span style='font-size:52px'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024</strong></span>
-        //                    </div>
-        //                    <div style='margin: 8px 0; font-size: 28px; margin-top: 9px; font-weight: bold;'>ਸਰਟੀਫਿਕੇਟ</div>
-        //              <img style='width: 88%; height: 13%; margin-top: 6px;' src='http://10.147.24.36:8082/SSD/ribbon.png' alt='Ribbon' >
-        //                    <div style='margin: 22px 0; font-size: 19px; font-weight: bold;'>
-        //                        ਮਿਤੀ ਤੋਂ <strong>{startDate}</strong> ਮਿਤੀ ਤੱਕ <strong>{endDate}</strong>
-        //                    </div>
-        //                    <div style='margin: 10px 0; font-size: 21px; text-align: justify;word-spacing: 5px;'>
-        //                            ਇਹ ਪ੍ਰਮਾਣਿਤ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ <strong>{await TranslateToPunjabi(player.ApplicantFullName)}</strong>, ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ <strong>{await TranslateToPunjabi(player.ApplicantFatherName)}</strong>, ਜਿਨ੍ਹਾਂ ਦੀ ਜਨਮ ਮਿਤੀ <strong>{await TranslateToPunjabi(player.ApplicantDOB)}</strong> ਹੈ, ਨੇ ਰਾਜ ਪੱਧਰੀ ਖੇਡਾਂ 2024 ਵਿੱਚ ਭਾਗ ਲਿਆ, ਜੋ ਜ਼ਿਲ੍ਹਾ <strong>{await TranslateToPunjabi(player.GameHeldDistrict)}</strong> ਵਿੱਚ ਆਯੋਜਿਤ ਹੋਈਆਂ। ਉਨ੍ਹਾਂ ਨੇ ਜ਼ਿਲ੍ਹਾ <strong>{await TranslateToPunjabi(player.GameRepresentingDistrict)}</strong> ਦੀ ਨੁਮਾਇੰਦਗੀ ਕਰਦਿਆਂ <strong>{await TranslateToPunjabi(player.ApplicantGame)}</strong> ਖੇਡ ਦੇ <strong>{await TranslateToPunjabi(player.ApplicantEvent)}</strong> ਇਵੈਂਟ ਸ਼੍ਰੇਣੀ (<strong>{await TranslateToPunjabi(player.ApplicantAgeGroup)}</strong> ਉਮਰ ਸਮੂਹ) ਵਿੱਚ ਭਾਗ ਲਿਆ। <strong>{player.Score}</strong> ਦੇ ਨਾਲ,<strong>{player.Position}</strong> ਸਥਾਨ ਹਾਸਲ ਕੀਤਾ।
-
-        //                    </div> 
-        //                    <div style='display: flex; justify-content: space-between; margin: 50px 0 0;padding-top: 20px'>
-        //            <div style='text-align: right; font-size: 15px; '>
-        //                <img src='./images/director.png' style='margin-left: 10px;' />
-        //                <span style='font-size: 18px;'>ਕਨਵੀਨਰ</span>
-        //            </div>
-        //            <div style='text-align: right; font-size: 15px;'>
-        //                <img src='./images/director.png' style='margin-left: 10px;' />
-        //                <span style='font-size: 18px;'>ਜ਼ਿਲ੍ਹਾ ਖੇਡ ਅਫ਼ਸਰ</span>
-        //            </div>
-        //            <div style='text-align: right; font-size: 15px;'>
-        //                <img src='C:\Users\HP\OneDrive\Desktop\Sports Signature\Director Sign' style='margin-left: 10px;display: block; margin: auto; margin-bottom: 5px;' />
-        //                <span style='font-size: 18px;'>ਡਾਇਰੈਕਟਰ ਸਪੋਰਟਸ <br />ਪੰਜਾਬ</span>
-        //            </div>
-
-
-        //        </div>
-        //                </div>
-        //            </div>
-        //        </body>
-        //        </html>";
-
-        //                await page.SetContentAsync(htmlContent);
-
-        //                await page.PdfAsync(filePath, new PdfOptions
-        //                {
-        //                    PrintBackground = true,
-        //                    Format = PaperFormat.Legal,
-        //                    Landscape = true,
-        //                    Width = "100%",
-        //                });
-
-        //                // Add the new record to the list
-        //                newCertificates.Add(new PlayerIssuedCertificate
-        //                {
-        //                    GameHeldDistrict = districtName,
-        //                    ApplicantGame = gameName,
-        //                    ApplicantAgeGroup = ageGroup,
-        //                    ApplicantFullName = player.ApplicantFullName,
-        //                    ApplicantFatherName = player.ApplicantFatherName,
-        //                    ApplicantDOB = player.ApplicantDOB,
-        //                    ApplicantEvent = player.ApplicantEvent,
-        //                    CertificateSerialNo = certificateNo,
-        //                    CertificatePath = filePath
-        //                });
-        //                newSerialNumber++; // Increment serial number for the next certificate
-        //            }
-        //            // **Save all records at once**
-        //            if (newCertificates.Any())
-        //            {
-        //                await _servicePlusContext.PlayerIssuedCertificate.AddRangeAsync(newCertificates);
-        //                await _servicePlusContext.SaveChangesAsync();
-        //            }
-        //            return newCertificates.Count.ToString();
-        //        }
-
-
+     
         private async Task<string> GeneratePlayerCertificate(string districtName, string gameName, string ageGroup)
         {
             // District-wise serial number prefixes to create Folder Name
@@ -3557,27 +3367,41 @@ namespace ServicePlusAPIs.Controllers
 
             foreach (var player in playerCertificateDetails)
             {
+                string startDate = "01-01-2024";
+                string endDate = "31-12-2024";
                 // Ensure a unique 6-digit serial number
-                string certificateNo = newSerialNumber.ToString("D6");
+                //string certificateNo = newSerialNumber.ToString("D6");
+                int currentYear = DateTime.Now.Year;
+                string formattedGameName = gameName.Replace(" ", ""); // Remove spaces
+                string certificateNo = $"{formattedGameName}{currentYear}{newSerialNumber:D6}";
+                // Define folder hierarchy
+                string baseFolder = "GeneratedCertificates"; // First folder
+                string districtFolder = $"{districtName}_{randomDistrictSr}"; // Second folder
+                string gameFolder = gameName; // Third folder
+                string ageGroupFolder = ageGroup; // Fourth folder
 
-                // Define folder path
-                string folderName = $"{districtName}_{randomDistrictSr}_{gameName}_{ageGroup}";
-                //  string folderPath = Path.Combine(@"C:\inetpub\wwwroot", "GeneratedCertificates", folderName);
-                string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "GeneratedCertificates", folderName);
+                // Combine paths to create full directory structure
+                string folderPath = Path.Combine(Directory.GetCurrentDirectory(), baseFolder, districtFolder, gameFolder, ageGroupFolder);
+
+                // Check if directory exists, if not, create it
                 if (!Directory.Exists(folderPath))
                 {
                     Directory.CreateDirectory(folderPath);
                 }
-                string startDate = "01-01-2024";
-                string endDate = "31-12-2024";
-                // Define certificate filename
-                string fileName = $"{districtName}_{randomDistrictSr}_{gameName}_{player.ApplicantFullName}.pdf";
-                string filePath = Path.Combine(folderPath, fileName);
 
+                // Define certificate filename
+                string fileName = $"{districtName}_{randomDistrictSr}_{gameName}_{ageGroup}_{player.ApplicantFullName}.pdf";
+                string filePath = Path.Combine(folderPath, fileName);
+                var googleSheetsService = new GoogleSheetsService(_servicePlusContext); // Pass the context here
+                await googleSheetsService.UpdateCertificateDetails(player.SrNo, filePath, certificateNo);
+
+                // Puppeteer PDF Generation Logic
                 await new BrowserFetcher().DownloadAsync();
                 await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions { Headless = true });
                 await using var page = await browser.NewPageAsync();
                 await page.EmulateMediaTypeAsync(PuppeteerSharp.Media.MediaType.Screen);
+
+                // Further processing...
 
 
 
@@ -3699,7 +3523,7 @@ namespace ServicePlusAPIs.Controllers
             using HttpClient client = new HttpClient();
             string url = $"https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pa&dt=t&q={text}";
 
-            var response = await client.GetStringAsync(url);
+            var response = await client.GetStringAsync(url); 
             var jsonData = System.Text.Json.JsonSerializer.Deserialize<object[]>(response);
             var translatedText = ((JsonElement)jsonData[0]).EnumerateArray().First().EnumerateArray().First().GetString();
 

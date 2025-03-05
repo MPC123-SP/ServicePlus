@@ -17,11 +17,12 @@ namespace ServicePlusAPIs.ExternalAPIs
     public class GoogleSheetsService
     {
         private readonly ServicePlusContext _servicePlusContext;
-        private static readonly string[] Scopes = { SheetsService.Scope.SpreadsheetsReadonly };
+        private static readonly string[] Scopes = { SheetsService.Scope.Spreadsheets };
         private static readonly string ApplicationName = "Sports Service";
         private static readonly string SpreadsheetId = "1BuUjoz_01GH8PXdN1A02G54CMtiDBR5sZvWZgHq-Xnc"; // Your Google Sheet ID
         private static readonly string SheetName = "Sheet1"; // Adjust if needed
-        private static readonly string CredentialsFilePath = "C:\\Users\\Mohit\\Documents\\GitHub\\ServicePlus\\ServicePlusAPIs\\ExternalAPIs\\SportsServiceAccount.json";
+        //private static readonly string CredentialsFilePath = "C:\\Users\\Mohit\\Documents\\GitHub\\ServicePlus\\ServicePlusAPIs\\ExternalAPIs\\SportsServiceAccount.json";
+        private static readonly string CredentialsFilePath = "C:\\Users\\HP\\OneDrive\\Documents\\GitHub\\ServicePlus\\ServicePlusAPIs\\ExternalAPIs\\SportsServiceAccount.json";
 
 
         public GoogleSheetsService(ServicePlusContext context)
@@ -57,6 +58,7 @@ namespace ServicePlusAPIs.ExternalAPIs
                 var records = values.Skip(1) // Assuming first row is headers
                     .Select(row => new PlayerCertificateDetails
                     {
+                        SrNo = int.TryParse(row.ElementAtOrDefault(0)?.ToString()?.Trim(), out int srNo) ? srNo : 0, // Default to 0 if parsing fails
                         ApplicantFullName = row.ElementAtOrDefault(1)?.ToString()?.Trim(),
                         ApplicantFatherName = row.ElementAtOrDefault(2)?.ToString()?.Trim(),
                         ApplicantDOB = row.ElementAtOrDefault(3)?.ToString()?.Trim(),
@@ -84,5 +86,53 @@ namespace ServicePlusAPIs.ExternalAPIs
             } 
         }
 
+
+        public async Task<bool> UpdateCertificateDetails(int? srNo, string certificatePath, string certificateSerialNo)
+        {
+            try
+            {
+                GoogleCredential credential;
+                using (var stream = new FileStream(CredentialsFilePath, FileMode.Open, FileAccess.Read))
+                {
+                    credential = GoogleCredential.FromStream(stream).CreateScoped(Scopes);
+                }
+
+                var service = new SheetsService(new BaseClientService.Initializer
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = ApplicationName,
+                });
+
+                // Google Sheets is 1-based indexing
+                int? rowIndex = srNo + 1; // Adjusting for Google Sheets indexing
+
+                // Data to update (Columns O & P)
+                IList<IList<object>> updatedValues = new List<IList<object>>
+        {
+            new List<object> { certificatePath, certificateSerialNo }
+        };
+
+                // Define the update range for columns O & P
+                string updateRange = $"'{SheetName}'!O{rowIndex}:P{rowIndex}";
+
+                var updateRequest = new ValueRange
+                {
+                    Values = updatedValues
+                };
+
+                var update = service.Spreadsheets.Values.Update(updateRequest, SpreadsheetId, updateRange);
+                update.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
+                await update.ExecuteAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating Google Sheets: {ex.Message}");
+                return false;
+            }
+        }
+
     }
+
 }
