@@ -83,7 +83,7 @@ namespace ServicePlusAPIs.ExternalAPIs
             {
                 Console.WriteLine($"Error accessing Google Sheets API: {ex.Message}");
                 return false;
-            } 
+            }
         }
 
 
@@ -108,13 +108,14 @@ namespace ServicePlusAPIs.ExternalAPIs
 
                 // Data to update (Columns N & O)
                 // N Means for Certificate Path And O Means for Certificate Serial No. which is in Spread sheet column
+                // Data to update (Columns N & O) - Ensure two values are passed correctly
                 IList<IList<object>> updatedValues = new List<IList<object>>
-        {
-            new List<object> { certificatePath, certificateSerialNo }
-        };
+                    {
+                        new List<object> { certificatePath, certificateSerialNo } // Ensure exactly 2 elements for N & O
+                    };
 
                 // Define the update range for columns N & O
-                string updateRange = $"'{SheetName}'!N{rowIndex}:O{rowIndex}";
+                string updateRange = $"'{SheetName}'!N{rowIndex}:O{rowIndex}";  // Ensure it updates columns N to O
 
                 var updateRequest = new ValueRange
                 {
@@ -124,6 +125,7 @@ namespace ServicePlusAPIs.ExternalAPIs
                 var update = service.Spreadsheets.Values.Update(updateRequest, SpreadsheetId, updateRange);
                 update.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
                 await update.ExecuteAsync();
+
 
                 return true;
             }

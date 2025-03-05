@@ -3183,10 +3183,10 @@ namespace ServicePlusAPIs.Controllers
             // District-wise serial number prefixes to create Folder Name
             var districtPrefixes = new Dictionary<string, string>
     {
-        { "PATIALA", "PAT000" },
-        { "AMRITSAR", "AMR000" },
-        { "BATHINDA", "BAT000" },
-        { "LUDHIANA", "LUD000" }
+        { "PATIALA", "PAT" },
+        { "AMRITSAR", "AMR" },
+        { "BATHINDA", "BAT" },
+        { "LUDHIANA", "LUD" }
         // Add more districts as needed
     };
 
@@ -3355,8 +3355,11 @@ namespace ServicePlusAPIs.Controllers
 
             // Get last serial number and generate a new one
             var lastIssuedCertificate = await _servicePlusContext.PlayerIssuedCertificate
-    .OrderByDescending(c => c.CertificateSerialNo).Select(d => d.CertificateSerialNo)
-    .FirstOrDefaultAsync();
+                                         .Where(c => c.GameHeldDistrict == districtName) // Filter by district
+                                         .OrderByDescending(c => c.CertificateSerialNo)
+                                         .Select(d => d.CertificateSerialNo)
+                                         .FirstOrDefaultAsync();
+
 
             int newSerialNumber = lastIssuedCertificate != null && int.TryParse(lastIssuedCertificate, out int lastSerial)
                 ? lastSerial + 1
@@ -3373,10 +3376,10 @@ namespace ServicePlusAPIs.Controllers
                 //string certificateNo = newSerialNumber.ToString("D6");
                 int currentYear = DateTime.Now.Year;
                 string formattedGameName = gameName.Replace(" ", ""); // Remove spaces
-                string certificateNo = $"{formattedGameName}{currentYear}{newSerialNumber:D6}";
+                string certificateNo = $"{randomDistrictSr}-2024-{newSerialNumber:D6}";
                 // Define folder hierarchy
                 string baseFolder = "GeneratedCertificates"; // First folder
-                string districtFolder = $"{districtName}_{randomDistrictSr}"; // Second folder
+                string districtFolder = $"{districtName}"; // Second folder
                 string gameFolder = gameName; // Third folder
                 string ageGroupFolder = ageGroup; // Fourth folder
 
@@ -3390,10 +3393,14 @@ namespace ServicePlusAPIs.Controllers
                 }
 
                 // Define certificate filename
-                string fileName = $"{districtName}_{randomDistrictSr}_{gameName}_{ageGroup}_{player.ApplicantFullName}.pdf";
+                string fileName = $"{certificateNo}.pdf";
                 string filePath = Path.Combine(folderPath, fileName);
                 var googleSheetsService = new GoogleSheetsService(_servicePlusContext); // Pass the context here
-                await googleSheetsService.UpdateCertificateDetails(player.SrNo, filePath, certificateNo);
+                await googleSheetsService.UpdateCertificateDetails(
+                    player.SrNo,
+                    $"{baseFolder}\\{districtFolder}\\{gameFolder}\\{ageGroupFolder}\\{certificateNo}",
+                    certificateNo
+                );
 
                 // Puppeteer PDF Generation Logic
                 await new BrowserFetcher().DownloadAsync();
