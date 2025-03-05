@@ -106,14 +106,15 @@ namespace ServicePlusAPIs.ExternalAPIs
                 // Google Sheets is 1-based indexing
                 int? rowIndex = srNo + 1; // Adjusting for Google Sheets indexing
 
-                // Data to update (Columns O & P)
+                // Data to update (Columns N & O)
+                // N Means for Certificate Path And O Means for Certificate Serial No. which is in Spread sheet column
                 IList<IList<object>> updatedValues = new List<IList<object>>
         {
             new List<object> { certificatePath, certificateSerialNo }
         };
 
-                // Define the update range for columns O & P
-                string updateRange = $"'{SheetName}'!O{rowIndex}:P{rowIndex}";
+                // Define the update range for columns N & O
+                string updateRange = $"'{SheetName}'!N{rowIndex}:O{rowIndex}";
 
                 var updateRequest = new ValueRange
                 {
