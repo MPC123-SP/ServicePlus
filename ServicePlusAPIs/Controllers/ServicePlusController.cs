@@ -3612,35 +3612,49 @@ namespace ServicePlusAPIs.Controllers
                     <div class='text-bold' style=' font-size: 30px; font-weight: bold; padding-top: 2px;'>ਖੇਡਾਂ ਅਤੇ ਯੁਵਾ ਮਾਮਲੇ ਵਿਭਾਗ</div>
 <img style='width: 42%;height: 3%;' src='http://10.147.24.36:8082/SSD/arrow.png'>
                     <div style='margin: 5px 0; font-size:28px;'>
-                        <span style='font-size:52px'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024</strong></span>
+                        <span style='font-size:52px; color: #3d387c;'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024</strong></span>
                     </div>
                     <div style='margin: 8px 0; font-size: 28px; margin-top: 9px; font-weight: bold;'>ਸਰਟੀਫਿਕੇਟ</div>
               <img style='width: 88%; height: 13%; margin-top: 6px;' src='http://10.147.24.36:8082/SSD/ribbon.png' alt='Ribbon' >
                     <div style='margin: 22px 0; font-size: 19px; font-weight: bold;'>
                         ਮਿਤੀ ਤੋਂ <strong>{startDate}</strong> ਮਿਤੀ ਤੱਕ <strong>{endDate}</strong>
                     </div> 
-                    <div style='margin: 10px 0; font-size: 21px; text-align: justify;word-spacing: 5px; line-height:1.8;'>
+                    <div style='margin: 8px 0; font-size: 21px; text-align: justify;word-spacing: 5px; line-height:1.6;'>
                             ਇਹ ਪ੍ਰਮਾਣਿਤ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ <strong>{await TranslateToPunjabi(player.ApplicantFullName)}</strong>, ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ <strong>{await TranslateToPunjabi(player.ApplicantFatherName)}</strong>, ਜਿਨ੍ਹਾਂ ਦੀ ਜਨਮ ਮਿਤੀ <strong>{await TranslateToPunjabi(player.ApplicantDOB)}</strong> ਹੈ, ਨੇ ਰਾਜ ਪੱਧਰੀ ਖੇਡਾਂ 2024 ਵਿੱਚ ਭਾਗ ਲਿਆ, ਜੋ ਜ਼ਿਲ੍ਹਾ <strong>{await TranslateToPunjabi(player.GameHeldDistrict)}</strong> ਵਿੱਚ ਆਯੋਜਿਤ ਹੋਈਆਂ। ਉਨ੍ਹਾਂ ਨੇ ਜ਼ਿਲ੍ਹਾ <strong>{await TranslateToPunjabi(player.GameRepresentingDistrict)}</strong> ਦੀ ਨੁਮਾਇੰਦਗੀ ਕਰਦਿਆਂ <strong>{await TranslateToPunjabi(player.ApplicantGame)}</strong> ਖੇਡ ਦੇ <strong>{await TranslateToPunjabi(player.ApplicantEvent)}</strong> ਇਵੈਂਟ ਸ਼੍ਰੇਣੀ (<strong>{await TranslateToPunjabi(player.ApplicantAgeGroup)}</strong> ਉਮਰ ਸਮੂਹ) ਵਿੱਚ ਭਾਗ ਲਿਆ। <strong>{player.Score}</strong> ਦੇ ਨਾਲ,<strong>{player.Position}</strong> ਸਥਾਨ ਹਾਸਲ ਕੀਤਾ।
  
                     </div> 
 
-                    <div style='display: flex; justify-content: space-between; margin: 30px 0 0;align-items: center;'>
+                   
 
-                        <div style='text-align: left; width:35%;'>
-                            <img src='{ConveyorImagePath}' style='height: auto; width:30%;'/>
-                            <span style='font-size: 18px;'>ਕਨਵੀਨਰ</span>
-                        </div>
-                            <div  style='text-align: center; width:35%;' >
-                                <img src='{dsoImagePath}' style='height: auto; width:30%;' />
-                                <span style='font-size: 18px;'>ਜ਼ਿਲ੍ਹਾ ਖੇਡ ਅਫ਼ਸਰ</span>
-                            </div>
-                        <div style='text-align: right;width:35%;'>
-                            <img src='{dsoImagePath}' style='height: auto; width:30%;' />
-                            <span style='font-size: 18px;'>ਡਾਇਰੈਕਟਰ ਸਪੋਰਟਸ <br />ਪੰਜਾਬ</span>
-                        </div>
-          
-            
-                    </div>
+                    <div style='display: flex; justify-content: space-between; align-items: center; margin: 95px 0 0; text-align: center; flex-direction: column; position: relative;'>
+
+            <!-- Image Section -->
+            <div style='display: flex; justify-content: space-between; width: 100%; position: relative;'>
+                <div style='width: 33.33%; position: relative;'>
+                    <img src='{ConveyorImagePath}' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -38px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                </div>
+                <div style='width: 33.33%; position: relative;'>
+                    <img src='{dsoImagePath}' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -43px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                </div>
+                <div style='width: 35%; position: relative;'>
+                    <img src='{dsoImagePath}' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -43px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                </div>
+            </div>
+        
+            <!-- Text Section -->
+            <div style='display: flex; justify-content: space-between; width: 100%; position: relative;'>
+                <div style='width: 33.33%; position: relative;'>
+                    <span style='font-size: 18px; display: block;'>ਕਨਵੀਨਰ</span>
+                </div>
+                <div style='width: 33.33%; position: relative;'>
+                    <span style='font-size: 18px; display: block;'>ਜ਼ਿਲ੍ਹਾ ਖੇਡ ਅਫ਼ਸਰ</span>
+                </div>
+                <div style='width: 35%; text-align:center; position: relative;'>
+                    <span style='font-size: 18px; display: block;'>ਡਾਇਰੈਕਟਰ ਸਪੋਰਟਸ <br />ਪੰਜਾਬ</span>
+                </div>
+            </div>
+        
+        </div>
                 </div>
             </div>
         </body>
