@@ -40,6 +40,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using MediaType = PuppeteerSharp.Media.MediaType;
 
 namespace ServicePlusAPIs.Controllers
 {
@@ -3404,9 +3405,18 @@ namespace ServicePlusAPIs.Controllers
 
                 // Puppeteer PDF Generation Logic
                 await new BrowserFetcher().DownloadAsync();
-                await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions { Headless = true });
+                await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+                {
+                    Headless = true,
+                    Args = new[] {
+                "--font-render-hinting=none",
+                "--force-color-profile=srgb"
+            }
+                });
+
                 await using var page = await browser.NewPageAsync();
-                await page.EmulateMediaTypeAsync(PuppeteerSharp.Media.MediaType.Screen);
+                await page.SetUserAgentAsync("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36");
+                await page.EmulateMediaTypeAsync(MediaType.Screen);
 
                 // Further processing...
 
@@ -3437,7 +3447,7 @@ namespace ServicePlusAPIs.Controllers
             <img id='background-img' src='http://10.147.24.36:8082/SSD/SportsCertificateBg.png' />
             <div id='certificate-container'>
                 <div style='position: absolute; top: 16%; left: 10%; width: 80%; height:100%; padding: 20px; border-radius: 10px; box-sizing: border-box; text-align: center;'>
-                    <div style='margin: 8px 0; font-size: 19px; font-weight: bold; position: absolute; top: -12%; right: 3%;'>
+                    <div style='margin: 8px 0; font-size: 16px; font-weight: bold; position: absolute; top: -12%; right: 3%;'>
                         ਸਰਟੀਫਿਕੇਟ ਨੰ. : <u>{certificateNo}</u>
                     </div>
                     <div class='text-bold' style=' font-size: 30px; font-weight: bold; padding-top: 2px;'>ਖੇਡਾਂ ਅਤੇ ਯੁਵਾ ਮਾਮਲੇ ਵਿਭਾਗ</div>
@@ -3445,19 +3455,49 @@ namespace ServicePlusAPIs.Controllers
                     <div style='margin: 5px 0; font-size:28px;'>
                         <span style='font-size:52px; color: #3d387c;'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024</strong></span>
                     </div>
-                    <div style='margin: 8px 0; font-size: 28px; margin-top: 9px; font-weight: bold;'>ਸਰਟੀਫਿਕੇਟ</div>
-              <img style='width: 88%; height: 13%; margin-top: 6px;' src='http://10.147.24.36:8082/SSD/ribbon.png' alt='Ribbon' >
-                    <div style='margin: 22px 0; font-size: 19px; font-weight: bold;'>
+    <div style='margin: 8px 0; font-size: 28px; margin-top: 5px; font-weight: bold;'>ਮੈਰਿਟ ਸਰਟੀਫਿਕੇਟ</div>
+              <div style=""
+            display: inline-block; 
+            background-color: #d32f2f; 
+            color: white; 
+            padding: 7px 20px; 
+            border-radius: 20px 0 20px 0; 
+            font-size: 24px; 
+            font-weight: bold; 
+            font-family: 'Gurmukhi', Arial, sans-serif;"">ਰਾਜ ਪੱਧਰੀ ਟੂਰਨਾਮੈਂਟ</div>
+              
+             <div style='margin: 6px 0; font-size: 24px; margin-top: 5px; font-weight: bold;'>{await TranslateToPunjabi(player.GameHeldDistrict)}</div>
+                    <div style='margin: 12px 0; font-size: 19px; font-weight: bold;'>
                         ਮਿਤੀ ਤੋਂ <strong>{startDate}</strong> ਮਿਤੀ ਤੱਕ <strong>{endDate}</strong>
                     </div> 
-                    <div style='margin: 8px 0; font-size: 21px; text-align: justify;word-spacing: 5px; line-height:1.6;'>
-                            ਇਹ ਪ੍ਰਮਾਣਿਤ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ <strong>{await TranslateToPunjabi(player.ApplicantFullName)}</strong>, ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ <strong>{await TranslateToPunjabi(player.ApplicantFatherName)}</strong>, ਜਿਨ੍ਹਾਂ ਦੀ ਜਨਮ ਮਿਤੀ <strong>{await TranslateToPunjabi(player.ApplicantDOB)}</strong> ਹੈ, ਨੇ ਰਾਜ ਪੱਧਰੀ ਖੇਡਾਂ 2024 ਵਿੱਚ ਭਾਗ ਲਿਆ, ਜੋ ਜ਼ਿਲ੍ਹਾ <strong>{await TranslateToPunjabi(player.GameHeldDistrict)}</strong> ਵਿੱਚ ਆਯੋਜਿਤ ਹੋਈਆਂ। ਉਨ੍ਹਾਂ ਨੇ ਜ਼ਿਲ੍ਹਾ <strong>{await TranslateToPunjabi(player.GameRepresentingDistrict)}</strong> ਦੀ ਨੁਮਾਇੰਦਗੀ ਕਰਦਿਆਂ <strong>{await TranslateToPunjabi(player.ApplicantGame)}</strong> ਖੇਡ ਦੇ <strong>{await TranslateToPunjabi(player.ApplicantEvent)}</strong> ਇਵੈਂਟ ਸ਼੍ਰੇਣੀ (<strong>{await TranslateToPunjabi(player.ApplicantAgeGroup)}</strong> ਉਮਰ ਸਮੂਹ) ਵਿੱਚ ਭਾਗ ਲਿਆ। <strong>{player.Score}</strong> ਦੇ ਨਾਲ,<strong>{player.Position}</strong> ਸਥਾਨ ਹਾਸਲ ਕੀਤਾ।
- 
-                    </div> 
+                   <div style=''text-align: justify; font-size: 27px;line-height:2;>
+                            ਤਸਦੀਕ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ 
+                            <strong>
+                                <span style='display: inline-block; width: 83%;  border-bottom: 1.5px dashed #000;'>
+                                    {await TranslateToPunjabi(player.ApplicantFullName)}
+                                </span>
+                            </strong><br>
+                            ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ 
+                            <strong><span style='display: inline-block; width: 39%; text-align: center; border-bottom:1.5px dashed #000;'>{await TranslateToPunjabi(player.ApplicantFatherName)}</span></strong>
+                            ਜਿਨ੍ਹਾਂ ਦੀ ਜਨਮ ਮਿਤੀ 
+                            <strong><span style='display: inline-block; width: 38%; text-align: center; border-bottom: 1.5px dashed #000;'>{await TranslateToPunjabi(player.ApplicantDOB)}</span></strong><br>
+                            ਨੇ ਪੰਜਾਬ ਰਾਜ ਖੇਡਾ - 2024 ਵਿੱਚ ਜ਼ਿਲ੍ਹਾ 
+                            <strong><span style='display: inline-block; width: 76%; text-align: center; border-bottom: 1.5px dashed #000;'>{await TranslateToPunjabi(player.GameRepresentingDistrict)}</span></strong> <br>
+                            ਵਲੋਂ ਖੇਡ 
+                            <strong><span style='display: inline-block; width: 44%; text-align: center; border-bottom: 1.5px dashed #000;'>{await TranslateToPunjabi(player.ApplicantGame)}</span></strong>  
+                            ਵਿਵੇਟ/ਵਰਗ 
+                            <strong><span style='display: inline-block; width: 41%; text-align: center; border-bottom: 1.5px dashed #000;'>{await TranslateToPunjabi(player.ApplicantEvent)}</span></strong> <br>
+                            ਈਵੈਂਟ ਸਮਾਂ/ਦੂਰੀ/ਉਚਾਈ/ਭਾਰ 
+                            <strong><span style='display: inline-block; width: 35%; text-align: center; border-bottom: 1.5px dashed #000;'>{await TranslateToPunjabi(player.Score)}</span></strong>  
+                            ਵਿਚ ਭਾਗ ਲਿਆ ਅਤੇ 
+                            <strong><span style='display: inline-block; width: 22%; text-align: center; border-bottom: 1.5px dashed #000;'>{await TranslateToPunjabi(player.Position)}</span></strong>  
+                            ਪੁਜੀਸ਼ਨ ਪ੍ਰਾਪਤ ਕੀਤੀ <br>
+                            ਉਮਰ ਵਰਗ 
+                            <strong><span style='display: inline-block; width: 45%; text-align: center; border-bottom: 1.5px dashed #000;'>{await TranslateToPunjabi(player.ApplicantAgeGroup)}</span></strong>
+                        <strong><span style='display:  inline-block; width: 45%; text-align: center; border-bottom: 0px dashed #000;'> </span></strong>
+                     </div>                
 
-                   
-
-                    <div style='display: flex; justify-content: space-between; align-items: center; margin: 95px 0 0; text-align: center; flex-direction: column; position: relative;'>
+                    <div style='display: flex; justify-content: space-between; align-items: center; margin: 106px 0 0; text-align: center; flex-direction: column; position: relative;'>
 
             <!-- Image Section -->
             <div style='display: flex; justify-content: space-between; width: 100%; position: relative;'>
