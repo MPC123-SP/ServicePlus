@@ -3478,27 +3478,27 @@ namespace ServicePlusAPIs.Controllers
                    <div style='text-align: justify; margin-top: 5px; font-size: 16px;line-height:2.5;'>
                             ਤਸਦੀਕ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ 
                             <strong>
-                                <span style='display: inline-block; width: 83%; text-align: center;  border-bottom: 0.5px dashed #000;'>
+                                <span style='display: inline-block; width: 83%; text-align: center;  border-bottom: 0.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>
                                     {await TranslateToPunjabi(player.ApplicantFullName)}
                                 </span>
                             </strong><br>
                             ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ 
-                            <strong><span style='display: inline-block; width: 39%; text-align: center; border-bottom:0.2px dashed #000;'>{await TranslateToPunjabi(player.ApplicantFatherName)}</span></strong>
+                            <strong><span style='display: inline-block; width: 39%; text-align: center; border-bottom:0.2px dashed #000; min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(player.ApplicantFatherName)}</span></strong>
                             ਜਿਨ੍ਹਾਂ ਦੀ ਜਨਮ ਮਿਤੀ 
-                            <strong><span style='display: inline-block; width: 38%; text-align: center; border-bottom: 0.3px dashed #000;'>{player.ApplicantDOB}</span></strong><br>
+                            <strong><span style='display: inline-block; width: 38%; text-align: center; border-bottom: 0.3px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.ApplicantDOB}</span></strong><br>
                             ਨੇ ਪੰਜਾਬ ਰਾਜ ਖੇਡਾ - 2024 ਵਿੱਚ ਜ਼ਿਲ੍ਹਾ 
-                            <strong><span style='display: inline-block; width: 76%; text-align: center; border-bottom: 0.4px dashed #000;'>{await TranslateToPunjabi(player.GameRepresentingDistrict)}</span></strong> <br>
+                            <strong><span style='display: inline-block; width: 76%; text-align: center; border-bottom: 0.4px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(player.GameRepresentingDistrict)}</span></strong> <br>
                             ਵਲੋਂ ਖੇਡ 
-                            <strong><span style='display: inline-block; width: 44%; text-align: center; border-bottom: 0.6px dashed #000;'>{await TranslateToPunjabi(player.ApplicantGame)}</span></strong>  
+                            <strong><span style='display: inline-block; width: 44%; text-align: center; border-bottom: 0.6px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(player.ApplicantGame)}</span></strong>  
                             ਵਿਵੇਟ/ਵਰਗ 
-                            <strong><span style='display: inline-block; width: 41%; text-align: center; border-bottom: 0.7px dashed #000;'>{await TranslateToPunjabi(player.ApplicantEvent)}</span></strong> <br>
+                            <strong><span style='display: inline-block; width: 41%; text-align: center; border-bottom: 0.7px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(player.ApplicantEvent)}</span></strong> <br>
                             ਈਵੈਂਟ ਸਮਾਂ/ਦੂਰੀ/ਉਚਾਈ/ਭਾਰ 
-                            <strong><span style='display: inline-block; width: 35%; text-align: center; border-bottom: 0.8px dashed #000;'>{await TranslateToPunjabi(player.Score)}</span></strong>  
+                            <strong><span style='display: inline-block; width: 35%; text-align: center; border-bottom: 0.8px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(player.Score)}</span></strong>  
                             ਵਿਚ ਭਾਗ ਲਿਆ ਅਤੇ 
-                            <strong><span style='display: inline-block; width: 22%; text-align: center; border-bottom: 0.9px dashed #000;'>{player.Position}</span></strong>  
+                            <strong><span style='display: inline-block; width: 22%; text-align: center; border-bottom: 0.9px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.Position}</span></strong>  
                             ਪੁਜੀਸ਼ਨ ਪ੍ਰਾਪਤ ਕੀਤੀ <br>
                             ਉਮਰ ਵਰਗ 
-                            <strong><span style='display: inline-block; width: 45%; text-align: center; border-bottom: 1.5px dashed #000;'>{await TranslateToPunjabi(player.ApplicantAgeGroup)}</span></strong>
+                            <strong><span style='display: inline-block; width: 45%; text-align: center; border-bottom: 1.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(player.ApplicantAgeGroup)}</span></strong>
                         <strong><span style='display:  inline-block; width: 45%; text-align: center; border-bottom: 0px dashed #000;'> </span></strong>
                      </div>                
 
@@ -3572,16 +3572,16 @@ namespace ServicePlusAPIs.Controllers
 
         private async Task<string> TranslateToPunjabi(string text)
         {
-            //using HttpClient client = new HttpClient();
-            //string url = $"https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pa&dt=t&q={text}";
+            using HttpClient client = new HttpClient();
+            string url = $"https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pa&dt=t&q={text}";
 
-            //var response = await client.GetStringAsync(url);
-            //var jsonData = System.Text.Json.JsonSerializer.Deserialize<object[]>(response);
-            //var translatedText = ((JsonElement)jsonData[0]).EnumerateArray().First().EnumerateArray().First().GetString();
+            var response = await client.GetStringAsync(url);
+            var jsonData = System.Text.Json.JsonSerializer.Deserialize<object[]>(response);
+            var translatedText = ((JsonElement)jsonData[0]).EnumerateArray().First().EnumerateArray().First().GetString();
 
 
-            //return translatedText;
-            return text;
+            return translatedText;
+            // return text;
         }
 
          
