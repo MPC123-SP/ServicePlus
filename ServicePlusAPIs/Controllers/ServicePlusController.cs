@@ -3178,7 +3178,7 @@ namespace ServicePlusAPIs.Controllers
                 return BadRequest(new { message = "No record found" });
             }
         }
-     
+
         private async Task<string> GeneratePlayerCertificate(string districtName, string gameName, string ageGroup)
         {
             // District-wise serial number prefixes to create Folder Name
@@ -3195,7 +3195,7 @@ namespace ServicePlusAPIs.Controllers
             string randomDistrictSr = districtPrefixes.ContainsKey(districtName.ToUpper())
                 ? districtPrefixes[districtName.ToUpper()]
                 : "GEN000";
-
+             
             // Fetch issued certificates first (executed on DB)
             var existingCertificates = await _servicePlusContext.PlayerIssuedCertificate
                 .Where(c => c.GameHeldDistrict == districtName
@@ -3437,67 +3437,72 @@ namespace ServicePlusAPIs.Controllers
                 }}
                 #background-img {{
                     position: fixed;
-                    width: 100%;
-                    height: 100%;
+                    padding-left:6px;
+                    padding-right:4px;
+                    padding-top:6px;
+                    padding-bottom:6px;
+
+                    width: 99%;
+                    height: 98%;
                 }}
                 .text-bold {{ font-weight: bold; }}
             </style>
         </head>
         <body>
-            <img id='background-img' src='http://10.147.24.36:8082/SSD/SportsCertificateBg.png' />
+            <img id='background-img' src='http://10.147.24.36:8082/SSD/SportsCertificateBgNew.png' />
             <div id='certificate-container'>
-                <div style='position: absolute; top: 16%; left: 10%; width: 80%; height:100%; padding: 20px; border-radius: 10px; box-sizing: border-box; text-align: center;'>
+                <div style='position: absolute; top: 16%; left: 10%; width: 80%; height:100%; padding: 30px; border-radius: 10px; box-sizing: border-box; text-align: center;'>
                     <div style='margin: 8px 0; font-size: 16px; font-weight: bold; position: absolute; top: -12%; right: 3%;'>
                         ਸਰਟੀਫਿਕੇਟ ਨੰ. : <u>{certificateNo}</u>
                     </div>
-                    <div class='text-bold' style=' font-size: 30px; font-weight: bold; padding-top: 2px;'>ਖੇਡਾਂ ਅਤੇ ਯੁਵਾ ਮਾਮਲੇ ਵਿਭਾਗ</div>
+                    <div class='text-bold' style=' font-size: 25px; font-weight: bold; padding-top: 2px;'>ਖੇਡਾਂ ਅਤੇ ਯੁਵਾ ਮਾਮਲੇ ਵਿਭਾਗ</div>
 <img style='width: 42%;height: 3%;' src='http://10.147.24.36:8082/SSD/arrow.png'>
-                    <div style='margin: 5px 0; font-size:28px;'>
-                        <span style='font-size:52px; color: #3d387c;'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024</strong></span>
+                    <div style='margin: 3px 0;  '>
+                        <span style='font-size:35px; color: #3d387c;'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024</strong></span>
                     </div>
-    <div style='margin: 8px 0; font-size: 28px; margin-top: 5px; font-weight: bold;'>ਮੈਰਿਟ ਸਰਟੀਫਿਕੇਟ</div>
-              <div style=""
+    <div style='margin: 5px 0; font-size: 22px; margin-top: 3px; font-weight: bold;'>ਮੈਰਿਟ ਸਰਟੀਫਿਕੇਟ</div>
+              <div style='
             display: inline-block; 
             background-color: #d32f2f; 
             color: white; 
-            padding: 7px 20px; 
+            padding: 6px 18px; 
             border-radius: 20px 0 20px 0; 
-            font-size: 24px; 
+            font-size: 16px; 
             font-weight: bold; 
-            font-family: 'Gurmukhi', Arial, sans-serif;"">ਰਾਜ ਪੱਧਰੀ ਟੂਰਨਾਮੈਂਟ</div>
+            font-family: 'Gurmukhi', Arial, sans-serif;'>ਰਾਜ ਪੱਧਰੀ ਟੂਰਨਾਮੈਂਟ</div>
               
-             <div style='margin: 6px 0; font-size: 24px; margin-top: 5px; font-weight: bold;'>{await TranslateToPunjabi(player.GameHeldDistrict)}</div>
-                    <div style='margin: 12px 0; font-size: 19px; font-weight: bold;'>
+             <div style=' font-size: 20px; margin-top: 3px; font-weight: bold;'>{await TranslateToPunjabi(player.GameHeldDistrict)}</div>
+                    <div style='margin: 10px 0; font-size: 18px; font-weight: bold;'>
                         ਮਿਤੀ ਤੋਂ <strong>{startDate}</strong> ਮਿਤੀ ਤੱਕ <strong>{endDate}</strong>
                     </div> 
-                   <div style=''text-align: justify; font-size: 27px;line-height:2;>
+                   <div style='text-align: justify; margin-top: 5px; font-size: 16px;line-height:2.5;'>
                             ਤਸਦੀਕ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ 
                             <strong>
-                                <span style='display: inline-block; width: 83%;  border-bottom: 1.5px dashed #000;'>
+                                <span style='display: inline-block; width: 83%; text-align: center;  border-bottom: 0.5px dashed #000;'>
                                     {await TranslateToPunjabi(player.ApplicantFullName)}
                                 </span>
                             </strong><br>
                             ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ 
-                            <strong><span style='display: inline-block; width: 39%; text-align: center; border-bottom:1.5px dashed #000;'>{await TranslateToPunjabi(player.ApplicantFatherName)}</span></strong>
+                            <strong><span style='display: inline-block; width: 39%; text-align: center; border-bottom:0.2px dashed #000;'>{await TranslateToPunjabi(player.ApplicantFatherName)}</span></strong>
                             ਜਿਨ੍ਹਾਂ ਦੀ ਜਨਮ ਮਿਤੀ 
-                            <strong><span style='display: inline-block; width: 38%; text-align: center; border-bottom: 1.5px dashed #000;'>{await TranslateToPunjabi(player.ApplicantDOB)}</span></strong><br>
+                            <strong><span style='display: inline-block; width: 38%; text-align: center; border-bottom: 0.3px dashed #000;'>{player.ApplicantDOB}</span></strong><br>
                             ਨੇ ਪੰਜਾਬ ਰਾਜ ਖੇਡਾ - 2024 ਵਿੱਚ ਜ਼ਿਲ੍ਹਾ 
-                            <strong><span style='display: inline-block; width: 76%; text-align: center; border-bottom: 1.5px dashed #000;'>{await TranslateToPunjabi(player.GameRepresentingDistrict)}</span></strong> <br>
+                            <strong><span style='display: inline-block; width: 76%; text-align: center; border-bottom: 0.4px dashed #000;'>{await TranslateToPunjabi(player.GameRepresentingDistrict)}</span></strong> <br>
                             ਵਲੋਂ ਖੇਡ 
-                            <strong><span style='display: inline-block; width: 44%; text-align: center; border-bottom: 1.5px dashed #000;'>{await TranslateToPunjabi(player.ApplicantGame)}</span></strong>  
+                            <strong><span style='display: inline-block; width: 44%; text-align: center; border-bottom: 0.6px dashed #000;'>{await TranslateToPunjabi(player.ApplicantGame)}</span></strong>  
                             ਵਿਵੇਟ/ਵਰਗ 
-                            <strong><span style='display: inline-block; width: 41%; text-align: center; border-bottom: 1.5px dashed #000;'>{await TranslateToPunjabi(player.ApplicantEvent)}</span></strong> <br>
+                            <strong><span style='display: inline-block; width: 41%; text-align: center; border-bottom: 0.7px dashed #000;'>{await TranslateToPunjabi(player.ApplicantEvent)}</span></strong> <br>
                             ਈਵੈਂਟ ਸਮਾਂ/ਦੂਰੀ/ਉਚਾਈ/ਭਾਰ 
-                            <strong><span style='display: inline-block; width: 35%; text-align: center; border-bottom: 1.5px dashed #000;'>{await TranslateToPunjabi(player.Score)}</span></strong>  
+                            <strong><span style='display: inline-block; width: 35%; text-align: center; border-bottom: 0.8px dashed #000;'>{await TranslateToPunjabi(player.Score)}</span></strong>  
                             ਵਿਚ ਭਾਗ ਲਿਆ ਅਤੇ 
-                            <strong><span style='display: inline-block; width: 22%; text-align: center; border-bottom: 1.5px dashed #000;'>{await TranslateToPunjabi(player.Position)}</span></strong>  
+                            <strong><span style='display: inline-block; width: 22%; text-align: center; border-bottom: 0.9px dashed #000;'>{player.Position}</span></strong>  
                             ਪੁਜੀਸ਼ਨ ਪ੍ਰਾਪਤ ਕੀਤੀ <br>
                             ਉਮਰ ਵਰਗ 
                             <strong><span style='display: inline-block; width: 45%; text-align: center; border-bottom: 1.5px dashed #000;'>{await TranslateToPunjabi(player.ApplicantAgeGroup)}</span></strong>
                         <strong><span style='display:  inline-block; width: 45%; text-align: center; border-bottom: 0px dashed #000;'> </span></strong>
                      </div>                
 
-                    <div style='display: flex; justify-content: space-between; align-items: center; margin: 106px 0 0; text-align: center; flex-direction: column; position: relative;'>
+                    <div style='display: flex; justify-content: space-between; align-items: center; margin: 60px 0 0; text-align: center; flex-direction: column; position: relative;'>
 
             <!-- Image Section -->
             <div style='display: flex; justify-content: space-between; width: 100%; position: relative;'>
@@ -3538,7 +3543,7 @@ namespace ServicePlusAPIs.Controllers
                     PrintBackground = true,
                     Format = PaperFormat.Legal,
                     Landscape = true,
-                    Width = "100%",
+                    Width = "90%",
                 });
 
                 // Add the new record to the list
@@ -3567,27 +3572,19 @@ namespace ServicePlusAPIs.Controllers
 
         private async Task<string> TranslateToPunjabi(string text)
         {
-            using HttpClient client = new HttpClient();
-            string url = $"https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pa&dt=t&q={text}";
+            //using HttpClient client = new HttpClient();
+            //string url = $"https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pa&dt=t&q={text}";
 
-            var response = await client.GetStringAsync(url); 
-            var jsonData = System.Text.Json.JsonSerializer.Deserialize<object[]>(response);
-            var translatedText = ((JsonElement)jsonData[0]).EnumerateArray().First().EnumerateArray().First().GetString();
+            //var response = await client.GetStringAsync(url);
+            //var jsonData = System.Text.Json.JsonSerializer.Deserialize<object[]>(response);
+            //var translatedText = ((JsonElement)jsonData[0]).EnumerateArray().First().EnumerateArray().First().GetString();
 
 
-            return translatedText;
-
+            //return translatedText;
+            return text;
         }
 
-        //private async Task<string> TranslateToPunjabi(string text )
-        //{
-        //    using HttpClient client = new HttpClient();  
-        //    string url = $"https://api.mymemory.translated.net/get?q={text}&langpair=en|pa&key=ae65e30bb21f9d5498cc";
-
-        //    var response = await client.GetStringAsync(url);
-        // var sd= JObject.Parse(response)["responseData"]["translatedText"].ToString();
-        //    return sd;
-        //}
+         
         #endregion
 
         #region Under Development
