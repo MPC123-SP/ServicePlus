@@ -1,22 +1,14 @@
 ﻿using AutoMapper;
-using DocumentFormat.OpenXml.Drawing.Charts;
-using DocumentFormat.OpenXml.EMMA;
-using DocumentFormat.OpenXml.Office2010.Excel;
-using DocumentFormat.OpenXml.Spreadsheet;
-using DocumentFormat.OpenXml.Wordprocessing;
-using Google.Cloud.Translation.V2;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Formatters;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using PuppeteerSharp;
 using PuppeteerSharp.Media;
 using ServicePlusAPIs.AuthenticateModels;
 using ServicePlusAPIs.Context;
 using ServicePlusAPIs.ExternalAPIs;
+using ServicePlusAPIs.Helper;
 using ServicePlusAPIs.HelperModels;
 using ServicePlusAPIs.HelperViewModel;
 using ServicePlusAPIs.Models;
@@ -32,11 +24,8 @@ using ServicePlusAPIs.ReportsViewModel;
 using ServicePlusAPIs.ViewModels;
 using ServicePlusAPIs.ViewModels.PublicModel;
 using ServicePlusAPIs.ViewModels.SportsModel;
-using System.Buffers;
 using System.Data;
-using System.Drawing.Printing;
 using System.Globalization;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -3195,7 +3184,7 @@ namespace ServicePlusAPIs.Controllers
             string randomDistrictSr = districtPrefixes.ContainsKey(districtName.ToUpper())
                 ? districtPrefixes[districtName.ToUpper()]
                 : "GEN000";
-             
+
             // Fetch issued certificates first (executed on DB)
             var existingCertificates = await _servicePlusContext.PlayerIssuedCertificate
                 .Where(c => c.GameHeldDistrict == districtName
@@ -3368,14 +3357,14 @@ namespace ServicePlusAPIs.Controllers
 
 
             var newCertificates = new List<PlayerIssuedCertificate>();
-
+            string startDate = "01-01-2024";
+            string endDate = "31-12-2024"; 
             foreach (var player in playerCertificateDetails)
             {
-                string startDate = "01-01-2024";
-                string endDate = "31-12-2024";
-                // Ensure a unique 6-digit serial number
+               
+                
                 //string certificateNo = newSerialNumber.ToString("D6");
-                int currentYear = DateTime.Now.Year;
+              
                 string formattedGameName = gameName.Replace(" ", ""); // Remove spaces
                 string certificateNo = $"{randomDistrictSr}-2024-{newSerialNumber:D6}";
                 // Define folder hierarchy
@@ -3454,6 +3443,11 @@ namespace ServicePlusAPIs.Controllers
                 <div style='position: absolute; top: 16%; left: 10%; width: 80%; height:100%; padding: 30px; border-radius: 10px; box-sizing: border-box; text-align: center;'>
                     <div style='margin: 8px 0; font-size: 16px; font-weight: bold; position: absolute; top: -12%; right: 3%;'>
                         ਸਰਟੀਫਿਕੇਟ ਨੰ. : <u>{certificateNo}</u>
+                    <div style='text-align: center; margin-top: 15px;margin-left:30px;'>
+                        <img src='data:image/png;base64,{await GetBase64QRCode(certificateNo)}' width='100' height='100' />
+                        <p>Scan to verify</p>
+                    </div>
+
                     </div>
                     <div class='text-bold' style=' font-size: 25px; font-weight: bold; padding-top: 2px;'>ਖੇਡਾਂ ਅਤੇ ਯੁਵਾ ਮਾਮਲੇ ਵਿਭਾਗ</div>
 <img style='width: 42%;height: 3%;' src='http://10.147.24.36:8082/SSD/arrow.png'>
@@ -3583,8 +3577,39 @@ namespace ServicePlusAPIs.Controllers
             return translatedText;
             // return text;
         }
+        private async Task<string> GetBase64QRCode(string certificateNo)
+        {
+            GenerateQRCode generateQRCode = new GenerateQRCode();
 
-         
+            string qrFilePath = generateQRCode.GetGenerateQRCode(certificateNo);
+            byte[] imageBytes = await System.IO.File.ReadAllBytesAsync(qrFilePath);
+            return Convert.ToBase64String(imageBytes);
+        }
+
+        [HttpGet("VerifySportsCertificate")]
+        public async Task<IActionResult> VerifySportsCertificate(string certificateNo)
+        {
+            var certificate = await _servicePlusContext.PlayerIssuedCertificate
+                .FirstOrDefaultAsync(c => c.CertificateSerialNo == certificateNo);
+
+            if (certificate == null)
+            {
+                return NotFound(new { message = "Certificate not found." });
+            }
+
+            return Ok(new
+            {
+                certificate.CertificateSerialNo,
+                certificate.ApplicantFullName,
+                certificate.ApplicantFatherName,
+                certificate.ApplicantGame,
+                certificate.ApplicantEvent,
+                certificate.ApplicantAgeGroup,
+                certificate.GameHeldDistrict
+            });
+        }
+
+
         #endregion
 
         #region Under Development
@@ -3652,61 +3677,61 @@ namespace ServicePlusAPIs.Controllers
         //    #endregion
 
 
-        [HttpGet]
-        [Route("DynamicReportServiceWise")]
-        public async Task<IActionResult> DynamicReportServiceWise(
-    [FromQuery] List<string> selectedColumns,
-    [FromQuery] string serviceName,
-    [FromQuery] string? fromDate,
-    [FromQuery] string? toDate,
-    [FromQuery] int? draw,
-    [FromQuery] int? start,
-    [FromQuery] int? length)
-        {
-            var query = _servicePlusContext.InitiatedDatas.AsQueryable();
+        //    [HttpGet]
+        //    [Route("DynamicReportServiceWise")]
+        //    public async Task<IActionResult> DynamicReportServiceWise(
+        //[FromQuery] List<string> selectedColumns,
+        //[FromQuery] string serviceName,
+        //[FromQuery] string? fromDate,
+        //[FromQuery] string? toDate,
+        //[FromQuery] int? draw,
+        //[FromQuery] int? start,
+        //[FromQuery] int? length)
+        //    {
+        //        var query = _servicePlusContext.InitiatedDatas.AsQueryable();
 
-            if (selectedColumns != null && selectedColumns.Any())
-            {
-                var parameter = Expression.Parameter(typeof(InitiatedData));
-                var propertyInfos = selectedColumns.Select(columnName => typeof(InitiatedData).GetProperty(columnName)).ToList();
+        //        if (selectedColumns != null && selectedColumns.Any())
+        //        {
+        //            var parameter = Expression.Parameter(typeof(InitiatedData));
+        //            var propertyInfos = selectedColumns.Select(columnName => typeof(InitiatedData).GetProperty(columnName)).ToList();
 
-                var bindings = propertyInfos.Select(propertyInfo =>
-                {
-                    var memberAccess = Expression.MakeMemberAccess(parameter, propertyInfo);
-                    return Expression.Bind(propertyInfo, memberAccess);
-                }).ToList();
+        //            var bindings = propertyInfos.Select(propertyInfo =>
+        //            {
+        //                var memberAccess = Expression.MakeMemberAccess(parameter, propertyInfo);
+        //                return Expression.Bind(propertyInfo, memberAccess);
+        //            }).ToList();
 
-                var memberInit = Expression.MemberInit(Expression.New(typeof(InitiatedData)), bindings);
-                var lambda = Expression.Lambda<Func<InitiatedData, InitiatedData>>(memberInit, parameter);
+        //            var memberInit = Expression.MemberInit(Expression.New(typeof(InitiatedData)), bindings);
+        //            var lambda = Expression.Lambda<Func<InitiatedData, InitiatedData>>(memberInit, parameter);
 
-                query = query.Where(data => data.ServiceName == serviceName);
+        //            query = query.Where(data => data.ServiceName == serviceName);
 
-                // Filter the results by date range if provided
-                if (!string.IsNullOrEmpty(fromDate) && !string.IsNullOrEmpty(toDate))
-                {
-                    if (DateTime.TryParse(fromDate, out var from) && DateTime.TryParse(toDate, out var to))
-                    {
-                        from = DateTime.SpecifyKind(from, DateTimeKind.Utc);
-                        to = DateTime.SpecifyKind(to, DateTimeKind.Utc);
+        //            // Filter the results by date range if provided
+        //            if (!string.IsNullOrEmpty(fromDate) && !string.IsNullOrEmpty(toDate))
+        //            {
+        //                if (DateTime.TryParse(fromDate, out var from) && DateTime.TryParse(toDate, out var to))
+        //                {
+        //                    from = DateTime.SpecifyKind(from, DateTimeKind.Utc);
+        //                    to = DateTime.SpecifyKind(to, DateTimeKind.Utc);
 
-                        query = query.Where(data => data.SubmissionDate >= from && data.SubmissionDate <= to);
-                    }
-                }
+        //                    query = query.Where(data => data.SubmissionDate >= from && data.SubmissionDate <= to);
+        //                }
+        //            }
 
-                // Apply the dynamic projection to the query
-                query = query.Select(lambda);
-            }
+        //            // Apply the dynamic projection to the query
+        //            query = query.Select(lambda);
+        //        }
 
-            // Apply pagination
-            if (start.HasValue && length.HasValue)
-            {
-                query = query.Skip(start.Value).Take(length.Value);
-            }
+        //        // Apply pagination
+        //        if (start.HasValue && length.HasValue)
+        //        {
+        //            query = query.Skip(start.Value).Take(length.Value);
+        //        }
 
-            var result = await query.ToListAsync();
+        //        var result = await query.ToListAsync();
 
-            return Ok(result);
-        }
+        //        return Ok(result);
+        //    }
         #endregion
     }
 
