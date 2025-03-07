@@ -38,6 +38,7 @@ namespace ServicePlusAPIs.Context
         public DbSet<SponsorPlayer> SponsorPlayers { get; set; }
         public DbSet<PlayerCertificateDetails> PlayerCertificateDetails { get; set; }
         public DbSet<PlayerIssuedCertificate> PlayerIssuedCertificate { get; set; }
+        public DbSet<VerifyCertificate> VerifyCertificates { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // Configure primary keys for related entities

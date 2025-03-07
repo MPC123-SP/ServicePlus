@@ -27,6 +27,8 @@ using ServicePlusAPIs.ViewModels.SportsModel;
 using System.Data;
 using System.Globalization;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using MediaType = PuppeteerSharp.Media.MediaType;
@@ -43,7 +45,8 @@ namespace ServicePlusAPIs.Controllers
         private readonly ILogger<ServicePlusController> _logger;
         // Outside the action method, possibly in the controller or a service class.
         private readonly Dictionary<string, string> districtNameMap = new Dictionary<string, string>();
-        private string text;
+
+        private readonly string SecretKey = "SportsServicePlus2025";  // Store this securely in your application
 
         public ServicePlusController(IMapper mapper, ILogger<ServicePlusController> logger, PostgresDbContext postgresDbContext, ServicePlusContext servicePlusContext)
         {
@@ -3357,14 +3360,15 @@ namespace ServicePlusAPIs.Controllers
 
 
             var newCertificates = new List<PlayerIssuedCertificate>();
+            var hashCertificates=new List<VerifyCertificate>();
             string startDate = "01-01-2024";
-            string endDate = "31-12-2024"; 
+            string endDate = "31-12-2024";
             foreach (var player in playerCertificateDetails)
             {
-               
-                
+
+
                 //string certificateNo = newSerialNumber.ToString("D6");
-              
+
                 string formattedGameName = gameName.Replace(" ", ""); // Remove spaces
                 string certificateNo = $"{randomDistrictSr}-2024-{newSerialNumber:D6}";
                 // Define folder hierarchy
@@ -3409,7 +3413,7 @@ namespace ServicePlusAPIs.Controllers
 
                 // Further processing...
 
-
+                var hasCertificateId = await GenerateSecureCertificateId(certificateNo);
 
                 string htmlContent = $@"<html>
         <head>
@@ -3444,7 +3448,7 @@ namespace ServicePlusAPIs.Controllers
                     <div style='margin: 8px 0; font-size: 16px; font-weight: bold; position: absolute; top: -12%; right: 3%;'>
                         ਸਰਟੀਫਿਕੇਟ ਨੰ. : <u>{certificateNo}</u>
                     <div style='text-align: center; margin-top: 15px;margin-left:30px;'>
-                        <img src='data:image/png;base64,{await GetBase64QRCode(certificateNo)}' width='100' height='100' />
+                        <img src='data:image/png;base64,{await GetBase64QRCode(hasCertificateId)}' width='100' height='100' />
                         <p>Scan to verify</p>
                     </div>
 
@@ -3540,6 +3544,7 @@ namespace ServicePlusAPIs.Controllers
                     Width = "90%",
                 });
 
+               
                 // Add the new record to the list
                 newCertificates.Add(new PlayerIssuedCertificate
                 {
@@ -3553,12 +3558,18 @@ namespace ServicePlusAPIs.Controllers
                     CertificateSerialNo = certificateNo,
                     CertificatePath = filePath
                 });
+                hashCertificates.Add(new VerifyCertificate
+                {
+                    CertificateSerialNo = certificateNo,
+                    CertificateHashKey = hasCertificateId
+                });
                 newSerialNumber++; // Increment serial number for the next certificate
             }
             // **Save all records at once**
-            if (newCertificates.Any())
+            if (newCertificates.Any()&& hashCertificates.Any())
             {
                 await _servicePlusContext.PlayerIssuedCertificate.AddRangeAsync(newCertificates);
+                await _servicePlusContext.VerifyCertificates.AddRangeAsync(hashCertificates);
                 await _servicePlusContext.SaveChangesAsync();
             }
             return newCertificates.Count.ToString();
@@ -3577,20 +3588,43 @@ namespace ServicePlusAPIs.Controllers
             return translatedText;
             // return text;
         }
-        private async Task<string> GetBase64QRCode(string certificateNo)
+
+        private async Task<string> GenerateSecureCertificateId(string certificateNo)
+        {
+            using (var sha256 = SHA256.Create())
+            {
+                var combined = certificateNo + SecretKey;
+                var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(combined));
+                return BitConverter.ToString(bytes).Replace("-", "").ToLower();
+            }
+        }
+
+        private async Task<string> GetBase64QRCode(string certificateHashKey)
         {
             GenerateQRCode generateQRCode = new GenerateQRCode();
 
-            string qrFilePath = generateQRCode.GetGenerateQRCode(certificateNo);
+            string qrFilePath = generateQRCode.GetGenerateQRCode(certificateHashKey);
             byte[] imageBytes = await System.IO.File.ReadAllBytesAsync(qrFilePath);
             return Convert.ToBase64String(imageBytes);
         }
 
         [HttpGet("VerifySportsCertificate")]
-        public async Task<IActionResult> VerifySportsCertificate(string certificateNo)
+        public async Task<IActionResult> VerifySportsCertificate(string certificateHashKey)
         {
+            // Retrieve the first matching certificateSerialNo using the hash key
+            var certificateSerialNo = await _servicePlusContext.VerifyCertificates
+                .Where(c => c.CertificateHashKey == certificateHashKey)
+                .Select(d => d.CertificateSerialNo)
+                .FirstOrDefaultAsync();  // Ensure you get a single value
+
+            if (string.IsNullOrEmpty(certificateSerialNo))
+            {
+                return NotFound(new { message = "Certificate not found." });
+            }
+
+            // Find the certificate details using the found certificateSerialNo
             var certificate = await _servicePlusContext.PlayerIssuedCertificate
-                .FirstOrDefaultAsync(c => c.CertificateSerialNo == certificateNo);
+                .FirstOrDefaultAsync(c => c.CertificateSerialNo == certificateSerialNo);
 
             if (certificate == null)
             {
@@ -3608,6 +3642,7 @@ namespace ServicePlusAPIs.Controllers
                 certificate.GameHeldDistrict
             });
         }
+
 
 
         #endregion

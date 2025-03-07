@@ -1,13 +1,20 @@
-﻿using QRCoder;
+﻿using System.Security.Cryptography;
+using System.Text;
+using QRCoder;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
+
 namespace ServicePlusAPIs.Helper
 {
     public class GenerateQRCode
     {
-        public string GetGenerateQRCode(string certificateNo)
-        {
-            string qrText = $"https://pbsports.punjab.gov.in/ServicePlusSports/VerifySportsCertificate/{certificateNo}";
+       
+
+        // Method to generate the QR code with security enhancements
+        public string GetGenerateQRCode(string secureCertificateId)
+        {  
+            string qrText = $"https://pbsports.punjab.gov.in/ServicePlusSports/VerifySportsCertificate.php?{secureCertificateId}";
+
             using (QRCodeGenerator qrGenerator = new QRCodeGenerator())
             {
                 QRCodeData qrCodeData = qrGenerator.CreateQrCode(qrText, QRCodeGenerator.ECCLevel.Q);
@@ -21,7 +28,7 @@ namespace ServicePlusAPIs.Helper
                             Directory.CreateDirectory(qrFolderPath);
                         }
 
-                        string qrFilePath = Path.Combine(qrFolderPath, $"{certificateNo}.png");
+                        string qrFilePath = Path.Combine(qrFolderPath, $"{secureCertificateId}.png");
                         qrCodeImage.Save(qrFilePath, new PngEncoder());
                         return qrFilePath;
                     }
@@ -29,5 +36,4 @@ namespace ServicePlusAPIs.Helper
             }
         }
     }
-
 }
