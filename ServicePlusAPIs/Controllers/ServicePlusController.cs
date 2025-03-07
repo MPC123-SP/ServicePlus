@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -3182,8 +3183,7 @@ namespace ServicePlusAPIs.Controllers
         { "LUDHIANA", "LUD" }
         // Add more districts as needed
     };
-            string fromDate = "";
-            string toDate = "";
+           
             // Get the prefix for the given district, default to "GEN000" if not found
             string randomDistrictSr = districtPrefixes.ContainsKey(districtName.ToUpper())
                 ? districtPrefixes[districtName.ToUpper()]
@@ -3361,8 +3361,9 @@ namespace ServicePlusAPIs.Controllers
                 : 1;
 
 
-
-
+            string fromDate = "";
+            string toDate = "";
+            //to get Game From and To Date
             var gameFromToDate = new Dictionary<(string, string), (string fromDate, string toDate)>
         {
            // Amritsar
@@ -3411,7 +3412,7 @@ namespace ServicePlusAPIs.Controllers
                                 { ("PATIALA", "Archery"), ("04-11-2024", "09-11-2024") },
                                 { ("PATIALA", "Gymnastics"), ("08-11-2024", "11-11-2024") },
                                 { ("PATIALA", "KABADDI CIRCLE"), ("04-11-2024", "09-11-2024") },
-                                { ("PATIALA", "Kho-Kho"), ("04-11-2024", "09-11-2024") },
+                                { ("PATIALA", "KHO KHO"), ("04-11-2024", "09-11-2024") },
 
                                 // Rupnagar
                                 { ("Rupnagar", "Handball"), ("16-11-2024", "21-11-2024") },
@@ -3431,15 +3432,19 @@ namespace ServicePlusAPIs.Controllers
 
                                 // SBS Nagar
                                 { ("SBS Nagar", "Boxing"), ("16-11-2024", "24-11-2024") },
+            };
 
-        };
+
+            (fromDate, toDate) = GetGameDates(districtName, gameName, gameFromToDate);
             static (string fromDate, string toDate) GetGameDates(string district, string game, Dictionary<(string, string), (string fromDate, string toDate)> gameFromToDate)
             {
+                // Check if the dictionary contains the key (district, game)
                 if (gameFromToDate.TryGetValue((district, game), out var dates))
                 {
-                    return dates; // ✅ Correctly returning the found dates
+                    return dates; // If found, return the dates
                 }
-                return ("Not Found", "Not Found"); // ✅ Default return if not found
+
+                return ("Not Found", "Not Found"); // If not found, return default message
             }
             var newCertificates = new List<PlayerIssuedCertificate>();
 
@@ -3571,7 +3576,7 @@ namespace ServicePlusAPIs.Controllers
                             ਵਲੋਂ ਖੇਡ 
                             <strong><span style='display: inline-block; width: 44%; text-align: center; border-bottom: 0.6px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(player.ApplicantGame)}</span></strong>  
                             ਵਿਵੇਟ/ਵਰਗ 
-                            <strong><span style='display: inline-block; width: 41%; text-align: center; border-bottom: 0.7px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(player.ApplicantEvent)}</span></strong> <br>
+                            <strong><span style='display: inline-block; width: 41%; text-align: center; border-bottom: 0.7px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(player.ApplicantEvent.Contains("NA") ? "----" : await TranslateToPunjabi(player.ApplicantEvent))}</span></strong> <br>
                             ਈਵੈਂਟ ਸਮਾਂ/ਦੂਰੀ/ਉਚਾਈ/ਭਾਰ 
                             <strong><span style='display: inline-block; width: 35%; text-align: center; border-bottom: 0.8px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(player.Score)}</span></strong>  
                             ਵਿਚ ਭਾਗ ਲਿਆ ਅਤੇ 
