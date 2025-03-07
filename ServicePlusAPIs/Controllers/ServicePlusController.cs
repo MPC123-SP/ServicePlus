@@ -3182,7 +3182,8 @@ namespace ServicePlusAPIs.Controllers
         { "LUDHIANA", "LUD" }
         // Add more districts as needed
     };
-
+            string fromDate = "";
+            string toDate = "";
             // Get the prefix for the given district, default to "GEN000" if not found
             string randomDistrictSr = districtPrefixes.ContainsKey(districtName.ToUpper())
                 ? districtPrefixes[districtName.ToUpper()]
@@ -3243,7 +3244,8 @@ namespace ServicePlusAPIs.Controllers
 
                     //Barnala
                     { ("Barnala", "Netball"), $@"{baseDirectory}\Barnala\Netball Convenor Sign\NET-remove.png" },
-                    { ("Patiala", "Table Tennis"), $@"{baseDirectory}\Barnala\Table Tennis Convenor Sign\TT-remove.png" },
+                    { ("Barnala", "Table Tennis"), $@"{baseDirectory}\Barnala\Table Tennis Convenor Sign\TT-remove.png" },
+                    { ("Barnala", "Badminton"), $@"{baseDirectory}\Barnala\Badminton Convenor Sign\dummy.png" },
 
                     //Bathinda
                     { ("Bathinda", "Hockey"), $@"{baseDirectory}\Bathinda\Hocky Convenor Sign\HOCKEY-remove.png" },
@@ -3359,10 +3361,90 @@ namespace ServicePlusAPIs.Controllers
                 : 1;
 
 
+
+
+            var gameFromToDate = new Dictionary<(string, string), (string fromDate, string toDate)>
+        {
+           // Amritsar
+                                { ("Amritsar", "Gatka"), ("07-11-2024", "10-11-2024") },
+                                { ("Amritsar", "Rugby"), ("07-11-2024", "10-11-2024") },
+
+                                // Barnala
+                                { ("Barnala", "Netball"), ("25-11-2024", "30-11-2024") },
+                                { ("Barnala", "Table Tennis"), ("25-11-2024", "30-11-2024") },
+                                { ("Barnala", "Badminton"), ("25-11-2024", "30-11-2024") },
+
+                                // Bathinda
+                                { ("Bathinda", "Hockey"), ("17-10-2024", "24-10-2024") },
+                                { ("Bathinda", "Powerlifting"), ("19-10-2024", "24-10-2024") },
+
+                                // Faridkot
+                                { ("Faridkot", "Basketball"), ("09-12-2024", "14-12-2024") },
+                                { ("Faridkot", "Taekwondo"), ("09-12-2024", "14-12-2024") },
+
+                                // Fatehgarh Sahib
+                                { ("Fatehgarh Sahib", "Fencing"), ("19-10-2024", "24-10-2024") },
+                                { ("Fatehgarh Sahib", "Softball"), ("19-10-2024", "24-10-2024") },
+
+                                // Hoshiarpur
+                                { ("Hoshiarpur", "Football"), ("04-11-2024", "10-11-2024") },
+
+                                // Jalandhar
+                                { ("Jalandhar", "Chess"), ("15-11-2024", "22-11-2024") },
+                                { ("Jalandhar", "Volleyball Smashing"), ("15-11-2024", "22-11-2024") },
+
+                                // Ludhiana
+                                { ("Ludhiana", "Athletics"), ("04-11-2024", "09-11-2024") },
+                                { ("Ludhiana", "Baseball"), ("04-11-2024", "09-11-2024") },
+                                { ("Ludhiana", "Cycling"), ("27-11-2024", "29-11-2024") },
+                                { ("Ludhiana", "Kick Boxing"), ("04-11-2024", "09-11-2024") },
+                                { ("Ludhiana", "Lawn Tennis"), ("04-11-2024", "09-11-2024") },
+
+                                // Malerkotla
+                                { ("Malerkotla", "Volleyball Shooting"), ("06-11-2024", "09-11-2024") },
+
+                                // Mansa
+                                { ("Mansa", "Judo"), ("19-10-2024", "24-10-2024") },
+                                { ("Mansa", "Wrestling"), ("19-10-2024", "24-10-2024") },
+
+                                // Patiala
+                                { ("PATIALA", "Archery"), ("04-11-2024", "09-11-2024") },
+                                { ("PATIALA", "Gymnastics"), ("08-11-2024", "11-11-2024") },
+                                { ("PATIALA", "KABADDI CIRCLE"), ("04-11-2024", "09-11-2024") },
+                                { ("PATIALA", "Kho-Kho"), ("04-11-2024", "09-11-2024") },
+
+                                // Rupnagar
+                                { ("Rupnagar", "Handball"), ("16-11-2024", "21-11-2024") },
+                                { ("Rupnagar", "Kayaking"), ("16-11-2024", "21-11-2024") },
+                                { ("Rupnagar", "Rowing"), ("16-11-2024", "21-11-2024") },
+
+                                // Sangrur
+                                { ("Sangrur", "Kabaddi"), ("16-11-2024", "21-11-2024") },
+                                { ("Sangrur", "Roller Skating"), ("16-11-2024", "21-11-2024") },
+                                { ("Sangrur", "Weightlifting"), ("16-11-2024", "21-11-2024") },
+                                { ("Sangrur", "Wushu"), ("16-11-2024", "21-11-2024") },
+
+                                // SAS Nagar
+                                { ("SAS Nagar", "Equestrian"), ("20-11-2024", "24-11-2024") },
+                                { ("SAS Nagar", "Shooting"), ("13-11-2024", "17-11-2024") },
+                                { ("SAS Nagar", "Swimming"), ("21-10-2024", "24-10-2024") },
+
+                                // SBS Nagar
+                                { ("SBS Nagar", "Boxing"), ("16-11-2024", "24-11-2024") },
+
+        };
+            static (string fromDate, string toDate) GetGameDates(string district, string game, Dictionary<(string, string), (string fromDate, string toDate)> gameFromToDate)
+            {
+                if (gameFromToDate.TryGetValue((district, game), out var dates))
+                {
+                    return dates; // ✅ Correctly returning the found dates
+                }
+                return ("Not Found", "Not Found"); // ✅ Default return if not found
+            }
             var newCertificates = new List<PlayerIssuedCertificate>();
-            var hashCertificates=new List<VerifyCertificate>();
-            string startDate = "01-01-2024";
-            string endDate = "31-12-2024";
+
+            var hashCertificates = new List<VerifyCertificate>();
+
             foreach (var player in playerCertificateDetails)
             {
 
@@ -3471,7 +3553,7 @@ namespace ServicePlusAPIs.Controllers
               
              <div style=' font-size: 20px; margin-top: 3px; font-weight: bold;'>{await TranslateToPunjabi(player.GameHeldDistrict)}</div>
                     <div style='margin: 10px 0; font-size: 18px; font-weight: bold;'>
-                        ਮਿਤੀ ਤੋਂ <strong>{startDate}</strong> ਮਿਤੀ ਤੱਕ <strong>{endDate}</strong>
+                        ਮਿਤੀ ਤੋਂ <strong>{fromDate}</strong> ਮਿਤੀ ਤੱਕ <strong>{toDate}</strong>
                     </div> 
                    <div style='text-align: justify; margin-top: 5px; font-size: 16px;line-height:2.5;'>
                             ਤਸਦੀਕ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ 
@@ -3544,7 +3626,7 @@ namespace ServicePlusAPIs.Controllers
                     Width = "90%",
                 });
 
-               
+
                 // Add the new record to the list
                 newCertificates.Add(new PlayerIssuedCertificate
                 {
@@ -3566,7 +3648,7 @@ namespace ServicePlusAPIs.Controllers
                 newSerialNumber++; // Increment serial number for the next certificate
             }
             // **Save all records at once**
-            if (newCertificates.Any()&& hashCertificates.Any())
+            if (newCertificates.Any() && hashCertificates.Any())
             {
                 await _servicePlusContext.PlayerIssuedCertificate.AddRangeAsync(newCertificates);
                 await _servicePlusContext.VerifyCertificates.AddRangeAsync(hashCertificates);
