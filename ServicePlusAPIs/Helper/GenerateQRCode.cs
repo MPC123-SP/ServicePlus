@@ -13,7 +13,7 @@ namespace ServicePlusAPIs.Helper
         // Method to generate the QR code with security enhancements
         public string GetGenerateQRCode(string secureCertificateId)
         {  
-            string qrText = $"https://pbsports.punjab.gov.in/ServicePlusSports/VerifySportsCertificate.php?{secureCertificateId}";
+            string qrText = $"https://pbsports.punjab.gov.in/ServicePlusSports/VerifySportsCertificate.php?certificateHashKey={secureCertificateId}";
 
             using (QRCodeGenerator qrGenerator = new QRCodeGenerator())
             {
