@@ -3563,7 +3563,7 @@ namespace ServicePlusAPIs.Controllers
                     <div class='text-bold' style=' font-size: 25px; font-weight: bold; padding-top: 2px;'>ਖੇਡਾਂ ਅਤੇ ਯੁਵਾ ਮਾਮਲੇ ਵਿਭਾਗ</div>
 <img style='width: 42%;height: 3%;' src='http://10.147.24.36:8082/SSD/arrow.png'>
                     <div style='margin: 3px 0;  '>
-                        <span style='font-size:35px; color: #3d387c;'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024 (ਸੀਜ਼ਨ 3)</strong></span>
+                        <span style='font-size:35px; color: #3d387c;'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024 (ਸੀਜ਼ਨ-3)</strong></span>
                     </div>
     <div style='margin: 5px 0; font-size: 22px; margin-top: 3px; font-weight: bold;'>ਮੈਰਿਟ ਸਰਟੀਫਿਕੇਟ</div>
               <div style='
@@ -3687,7 +3687,7 @@ namespace ServicePlusAPIs.Controllers
             // Use if-else to handle multiple possible values
             if (score == "1st" || score == "First")
             {
-                return "ਪਹਿਲਾਂ";
+                return "ਪਹਿਲਾ";
             }
             else if (score == "2nd" || score == "Second")
             {
