@@ -3177,13 +3177,33 @@ namespace ServicePlusAPIs.Controllers
             // District-wise serial number prefixes to create Folder Name
             var districtPrefixes = new Dictionary<string, string>
     {
-        { "PATIALA", "PAT" },
-        { "AMRITSAR", "AMR" },
+        { "AMRITSAR", "ASR" },
+        { "BARNALA", "BNL" },
         { "BATHINDA", "BAT" },
-        { "LUDHIANA", "LUD" }
+        { "FARIDKOT", "FDK" },
+        { "FATEHGARH SAHIB", "FGS" },
+        { "FAZILKA", "FAZ" },
+        { "FEROZEPUR", "FZR" },
+        { "GURDASPUR", "GSP" },
+        { "HOSHIARPUR", "HSP" },
+        { "JALANDHAR", "JAL" },
+        { "KAPURTHALA", "KPT" },
+        { "LUDHIANA", "LDH" },
+        { "MALERKOTLA", "MLK" },
+        { "MANSA", "MAN" },
+        { "MOGA", "MOG" },
+        { "PATHANKOT", "PKT" },
+        { "PATIALA", "PAT" },
+        { "RUPNAGAR", "RPR" },
+        { "S.A.S NAGAR", "SAS" },
+        { "SANGRUR", "SGR" },
+        { "SHAHID BHAGAT SINGH NAGAR", "SBS" },
+        { "SRI MUKTSAR SAHIB", "SMS" },
+        { "TARN TARAN", "TTN" }
+
         // Add more districts as needed
     };
-           
+
             // Get the prefix for the given district, default to "GEN000" if not found
             string randomDistrictSr = districtPrefixes.ContainsKey(districtName.ToUpper())
                 ? districtPrefixes[districtName.ToUpper()]
@@ -3421,7 +3441,7 @@ namespace ServicePlusAPIs.Controllers
 
                                 // Sangrur
                                 { ("Sangrur", "Kabaddi"), ("16-11-2024", "21-11-2024") },
-                                { ("Sangrur", "Roller Skating"), ("16-11-2024", "21-11-2024") },
+                                { ("Sangrur", "ROLLER SKATING"), ("16-11-2024", "21-11-2024") },
                                 { ("Sangrur", "Weightlifting"), ("16-11-2024", "21-11-2024") },
                                 { ("Sangrur", "Wushu"), ("16-11-2024", "21-11-2024") },
 
@@ -3533,17 +3553,17 @@ namespace ServicePlusAPIs.Controllers
             <div id='certificate-container'>
                 <div style='position: absolute; top: 16%; left: 10%; width: 80%; height:100%; padding: 30px; border-radius: 10px; box-sizing: border-box; text-align: center;'>
                     <div style='margin: 8px 0; font-size: 16px; font-weight: bold; position: absolute; top: -12%; right: 3%;'>
-                        ਸਰਟੀਫਿਕੇਟ ਨੰ. : <u>{certificateNo}</u>
+                        ਸਰਟੀਫਿਕੇਟ ਨੰ. : {certificateNo}
                     <div style='text-align: center; margin-top: 15px;margin-left:30px;'>
-                        <img src='data:image/png;base64,{await GetBase64QRCode(hasCertificateId)}' width='100' height='100' />
-                        <p>Scan to verify</p>
+                        <img src='data:image/png;base64,{await GetBase64QRCode(hasCertificateId)}' width='100' height='100'/>
+                        <p style='margin-top: 3px;'>Scan to verify</p>
                     </div>
 
                     </div>
                     <div class='text-bold' style=' font-size: 25px; font-weight: bold; padding-top: 2px;'>ਖੇਡਾਂ ਅਤੇ ਯੁਵਾ ਮਾਮਲੇ ਵਿਭਾਗ</div>
 <img style='width: 42%;height: 3%;' src='http://10.147.24.36:8082/SSD/arrow.png'>
                     <div style='margin: 3px 0;  '>
-                        <span style='font-size:35px; color: #3d387c;'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024</strong></span>
+                        <span style='font-size:35px; color: #3d387c;'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024 (ਸੀਜ਼ਨ 3)</strong></span>
                     </div>
     <div style='margin: 5px 0; font-size: 22px; margin-top: 3px; font-weight: bold;'>ਮੈਰਿਟ ਸਰਟੀਫਿਕੇਟ</div>
               <div style='
@@ -3558,7 +3578,7 @@ namespace ServicePlusAPIs.Controllers
               
              <div style=' font-size: 20px; margin-top: 3px; font-weight: bold;'>{await TranslateToPunjabi(player.GameHeldDistrict)}</div>
                     <div style='margin: 10px 0; font-size: 18px; font-weight: bold;'>
-                        ਮਿਤੀ ਤੋਂ <strong>{fromDate}</strong> ਮਿਤੀ ਤੱਕ <strong>{toDate}</strong>
+                        ਮਿਤੀ <strong>{fromDate}</strong> ਤੋਂ ਮਿਤੀ  <strong>{toDate} ਤੱਕ </strong>
                     </div> 
                    <div style='text-align: justify; margin-top: 5px; font-size: 16px;line-height:2.5;'>
                             ਤਸਦੀਕ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ 
@@ -3569,21 +3589,21 @@ namespace ServicePlusAPIs.Controllers
                             </strong><br>
                             ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ 
                             <strong><span style='display: inline-block; width: 39%; text-align: center; border-bottom:0.2px dashed #000; min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(player.ApplicantFatherName)}</span></strong>
-                            ਜਿਨ੍ਹਾਂ ਦੀ ਜਨਮ ਮਿਤੀ 
-                            <strong><span style='display: inline-block; width: 38%; text-align: center; border-bottom: 0.3px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.ApplicantDOB}</span></strong><br>
-                            ਨੇ ਪੰਜਾਬ ਰਾਜ ਖੇਡਾ - 2024 ਵਿੱਚ ਜ਼ਿਲ੍ਹਾ 
-                            <strong><span style='display: inline-block; width: 76%; text-align: center; border-bottom: 0.4px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(player.GameRepresentingDistrict)}</span></strong> <br>
+                             ਜਨਮ ਮਿਤੀ 
+                            <strong><span style='display: inline-block; width: 43%; text-align: center; border-bottom: 0.3px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.ApplicantDOB}</span></strong><br>
+                            ਨੇ ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024 ਵਿੱਚ ਜ਼ਿਲ੍ਹਾ 
+                            <strong><span style='display: inline-block; width: 72%; text-align: center; border-bottom: 0.4px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(player.GameRepresentingDistrict)}</span></strong> <br>
                             ਵਲੋਂ ਖੇਡ 
-                            <strong><span style='display: inline-block; width: 44%; text-align: center; border-bottom: 0.6px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(player.ApplicantGame)}</span></strong>  
-                            ਵਿਵੇਟ/ਵਰਗ 
+                            <strong><span style='display: inline-block; width: 44%; text-align: center; border-bottom: 0.6px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(await GetPunjabiGameName(player.ApplicantGame)).ToLower()}</span></strong>  
+                            ਈਵੈਂਟ/ਵਰਗ 
                             <strong><span style='display: inline-block; width: 41%; text-align: center; border-bottom: 0.7px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(player.ApplicantEvent.Contains("NA") ? "----" : await TranslateToPunjabi(player.ApplicantEvent))}</span></strong> <br>
                             ਈਵੈਂਟ ਸਮਾਂ/ਦੂਰੀ/ਉਚਾਈ/ਭਾਰ 
-                            <strong><span style='display: inline-block; width: 35%; text-align: center; border-bottom: 0.8px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(player.Score)}</span></strong>  
+                            <strong><span style='display: inline-block; width: 35%; text-align: center; border-bottom: 0.8px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(player.Score.Contains("NA") ? "----" : await TranslateToPunjabi(player.Score))}</span></strong>  
                             ਵਿਚ ਭਾਗ ਲਿਆ ਅਤੇ 
-                            <strong><span style='display: inline-block; width: 22%; text-align: center; border-bottom: 0.9px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.Position}</span></strong>  
-                            ਪੁਜੀਸ਼ਨ ਪ੍ਰਾਪਤ ਕੀਤੀ <br>
-                            ਉਮਰ ਵਰਗ 
-                            <strong><span style='display: inline-block; width: 45%; text-align: center; border-bottom: 1.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(player.ApplicantAgeGroup)}</span></strong>
+                            <strong><span style='display: inline-block; width: 22%; text-align: center; border-bottom: 0.9px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await GetScoreInPunjabi(player.Position)}</span></strong>  
+                            ਸਥਾਨ ਪ੍ਰਾਪਤ ਕੀਤਾ <br>
+                            ਉਮਰ ਵਰਗ (ਸਾਲ)
+                            <strong><span style='display: inline-block; width: 42%; text-align: center; border-bottom: 1.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(player.ApplicantAgeGroup)}</span></strong>
                         <strong><span style='display:  inline-block; width: 45%; text-align: center; border-bottom: 0px dashed #000;'> </span></strong>
                      </div>                
 
@@ -3598,7 +3618,7 @@ namespace ServicePlusAPIs.Controllers
                     <img src='{dsoImagePath}' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -43px; left: 50%; transform: translateX(-50%); z-index: 1;' />
                 </div>
                 <div style='width: 35%; position: relative;'>
-                    <img src='{dsoImagePath}' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -43px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                    <img src='' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -43px; left: 50%; transform: translateX(-50%); z-index: 1;' />
                 </div>
             </div>
         
@@ -3661,6 +3681,112 @@ namespace ServicePlusAPIs.Controllers
             }
             return newCertificates.Count.ToString();
         }
+
+        private async Task<string> GetScoreInPunjabi(string score)
+        {
+            // Use if-else to handle multiple possible values
+            if (score == "1st" || score == "First")
+            {
+                return "ਪਹਿਲਾਂ";
+            }
+            else if (score == "2nd" || score == "Second")
+            {
+                return "ਦੂਜਾ";
+            }
+            else if (score == "3rd" || score == "Third")
+            {
+                return "ਤੀਜਾ";
+            }
+            else
+            {
+                return "";
+            }
+        }
+
+        private async Task<string> GetPunjabiGameName(string game)
+        {
+            var gameSorted = game.ToLower().Trim();
+            switch (gameSorted) // Convert input to lowercase for case insensitivity
+            {
+                case "athletics":
+                    return "ਐਥਲੈਟਿਕਸ";
+                case "volleyball (smashing)":
+                    return "ਵਾਲੀਬਾਲ (ਸਮੈਸ਼ਿੰਗ)";
+                case "volleyball (shooting)":
+                    return "ਵਾਲੀਬਾਲ (ਸ਼ੂਟਿੰਗ)";
+                case "football":
+                    return "ਫੁੱਟਬਾਲ";
+                case "kabaddi (circle style)":
+                    return "ਕਬੱਡੀ (ਸਰਕਲ ਸ਼ੈਲੀ)";
+                case "kabaddi (national style)":
+                    return "ਕਬੱਡੀ (ਨੈਸ਼ਨਲ ਸ਼ੈਲੀ)";
+                case "kho kho":
+                    return "ਖੋ-ਖੋ";
+                case "powerlifting":
+                    return "ਪਾਵਰਲਿਫਟਿੰਗ";
+                case "hockey":
+                    return "ਹਾਕੀ";
+                case "softball":
+                    return "ਸੌਫਟਬਾਲ";
+                case "fencing":
+                    return "ਫੈਨਸਿੰਗ";
+                case "judo":
+                    return "ਜੂਡੋ";
+                case "wrestling":
+                    return "ਕੁਸ਼ਤੀ";
+                case "swimming":
+                    return "ਤੈਰਨਾ";
+                case "horse riding":
+                    return "ਘੋੜਸਵਾਰੀ";
+                case "shooting":
+                    return "ਸ਼ੂਟਿੰਗ";
+                case "basketball":
+                    return "ਬਾਸਕਟਬਾਲ";
+                case "taekwando":
+                    return "ਟੈਕਵਾਂਡੋ";
+                case "rugby":
+                    return "ਰਗਬੀ";
+                case "gatka":
+                    return "ਗਤਕਾ";
+                case "cycling":
+                    return "ਸਾਈਕਲਿੰਗ";
+                case "lawn tennis":
+                    return "ਲਾਨ ਟੈਨਿਸ";
+                case "baseball":
+                    return "ਬੇਸਬਾਲ";
+                case "kick boxing":
+                    return "ਕਿੱਕ ਬਾਕਸਿੰਗ";
+                case "gymnastics":
+                    return "ਜਿਮਨਾਸਟਿਕਸ";
+                case "archery":
+                    return "ਤੀਰੰਧਾਜ਼ੀ";
+                case "chess":
+                    return "ਸ਼ਤਰੰਜ";
+                case "table tennis":
+                    return "ਟੇਬਲ ਟੈਨਿਸ";
+                case "badminton":
+                    return "ਬੈਡਮਿੰਟਨ";
+                case "netball":
+                    return "ਨੈੱਟਬਾਲ";
+                case "weightlifting":
+                    return "ਭਾਰ ਉਠਾਉਣਾ";
+                case "roller skating":
+                    return "ਰੋਲਰ ਸਕੇਟਿੰਗ";
+                case "wushu":
+                    return "ਵੁਸ਼ੂ";
+                case "rowing":
+                    return "ਰੋਇੰਗ";
+                case "kaeking kanoing":
+                    return "ਕੈਕਿੰਗ ਕੈਨੋਇੰਗ";
+                case "handball":
+                    return "ਹੈਂਡਬਾਲ";
+                case "boxing":
+                    return "ਬਾਕਸਿੰਗ";
+                default:
+                    return "";
+            }
+        }
+
 
         private async Task<string> TranslateToPunjabi(string text)
         {
