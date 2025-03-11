@@ -3710,29 +3710,29 @@ namespace ServicePlusAPIs.Controllers
             {
                 case "athletics":
                     return "ਐਥਲੈਟਿਕਸ";
-                case "volleyball (smashing)":
-                    return "ਵਾਲੀਬਾਲ (ਸਮੈਸ਼ਿੰਗ)";
+                case "VOLLEYBALL":
+                    return "ਵਾਲੀਬਾਲ";
                 case "volleyball (shooting)":
                     return "ਵਾਲੀਬਾਲ (ਸ਼ੂਟਿੰਗ)";
                 case "football":
                     return "ਫੁੱਟਬਾਲ";
-                case "kabaddi (circle style)":
-                    return "ਕਬੱਡੀ (ਸਰਕਲ ਸ਼ੈਲੀ)";
-                case "kabaddi (national style)":
-                    return "ਕਬੱਡੀ (ਨੈਸ਼ਨਲ ਸ਼ੈਲੀ)";
-                case "kho kho":
+                case "KABADDI CIRCLE":
+                    return "ਕਬੱਡੀ ਸਰਕਲ";
+                case "KABADDI NATIONAL":
+                    return "ਕਬੱਡੀ ਨੈਸ਼ਨਲ";
+                case "KHO KHO":
                     return "ਖੋ-ਖੋ";
                 case "powerlifting":
                     return "ਪਾਵਰਲਿਫਟਿੰਗ";
                 case "hockey":
                     return "ਹਾਕੀ";
-                case "softball":
+                case "Softball":
                     return "ਸੌਫਟਬਾਲ";
-                case "fencing":
+                case "Fencing":
                     return "ਫੈਨਸਿੰਗ";
                 case "judo":
                     return "ਜੂਡੋ";
-                case "wrestling":
+                case "Wrestling":
                     return "ਕੁਸ਼ਤੀ";
                 case "swimming":
                     return "ਤੈਰਨਾ";
@@ -3740,11 +3740,11 @@ namespace ServicePlusAPIs.Controllers
                     return "ਘੋੜਸਵਾਰੀ";
                 case "shooting":
                     return "ਸ਼ੂਟਿੰਗ";
-                case "basketball":
+                case "Basketball":
                     return "ਬਾਸਕਟਬਾਲ";
                 case "taekwando":
                     return "ਟੈਕਵਾਂਡੋ";
-                case "rugby":
+                case "Rugby":
                     return "ਰਗਬੀ";
                 case "gatka":
                     return "ਗਤਕਾ";
@@ -3752,9 +3752,9 @@ namespace ServicePlusAPIs.Controllers
                     return "ਸਾਈਕਲਿੰਗ";
                 case "lawn tennis":
                     return "ਲਾਨ ਟੈਨਿਸ";
-                case "baseball":
+                case "BASEBALL":
                     return "ਬੇਸਬਾਲ";
-                case "kick boxing":
+                case "Kick Boxing":
                     return "ਕਿੱਕ ਬਾਕਸਿੰਗ";
                 case "gymnastics":
                     return "ਜਿਮਨਾਸਟਿਕਸ";
@@ -3764,21 +3764,21 @@ namespace ServicePlusAPIs.Controllers
                     return "ਸ਼ਤਰੰਜ";
                 case "table tennis":
                     return "ਟੇਬਲ ਟੈਨਿਸ";
-                case "badminton":
+                case "BADMINTON":
                     return "ਬੈਡਮਿੰਟਨ";
-                case "netball":
+                case "NETBALL":
                     return "ਨੈੱਟਬਾਲ";
-                case "weightlifting":
+                case "WEIGHT LIFTING":
                     return "ਭਾਰ ਉਠਾਉਣਾ";
-                case "roller skating":
+                case "ROLLER SKATING":
                     return "ਰੋਲਰ ਸਕੇਟਿੰਗ";
-                case "wushu":
+                case "WUSHU":
                     return "ਵੁਸ਼ੂ";
                 case "rowing":
                     return "ਰੋਇੰਗ";
                 case "kaeking kanoing":
                     return "ਕੈਕਿੰਗ ਕੈਨੋਇੰਗ";
-                case "handball":
+                case "HANDBALL":
                     return "ਹੈਂਡਬਾਲ";
                 case "boxing":
                     return "ਬਾਕਸਿੰਗ";
