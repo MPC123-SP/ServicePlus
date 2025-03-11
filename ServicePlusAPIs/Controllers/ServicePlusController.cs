@@ -3215,7 +3215,11 @@ namespace ServicePlusAPIs.Controllers
                             && c.ApplicantGame == gameName
                             && c.ApplicantAgeGroup == ageGroup
                             && c.CertificateSerialNo != null)
-                .Select(c => new
+                .ToListAsync(); // Move data to memory
+
+            // Create a Dictionary to store existing certificates for faster lookup
+            var certificateDict = existingCertificates.ToDictionary(
+                c => new
                 {
                     c.ApplicantFullName,
                     c.ApplicantFatherName,
@@ -3223,8 +3227,9 @@ namespace ServicePlusAPIs.Controllers
                     c.ApplicantGame,
                     c.ApplicantEvent,
                     c.ApplicantAgeGroup
-                })
-                .ToListAsync(); // Move data to memory
+                },
+                c => c // Store the certificate itself as the value
+            );
 
             // Fetch all players (executed on DB)
             var allPlayers = await _servicePlusContext.PlayerCertificateDetails
@@ -3235,13 +3240,15 @@ namespace ServicePlusAPIs.Controllers
 
             // Perform filtering in memory (LINQ to Objects)
             var playerCertificateDetails = allPlayers
-                .Where(d => !existingCertificates.Any(c =>
-                    c.ApplicantFullName == d.ApplicantFullName &&
-                    c.ApplicantFatherName == d.ApplicantFatherName &&
-                    c.ApplicantDOB == d.ApplicantDOB &&
-                    c.ApplicantGame == d.ApplicantGame &&
-                    c.ApplicantEvent == d.ApplicantEvent &&
-                    c.ApplicantAgeGroup == d.ApplicantAgeGroup))
+                .Where(d => !certificateDict.ContainsKey(new
+                {
+                    d.ApplicantFullName,
+                    d.ApplicantFatherName,
+                    d.ApplicantDOB,
+                    d.ApplicantGame,
+                    d.ApplicantEvent,
+                    d.ApplicantAgeGroup
+                }))
                 .ToList(); // Filtering done in memory
 
 
@@ -3376,11 +3383,18 @@ namespace ServicePlusAPIs.Controllers
                                          .FirstOrDefaultAsync();
 
 
-            int newSerialNumber = lastIssuedCertificate != null && int.TryParse(lastIssuedCertificate, out int lastSerial)
-                ? lastSerial + 1
-                : 1;
+            int newSerialNumber = 1; // Default to 1 if no certificate is found
+            if (!string.IsNullOrEmpty(lastIssuedCertificate))
+            {
+                // Split the certificate serial by "2024-" and take the part after it
+                var parts = lastIssuedCertificate.Split(new[] { "2024-" }, StringSplitOptions.None);
 
-
+                if (parts.Length > 1 && int.TryParse(parts[1], out int lastSerial))
+                {
+                    // Increment the last serial number
+                    newSerialNumber = lastSerial + 1;
+                }
+            }
             string fromDate = "";
             string toDate = "";
             //to get Game From and To Date
@@ -3469,6 +3483,20 @@ namespace ServicePlusAPIs.Controllers
             var newCertificates = new List<PlayerIssuedCertificate>();
 
             var hashCertificates = new List<VerifyCertificate>();
+            // Puppeteer PDF Generation Logic
+            await new BrowserFetcher().DownloadAsync();
+            await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+            {
+                Headless = true,
+                Args = new[] {
+                "--font-render-hinting=none",
+                "--force-color-profile=srgb"
+            }
+            });
+
+            await using var page = await browser.NewPageAsync();
+            await page.SetUserAgentAsync("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36");
+            await page.EmulateMediaTypeAsync(MediaType.Screen);
 
             foreach (var player in playerCertificateDetails)
             {
@@ -3503,20 +3531,7 @@ namespace ServicePlusAPIs.Controllers
                     certificateNo
                 );
 
-                // Puppeteer PDF Generation Logic
-                await new BrowserFetcher().DownloadAsync();
-                await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
-                {
-                    Headless = true,
-                    Args = new[] {
-                "--font-render-hinting=none",
-                "--force-color-profile=srgb"
-            }
-                });
-
-                await using var page = await browser.NewPageAsync();
-                await page.SetUserAgentAsync("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36");
-                await page.EmulateMediaTypeAsync(MediaType.Screen);
+              
 
                 // Further processing...
 
