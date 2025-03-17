@@ -3266,72 +3266,72 @@ namespace ServicePlusAPIs.Controllers
             Dictionary<(string, string), string> gameSignatures = new Dictionary<(string, string), string>
 {
                     //Amritsar
-                    { ("Amritsar", "Gatka"), $@"{baseDirectory}\Amritsar\Gatka Convenor Sign\dummy.png" },
-                    { ("Amritsar", "Rugby"), $@"{baseDirectory}\Amritsar\Rugby Convenor Sign\dummy.png" },
+                    { ("Amritsar", "Gatka"), $@"{baseDirectory}\Amritsar\Gatka Convenor Sign\Gatka Convenor Sign.png" },
+                    { ("Amritsar", "Rugby"), $@"{baseDirectory}\Amritsar\Rugby Convenor Sign\Rugby Convenor Sign.png" },
 
                     //Barnala
-                    { ("Barnala", "Netball"), $@"{baseDirectory}\Barnala\Netball Convenor Sign\NET-remove.png" },
-                    { ("Barnala", "Table Tennis"), $@"{baseDirectory}\Barnala\Table Tennis Convenor Sign\TT-remove.png" },
-                    { ("Barnala", "Badminton"), $@"{baseDirectory}\Barnala\Badminton Convenor Sign\dummy.png" },
+                    { ("Barnala", "Netball"), $@"{baseDirectory}\Barnala\Netball Convenor Sign\Netball English Convenor Sign.png" },
+                    { ("Barnala", "Table Tennis"), $@"{baseDirectory}\Barnala\Table Tennis Convenor Sign\Table Tennis Convenor Sign.png" },
+                    { ("Barnala", "Badminton"), $@"{baseDirectory}\Barnala\Badminton Convenor Sign\BADMINTON Convenor Sign.png" },
 
                     //Bathinda
-                    { ("Bathinda", "Hockey"), $@"{baseDirectory}\Bathinda\Hocky Convenor Sign\HOCKEY-remove.png" },
-                    { ("Bathinda", "Powerlifting"), $@"{baseDirectory}\Bathinda\Powerlifting Convenor Sign\POWERLIFTING-remove.png" },
+                    { ("Bathinda", "Hockey"), $@"{baseDirectory}\Bathinda\Hocky Convenor Sign\HOCKEY Convenor Sign.png" },
+                    { ("Bathinda", "Powerlifting"), $@"{baseDirectory}\Bathinda\Powerlifting Convenor Sign\POWERLIFTING Convenor Sign.png" },
 
                     //Faridkot
-                    { ("Faridkot", "Basketball"), $@"{baseDirectory}\Faridkot\Basketball Convenor Sign\dummy.png" },
-                    { ("Faridkot", "Taekwondo"), $@"{baseDirectory}\Faridkot\Taekwondo Convenor Sign\dummy.png" },
+                    { ("Faridkot", "Basketball"), $@"{baseDirectory}\Faridkot\Basketball Convenor Sign\Basketball Convenor Sign.png" },
+                    { ("Faridkot", "Taekwondo"), $@"{baseDirectory}\Faridkot\Taekwondo Convenor Sign\Taekwondo Convenor Sign.png" },
 
                     //Fatehgarh Sahib
-                    { ("Fatehgarh Sahib", "Fencing"), $@"{baseDirectory}\Fatehgarh Sahib\Fencing Convenor Sign\FENCING-remove.png" },
-                    { ("Fatehgarh Sahib", "Softball"), $@"{baseDirectory}\Fatehgarh Sahib\Softball Convenor Sign\SOFT-removebg.png" },
+                    { ("Fatehgarh Sahib", "Fencing"), $@"{baseDirectory}\Fatehgarh Sahib\Fencing Convenor Sign\FENCING Convenor Sign.png" },
+                    { ("Fatehgarh Sahib", "Softball"), $@"{baseDirectory}\Fatehgarh Sahib\Softball Convenor Sign\SOFT Convenor Sign.png" },
 
                     //Hoshiarpur
-                    { ("Hoshiarpur", "Football"), $@"{baseDirectory}\Hoshiarpur\Football Convenor Sign\dummy.png" },
+                    { ("Hoshiarpur", "Football"), $@"{baseDirectory}\Hoshiarpur\Football Convenor Sign\Football Convenor Sign.png" },
 
                     //Jalandhar
-                    { ("Jalandhar", "Chess"), $@"{baseDirectory}\Jalandhar\Chess Convenor Sign\Chess_Convener-remove.png" },
-                    { ("Jalandhar", "Volleyball Smashing"), $@"{baseDirectory}\Jalandhar\Volleyball Smashing Convenor Sign\Volleyball_Smashing_Convener_sign-remove.png" },
+                    { ("Jalandhar", "Chess"), $@"{baseDirectory}\Jalandhar\Chess Convenor Sign\Chess Convenor Sign.png" },
+                    { ("Jalandhar", "Volleyball Smashing"), $@"{baseDirectory}\Jalandhar\Volleyball Smashing Convenor Sign\Volleyball Smashing Convener sign.png" },
 
                     //Ludhiana
-                    { ("Ludhiana", "Athletics"), $@"{baseDirectory}\Ludhiana\Athletics Convenor Sign\ATHLETICS-removebg-preview.png" },
-                    { ("Ludhiana", "Baseball"), $@"{baseDirectory}\Ludhiana\Baseball Convenor Sign\BASEBALL-removebg-preview.png" },
-                    { ("Ludhiana", "Cycling"), $@"{baseDirectory}\Ludhiana\Cycling Convenor Sign\CYCLING-removebg-preview.png" },
+                    { ("Ludhiana", "Athletics"), $@"{baseDirectory}\Ludhiana\Athletics Convenor Sign\ATHLETICS Convenor Sign.png" },
+                    { ("Ludhiana", "Baseball"), $@"{baseDirectory}\Ludhiana\Baseball Convenor Sign\BASEBALL Convenor Sign.png" },
+                    { ("Ludhiana", "Cycling"), $@"{baseDirectory}\Ludhiana\Cycling Convenor Sign\CYCLING Convenor Sign.png" },
                     { ("Ludhiana", "Kick Boxing"), $@"{baseDirectory}\Ludhiana\Kick Boxing Convenor Sign\KICKBOXING-removebg-preview.png" },
-                    { ("Ludhiana", "Lawn Tennis"), $@"{baseDirectory}\Ludhiana\Lawn Tennis Convenor Sign\LAWN_TENNIS-removebg-preview.png" },
+                    { ("Ludhiana", "Lawn Tennis"), $@"{baseDirectory}\Ludhiana\Lawn Tennis Convenor Sign\image-removebg-preview.png" },
 
                     //Malerkotla
-                    { ("Malerkotla", "Volleyball Shooting"), $@"{baseDirectory}\Malerkotla\Volleyball Shooting Convenor Sign\dummy.png" },
+                    { ("Malerkotla", "Volleyball Shooting"), $@"{baseDirectory}\Malerkotla\Volleyball Shooting Convenor Sign\Volleyball Shooting Sign.png" },
 
                     //Mansa
-                    { ("Mansa", "Judo"), $@"{baseDirectory}\Mansa\Judo Convenor Sign\JUDO-removebg-preview.png" },
-                    { ("Mansa", "Wrestling"), $@"{baseDirectory}\Mansa\Wrestling Convenor Sign\dummy.png" },
+                    { ("Mansa", "Judo"), $@"{baseDirectory}\Mansa\Judo Convenor Sign\JUDO Convenor Sign.png" },
+                    { ("Mansa", "Wrestling"), $@"{baseDirectory}\Mansa\Wrestling Convenor Sign\Wrestling Convenor Sign.png" },
 
                     //Patiala
-                    { ("PATIALA", "Archary"), $@"{baseDirectory}\Patiala\Archary Convenor Sign\ARCHERY-removebg-preview.png" },
-                    { ("PATIALA", "Gymnastics"), $@"{baseDirectory}\Patiala\Gymnastics Convenor Sign\GYMNASTICS-removebg-preview.png" },
-                    { ("PATIALA", "KABADDI CIRCLE"), $@"{baseDirectory}\Patiala\Kabbadi circle style Convenor Sign\KABADDI_CS-removebg-preview.png" },
-                    { ("PATIALA", "Kho-Kho"), $@"{baseDirectory}\Patiala\Kho-Kho Convenor Sign\KHO_KHO-removebg-preview.png" },
+                    { ("PATIALA", "Archary"), $@"{baseDirectory}\Patiala\Archary Convenor Sign\ARCHERY Convenor Sign.png" },
+                    { ("PATIALA", "Gymnastics"), $@"{baseDirectory}\Patiala\Gymnastics Convenor Sign\GYMNASTICS Convenor Sign.png" },
+                    { ("PATIALA", "KABADDI CIRCLE"), $@"{baseDirectory}\Patiala\Kabbadi circle style Convenor Sign\KABADDI CS Convenor Sign.png" },
+                    { ("PATIALA", "Kho-Kho"), $@"{baseDirectory}\Patiala\Kho-Kho Convenor Sign\KHO KHO Convenor Sign.png" },
 
                     //Rupnagar
-                    { ("Rupnagar", "Handball"), $@"{baseDirectory}\Rupnagar\Handball Convenor Sign\dummy.png" },
-                    { ("Rupnagar", "Kayking"), $@"{baseDirectory}\Rupnagar\Kayking Convenor Sign\dummy.png" },
-                    { ("Rupnagar", "Rowing"), $@"{baseDirectory}\Rupnagar\Rowing Convenor Sign\dummy.png" },
+                    { ("Rupnagar", "Handball"), $@"{baseDirectory}\Rupnagar\Handball Convenor Sign\Handball Convenor Sign.png" },
+                    { ("Rupnagar", "Kayking"), $@"{baseDirectory}\Rupnagar\Kayking and Canoining Convenor Sign\Kayaking__Canoeing.png" },
+                    { ("Rupnagar", "Rowing"), $@"{baseDirectory}\Rupnagar\Rowing Convenor Sign\Rowing_Convenor Sign.png" },
                     
                     //Sangrur
-                    { ("Sangrur", "Kabaddi"), $@"{baseDirectory}\Sangrur\Kabaddi National Style Convenor Sign\dummy.png" },
-                    { ("Sangrur", "Roller Skating"), $@"{baseDirectory}\Sangrur\Roller Skating Convenor Sign\RS-removebg-preview.png" },
-                    { ("Sangrur", "Roller Skating Speed Skating"), $@"{baseDirectory}\Sangrur\Roller Skating Speed Skating Convenor Sign\dummy.png" },
-                    { ("Sangrur", "Weightlifting"), $@"{baseDirectory}\Sangrur\Weightlifting Convenor SIgn\WL-removebg-preview.png" },
-                    { ("Sangrur", "Wushu"), $@"{baseDirectory}\Sangrur\Wushu Convenor Sign\WUSHU-removebg-preview.png" },
+                    { ("Sangrur", "Kabaddi"), $@"{baseDirectory}\Sangrur\Kabaddi National Style Convenor Sign\Kabaddi National Convenor Sign.png" },
+                    { ("Sangrur", "Roller Skating"), $@"{baseDirectory}\Sangrur\Roller Skating Convenor Sign\Rollar Skating Convenor Sign.png" },
+                    { ("Sangrur", "Roller Skating Speed Skating"), $@"{baseDirectory}\Sangrur\Roller Skating Convenor Sign\Rollar Skating Convenor Sign.png" },
+                    { ("Sangrur", "Weightlifting"), $@"{baseDirectory}\Sangrur\Weightlifting Convenor SIgn\WL Convenor Sign.png" },
+                    { ("Sangrur", "Wushu"), $@"{baseDirectory}\Sangrur\Wushu Convenor Sign\WUSHU Convenor Sign.png" },
 
                     //SAS Nagar
-                    { ("SAS Nagar", "Equestrian"), $@"{baseDirectory}\SAS Nagar\Equestrian Convenor Sign\dummy.png" },
-                    { ("SAS Nagar", "Shooting"), $@"{baseDirectory}\SAS Nagar\Shooting Convenor Sign\dummy.png" },
-                    { ("SAS Nagar", "Swimming"), $@"{baseDirectory}\SAS Nagar\Swimming Convenor Sign\dummy.png" },
+                    { ("SAS Nagar", "Equestrian"), $@"{baseDirectory}\SAS Nagar\Equestrian Convenor Sign\Equestrian Convenor Sign.png" },
+                    { ("SAS Nagar", "Shooting"), $@"{baseDirectory}\SAS Nagar\Shooting Convenor Sign\Shooting Convenor Sign.png" },
+                    { ("SAS Nagar", "Swimming"), $@"{baseDirectory}\SAS Nagar\Swimming Convenor Sign\Swimming Convenor Sign.png" },
 
                     //SAS Nagar
-                    { ("SBS Nagar", "Boxing"), $@"{baseDirectory}\SBS Nagar\Boxing Convenor Sign\dummy.png" },
+                    { ("SBS Nagar", "Boxing"), $@"{baseDirectory}\SBS Nagar\Boxing Convenor Sign\Boxing Convenor Sign.png" },
 
                 };
 
@@ -3350,21 +3350,21 @@ namespace ServicePlusAPIs.Controllers
 
             Dictionary<string, string> dsoSignatures = new Dictionary<string, string>
 {
-                        { "Amritsar", $@"{baseDirectory}\Amritsar\DSO Sign\Dso_Amritsar_official_signature-remove.png" },
-                        { "Barnala", $@"{baseDirectory}\Barnala\DSO Sign\dso_barnala_signs-remove.png" },
-                        { "Bathinda", $@"{baseDirectory}\Bathinda\DSO Sign\dummy.png" },
-                        { "Faridkot", $@"{baseDirectory}\Faridkot\DSO Sign\Dso_Faridkot_Official_Signature-remove.png" },
-                        { "Fatehgarh Sahib", $@"{baseDirectory}\Fatehgarh Sahib\DSO Sign\dummy.png" },
-                        { "Hoshiarpur", $@"{baseDirectory}\Hoshiarpur\DSO Sign\dummy.png" },
-                        { "Jalandhar", $@"{baseDirectory}\Jalandhar\DSO Sign\dso_jalandhar_signs-remove.png" },
-                        { "Ludhiana", $@"{baseDirectory}\Ludhiana\DSO Sign\Dso_Ludhiana_official_signature-remove.png" },
-                        { "Malerkotla", $@"{baseDirectory}\Malerkotla\DSO Sign\dso_malerkotla_official_signature.png-removebg-preview.png" },
-                        { "Mansa", $@"{baseDirectory}\Mansa\DSO Sign\dso_mansa_sign-removebg-preview.png" },
-                        { "PATIALA", $@"{baseDirectory}\Patiala\DSO Sign\Dso_Patiala_Official_Signature-removebg-preview.png" },
-                        { "Rupnagar", $@"{baseDirectory}\Rupnagar\DSO Sign\dummy.png" },
-                        { "Sangrur", $@"{baseDirectory}\Sangrur\DSO Sign\dummy.png" },
-                        { "SAS Nagar", $@"{baseDirectory}\SAS Nagar\DSO Sign\MOHALI-removebg-preview.png" },
-                        { "SBS Nagar", $@"{baseDirectory}\SBS Nagar\DSO Sign\Dso_SBS_Nagar_official_signature-remove.png" }
+                        { "Amritsar", $@"{baseDirectory}\Amritsar\DSO Sign\Amritsar DSO.png" },
+                        { "Barnala", $@"{baseDirectory}\Barnala\DSO Sign\DSO Sign.png" },
+                        { "Bathinda", $@"{baseDirectory}\Bathinda\DSO Sign\DSo Sign.png" },
+                        { "Faridkot", $@"{baseDirectory}\Faridkot\DSO Sign\DSO Sign.png" },
+                        { "Fatehgarh Sahib", $@"{baseDirectory}\Fatehgarh Sahib\DSO Sign\DSO Sign.png" },
+                        { "Hoshiarpur", $@"{baseDirectory}\Hoshiarpur\DSO Sign\DSO Sign.png" },
+                        { "Jalandhar", $@"{baseDirectory}\Jalandhar\DSO Sign\DSO Sign.png" },
+                        { "Ludhiana", $@"{baseDirectory}\Ludhiana\DSO Sign\DSO Sign.png" },
+                        { "Malerkotla", $@"{baseDirectory}\Malerkotla\DSO Sign\DSO Sign.png" },
+                        { "Mansa", $@"{baseDirectory}\Mansa\DSO Sign\DSO Sign.png" },
+                        { "PATIALA", $@"{baseDirectory}\Patiala\DSO Sign\DSO Sign.png" },
+                        { "Rupnagar", $@"{baseDirectory}\Rupnagar\DSO Sign\DSO Sign.png" },
+                        { "Sangrur", $@"{baseDirectory}\Sangrur\DSO Sign\DSO Sign.png" },
+                        { "SAS Nagar", $@"{baseDirectory}\SAS Nagar\DSO Sign\DSO Sign.png" },
+                        { "SBS Nagar", $@"{baseDirectory}\SBS Nagar\DSO Sign\DSO Sign.png" }
                     };
 
             districtName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(districtName);
