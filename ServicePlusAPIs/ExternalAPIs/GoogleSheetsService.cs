@@ -47,7 +47,7 @@ namespace ServicePlusAPIs.ExternalAPIs
                     ApplicationName = ApplicationName,
                 });
 
-                var range = $"'{SheetName}'!A1:M";
+                var range = $"'{SheetName}'!A1:V";
                 var request = service.Spreadsheets.Values.Get(SpreadsheetId, range);
                 ValueRange response = await request.ExecuteAsync();
                 var values = response.Values;
@@ -60,17 +60,26 @@ namespace ServicePlusAPIs.ExternalAPIs
                     {
                         SrNo = int.TryParse(row.ElementAtOrDefault(0)?.ToString()?.Trim(), out int srNo) ? srNo : 0, // Default to 0 if parsing fails
                         ApplicantFullName = row.ElementAtOrDefault(1)?.ToString()?.Trim(),
-                        ApplicantFatherName = row.ElementAtOrDefault(2)?.ToString()?.Trim(),
-                        ApplicantDOB = row.ElementAtOrDefault(3)?.ToString()?.Trim(),
-                        ApplicantMobileNo = row.ElementAtOrDefault(4)?.ToString()?.Trim(),
-                        GameHeldDistrict = row.ElementAtOrDefault(5)?.ToString()?.Trim(),
-                        GameRepresentingDistrict = row.ElementAtOrDefault(6)?.ToString()?.Trim(),
-                        ApplicantGame = row.ElementAtOrDefault(7)?.ToString()?.Trim(),
-                        ApplicantEvent = row.ElementAtOrDefault(8)?.ToString()?.Trim(),
-                        ApplicantAgeGroup = row.ElementAtOrDefault(9)?.ToString()?.Trim(),
-                        Score = row.ElementAtOrDefault(10)?.ToString()?.Trim(),
-                        Position = row.ElementAtOrDefault(11)?.ToString()?.Trim(),
-                        ConveyorName = row.ElementAtOrDefault(12)?.ToString()?.Trim()
+                        ApplicantFullNamePB = row.ElementAtOrDefault(2)?.ToString()?.Trim(),
+                        ApplicantFatherName = row.ElementAtOrDefault(3)?.ToString()?.Trim(),
+                        ApplicantFatherNamePB = row.ElementAtOrDefault(4)?.ToString()?.Trim(),
+                        ApplicantDOB = row.ElementAtOrDefault(5)?.ToString()?.Trim(),
+                        ApplicantMobileNo = row.ElementAtOrDefault(6)?.ToString()?.Trim(),
+                        GameHeldDistrict = row.ElementAtOrDefault(7)?.ToString()?.Trim(),
+                        GameHeldDistrictPB = row.ElementAtOrDefault(8)?.ToString()?.Trim(),
+                        GameRepresentingDistrict = row.ElementAtOrDefault(9)?.ToString()?.Trim(),
+                        GameRepresentingDistrictPB = row.ElementAtOrDefault(10)?.ToString()?.Trim(),
+                        ApplicantGame = row.ElementAtOrDefault(11)?.ToString()?.Trim(),
+                        ApplicantGamePB = row.ElementAtOrDefault(12)?.ToString()?.Trim(),
+                        ApplicantEvent = row.ElementAtOrDefault(13)?.ToString()?.Trim(),
+                        ApplicantEventPB = row.ElementAtOrDefault(14)?.ToString()?.Trim(),
+                        ApplicantAgeGroup = row.ElementAtOrDefault(15)?.ToString()?.Trim(),
+                        ApplicantAgeGroupPB = row.ElementAtOrDefault(16)?.ToString()?.Trim(),
+                        Score = row.ElementAtOrDefault(17)?.ToString()?.Trim(),
+                        ScorePB = row.ElementAtOrDefault(18)?.ToString()?.Trim(),
+                        Position = row.ElementAtOrDefault(19)?.ToString()?.Trim(), 
+                        ConveyorName = row.ElementAtOrDefault(20)?.ToString()?.Trim(),
+                        ConveyorNamePB = row.ElementAtOrDefault(21)?.ToString()?.Trim(),
                     })
                     .ToList();
                 _servicePlusContext.PlayerCertificateDetails.RemoveRange(_servicePlusContext.PlayerCertificateDetails);

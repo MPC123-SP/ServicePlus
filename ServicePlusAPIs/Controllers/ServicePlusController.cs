@@ -1,6 +1,4 @@
 ﻿using AutoMapper;
-using DocumentFormat.OpenXml.InkML;
-using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -3146,14 +3144,22 @@ namespace ServicePlusAPIs.Controllers
 
         #region GetPlayerCertificateDetail
 
+
+
+        /// <summary>
+        /// Retrieves player certificate details based on the district, game name, and age group.
+        /// </summary>
+        /// <param name="district">The district where the player belongs.</param>
+        /// <param name="gameName">The game name selected by the player.</param>
+        /// <param name="AgeGroup">The age group of the player.</param>
+        /// <returns>A success message indicating that the record has been updated.</returns>
         [Route("GetPlayerCertificateDetail")]
         [HttpPost]
         public async Task<IActionResult> GetPlayerCertificateDetail(string district, string gameName, string AgeGroup)
         {
-
-            return Ok(await GeneratePlayerCertificate(district, gameName, AgeGroup) + " Record Updated Successfully");
-
+            return Ok(await GeneratePlayerCertificate(district, gameName , AgeGroup) + " Record Updated Successfully");
         }
+
         [Route("UpdateCertificatePlayers")]
         [HttpPost]
         public async Task<IActionResult> UpdateCertificatePlayers()
@@ -3261,78 +3267,78 @@ namespace ServicePlusAPIs.Controllers
 
             // Signature For Convenor
             // Define the base directory where images are stored
-            string baseDirectory = @"http://10.147.24.36:8082/SSD/SportsSignature";
+            string baseDirectory = @"http://10.147.24.36:8082/SSD/Sports_Signature";
 
             // Dictionary to store (district, game) as key and image path as value
             Dictionary<(string, string), string> gameSignatures = new Dictionary<(string, string), string>
 {
                     //Amritsar
-                    { ("Amritsar", "Gatka"), $@"{baseDirectory}\Amritsar\Gatka Convenor Sign\Gatka Convenor Sign.png" },
-                    { ("Amritsar", "Rugby"), $@"{baseDirectory}\Amritsar\Rugby Convenor Sign\Rugby Convenor Sign.png" },
+                    { ("AMRITSAR", "GATKA"), $@"{baseDirectory}/Amritsar/Gatka Convenor Sign/Gatka Convenor Sign.png" },
+                    { ("AMRITSAR", "RUGBY"), $@"{baseDirectory}/Amritsar/Rugby Convenor Sign/Rugby Convenor Sign.png" },
 
                     //Barnala
-                    { ("Barnala", "Netball"), $@"{baseDirectory}\Barnala\Netball Convenor Sign\Netball English Convenor Sign.png" },
-                    { ("Barnala", "Table Tennis"), $@"{baseDirectory}\Barnala\Table Tennis Convenor Sign\Table Tennis Convenor Sign.png" },
-                    { ("Barnala", "Badminton"), $@"{baseDirectory}\Barnala\Badminton Convenor Sign\BADMINTON Convenor Sign.png" },
+                    { ("BARNALA", "NETBALL"), $@"{baseDirectory}/Barnala/Netball Convenor Sign/Netball English Convenor Sign.png" },
+                    { ("BARNALA", "TABLE TENNIS"), $@"{baseDirectory}/Barnala/Table Tennis Convenor Sign/Table Tennis Convenor Sign.png" },
+                    { ("BARNALA", "BADMINTON"), $@"{baseDirectory}/Barnala/Badminton Convenor Sign/BADMINTON Convenor Sign.png" },
 
                     //Bathinda
-                    { ("Bathinda", "Hockey"), $@"{baseDirectory}\Bathinda\Hocky Convenor Sign\HOCKEY Convenor Sign.png" },
-                    { ("Bathinda", "Powerlifting"), $@"{baseDirectory}\Bathinda\Powerlifting Convenor Sign\POWERLIFTING Convenor Sign.png" },
+                    { ("BATHINDA", "HOCKEY"), $@"{baseDirectory}/Bathinda/Hocky Convenor Sign/HOCKEY Convenor Sign.png" },
+                    { ("BATHINDA", "POWERLIFTING"), $@"{baseDirectory}/Bathinda/Powerlifting Convenor Sign/POWERLIFTING Convenor Sign.png" },
 
                     //Faridkot
-                    { ("Faridkot", "Basketball"), $@"{baseDirectory}\Faridkot\Basketball Convenor Sign\Basketball Convenor Sign.png" },
-                    { ("Faridkot", "Taekwondo"), $@"{baseDirectory}\Faridkot\Taekwondo Convenor Sign\Taekwondo Convenor Sign.png" },
+                    { ("FARIDKOT", "BASKETBALL"), $@"{baseDirectory}/Faridkot/Basketball Convenor Sign/Basketball Convenor Sign.png" },
+                    { ("FARIDKOT", "TAEKWONDO"), $@"{baseDirectory}/Faridkot/Taekwondo Convenor Sign/Taekwondo Convenor Sign.png" },
 
                     //Fatehgarh Sahib
-                    { ("Fatehgarh Sahib", "Fencing"), $@"{baseDirectory}\Fatehgarh Sahib\Fencing Convenor Sign\FENCING Convenor Sign.png" },
-                    { ("Fatehgarh Sahib", "Softball"), $@"{baseDirectory}\Fatehgarh Sahib\Softball Convenor Sign\SOFT Convenor Sign.png" },
+                    { ("FATEHGARH SAHIB", "FENCING"), $@"{baseDirectory}/Fatehgarh Sahib/Fencing Convenor Sign/FENCING Convenor Sign.png" },
+                    { ("FATEHGARH SAHIB", "SOFTBALL"), $@"{baseDirectory}/Fatehgarh Sahib/Softball Convenor Sign/SOFT Convenor Sign.png" },
 
                     //Hoshiarpur
-                    { ("Hoshiarpur", "Football"), $@"{baseDirectory}\Hoshiarpur\Football Convenor Sign\Football Convenor Sign.png" },
+                    { ("HOSHIARPUR", "FOOTBALL"), $@"{baseDirectory}/Hoshiarpur/Football Convenor Sign/Football Convenor Sign.png" },
 
                     //Jalandhar
-                    { ("Jalandhar", "Chess"), $@"{baseDirectory}\Jalandhar\Chess Convenor Sign\Chess Convenor Sign.png" },
-                    { ("Jalandhar", "Volleyball Smashing"), $@"{baseDirectory}\Jalandhar\Volleyball Smashing Convenor Sign\Volleyball Smashing Convener sign.png" },
+                    { ("JALANDHAR", "CHESS"), $@"{baseDirectory}/Jalandhar/Chess Convenor Sign/Chess Convenor Sign.png" },
+                    { ("JALANDHAR", "VOLLEYBALL SMASHING"), $@"{baseDirectory}/Jalandhar/Volleyball Smashing Convenor Sign/Volleyball Smashing Convener sign.png" },
 
                     //Ludhiana
-                    { ("Ludhiana", "Athletics"), $@"{baseDirectory}\Ludhiana\Athletics Convenor Sign\ATHLETICS Convenor Sign.png" },
-                    { ("Ludhiana", "Baseball"), $@"{baseDirectory}\Ludhiana\Baseball Convenor Sign\BASEBALL Convenor Sign.png" },
-                    { ("Ludhiana", "Cycling"), $@"{baseDirectory}\Ludhiana\Cycling Convenor Sign\CYCLING Convenor Sign.png" },
-                    { ("Ludhiana", "Kick Boxing"), $@"{baseDirectory}\Ludhiana\Kick Boxing Convenor Sign\KICKBOXING-removebg-preview.png" },
-                    { ("Ludhiana", "Lawn Tennis"), $@"{baseDirectory}\Ludhiana\Lawn Tennis Convenor Sign\image-removebg-preview.png" },
+                    { ("LUDHIANA", "ATHLETICS"), $@"{baseDirectory}/Ludhiana/Athletics Convenor Sign/ATHLETICS Convenor Sign.png" },
+                    { ("LUDHIANA", "BASEBALL"), $@"{baseDirectory}/Ludhiana/Baseball Convenor Sign/BASEBALL Convenor Sign.png" },
+                    { ("LUDHIANA", "CYCLING"), $@"{baseDirectory}/Ludhiana/Cycling Convenor Sign/CYCLING Convenor Sign.png" },
+                    { ("LUDHIANA", "KICK BOXING"), $@"{baseDirectory}/Ludhiana/Kick Boxing Convenor Sign/KICKBOXING-removebg-preview.png" },
+                    { ("LUDHIANA", "LAWN TENNIS"), $@"{baseDirectory}/Ludhiana/Lawn Tennis Convenor Sign/image-removebg-preview.png" },
 
                     //Malerkotla
-                    { ("Malerkotla", "Volleyball Shooting"), $@"{baseDirectory}\Malerkotla\Volleyball Shooting Convenor Sign\Volleyball Shooting Sign.png" },
+                    { ("MALERKOTLA", "VOLLEYBALL SHOOTING"), $@"{baseDirectory}/Malerkotla/Volleyball Shooting Convenor Sign/Volleyball Shooting Sign.png" },
 
                     //Mansa
-                    { ("Mansa", "Judo"), $@"{baseDirectory}\Mansa\Judo Convenor Sign\JUDO Convenor Sign.png" },
-                    { ("Mansa", "Wrestling"), $@"{baseDirectory}\Mansa\Wrestling Convenor Sign\Wrestling Convenor Sign.png" },
+                    { ("MANSA", "JUDO"), $@"{baseDirectory}/Mansa/Judo Convenor Sign/JUDO Convenor Sign.png" },
+                    { ("MANSA", "WRESTLING"), $@"{baseDirectory}/Mansa/Wrestling Convenor Sign/Wrestling Convenor Sign.png" },
 
                     //Patiala
-                    { ("PATIALA", "Archary"), $@"{baseDirectory}\Patiala\Archary Convenor Sign\ARCHERY Convenor Sign.png" },
-                    { ("PATIALA", "Gymnastics"), $@"{baseDirectory}\Patiala\Gymnastics Convenor Sign\GYMNASTICS Convenor Sign.png" },
-                    { ("PATIALA", "KABADDI CIRCLE"), $@"{baseDirectory}\Patiala\Kabbadi circle style Convenor Sign\KABADDI CS Convenor Sign.png" },
-                    { ("PATIALA", "Kho-Kho"), $@"{baseDirectory}\Patiala\Kho-Kho Convenor Sign\KHO KHO Convenor Sign.png" },
+                    { ("PATIALA", "ARCHERY"), $@"{baseDirectory}/Patiala/Archary Convenor Sign/ARCHERY Convenor Sign.png" },
+                    { ("PATIALA", "GYMNASTICS"), $@"{baseDirectory}/Patiala/Gymnastics Convenor Sign/GYMNASTICS Convenor Sign.png" },
+                    { ("PATIALA", "CIRCLE KABADDI"), $@"{baseDirectory}/Patiala/Kabbadi circle style Convenor Sign/KABADDI CS Convenor Sign.png" },
+                    { ("PATIALA", "KHO KHO"), $@"{baseDirectory}/Patiala/Kho-Kho Convenor Sign/KHO KHO Convenor Sign.png" },
 
                     //Rupnagar
-                    { ("Rupnagar", "Handball"), $@"{baseDirectory}\Rupnagar\Handball Convenor Sign\Handball Convenor Sign.png" },
-                    { ("Rupnagar", "Kayking"), $@"{baseDirectory}\Rupnagar\Kayking and Canoining Convenor Sign\Kayaking__Canoeing.png" },
-                    { ("Rupnagar", "Rowing"), $@"{baseDirectory}\Rupnagar\Rowing Convenor Sign\Rowing_Convenor Sign.png" },
+                    { ("RUPNAGAR", "HANDBALL"), $@"{baseDirectory}/Rupnagar/Handball Convenor Sign/Handball Convenor Sign.png" },
+                    { ("RUPNAGAR", "KAYAKING"), $@"{baseDirectory}/Rupnagar/Kayking and Canoining Convenor Sign/Kayaking__Canoeing.png" },
+                    { ("RUPNAGAR", "ROWING"), $@"{baseDirectory}/Rupnagar/Rowing Convenor Sign/Rowing_Convenor Sign.png" },
                     
                     //Sangrur
-                    { ("Sangrur", "Kabaddi"), $@"{baseDirectory}\Sangrur\Kabaddi National Style Convenor Sign\Kabaddi National Convenor Sign.png" },
-                    { ("Sangrur", "Roller Skating"), $@"{baseDirectory}\Sangrur\Roller Skating Convenor Sign\Rollar Skating Convenor Sign.png" },
-                    { ("Sangrur", "Roller Skating Speed Skating"), $@"{baseDirectory}\Sangrur\Roller Skating Convenor Sign\Rollar Skating Convenor Sign.png" },
-                    { ("Sangrur", "Weightlifting"), $@"{baseDirectory}\Sangrur\Weightlifting Convenor SIgn\WL Convenor Sign.png" },
-                    { ("Sangrur", "Wushu"), $@"{baseDirectory}\Sangrur\Wushu Convenor Sign\WUSHU Convenor Sign.png" },
+                    { ("SANGRUR", "KABADDI NATIONAL STYLE"), $@"{baseDirectory}/Sangrur/Kabaddi National Style Convenor Sign/Kabaddi National Convenor Sign.png" },
+                    { ("SANGRUR", "ROLLER SKATING"), $@"{baseDirectory}/Sangrur/Roller Skating Convenor Sign/Rollar Skating Convenor Sign.png" },
+                    { ("SANGRUR", "Roller Skating Speed Skating"), $@"{baseDirectory}/Sangrur/Roller Skating Convenor Sign/Rollar Skating Convenor Sign.png" },
+                    { ("SANGRUR", "WEIGHT LIFTING"), $@"{baseDirectory}/Sangrur/Weightlifting Convenor SIgn/WL Convenor Sign.png" },
+                    { ("SANGRUR", "WUSHU"), $@"{baseDirectory}/Sangrur/Wushu Convenor Sign/WUSHU Convenor Sign.png" },
 
                     //SAS Nagar
-                    { ("SAS Nagar", "Equestrian"), $@"{baseDirectory}\SAS Nagar\Equestrian Convenor Sign\Equestrian Convenor Sign.png" },
-                    { ("SAS Nagar", "Shooting"), $@"{baseDirectory}\SAS Nagar\Shooting Convenor Sign\Shooting Convenor Sign.png" },
-                    { ("SAS Nagar", "Swimming"), $@"{baseDirectory}\SAS Nagar\Swimming Convenor Sign\Swimming Convenor Sign.png" },
+                    { ("SAS NAGAR", "EQUESTRAIN"), $@"{baseDirectory}/SAS Nagar/Equestrian Convenor Sign/Equestrian Convenor Sign.png" },
+                    { ("SAS NAGAR", "SHOOTING"), $@"{baseDirectory}/SAS Nagar/Shooting Convenor Sign/Shooting Convenor Sign.png" },
+                    { ("SAS NAGAR", "SWIMMING"), $@"{baseDirectory}/SAS Nagar/Swimming Convenor Sign/Swimming Convenor Sign.png" },
 
                     //SAS Nagar
-                    { ("SBS Nagar", "Boxing"), $@"{baseDirectory}\SBS Nagar\Boxing Convenor Sign\Boxing Convenor Sign.png" },
+                    { ("SBSNAGAR", "BOXING"), $@"{baseDirectory}/SBS Nagar/Boxing Convenor Sign/Boxing Convenor Sign.png" },
 
                 };
 
@@ -3351,21 +3357,21 @@ namespace ServicePlusAPIs.Controllers
 
             Dictionary<string, string> dsoSignatures = new Dictionary<string, string>
 {
-                        { "Amritsar", $@"{baseDirectory}\Amritsar\DSO Sign\Amritsar DSO.png" },
-                        { "Barnala", $@"{baseDirectory}\Barnala\DSO Sign\DSO Sign.png" },
-                        { "Bathinda", $@"{baseDirectory}\Bathinda\DSO Sign\DSo Sign.png" },
-                        { "Faridkot", $@"{baseDirectory}\Faridkot\DSO Sign\DSO Sign.png" },
-                        { "Fatehgarh Sahib", $@"{baseDirectory}\Fatehgarh Sahib\DSO Sign\DSO Sign.png" },
-                        { "Hoshiarpur", $@"{baseDirectory}\Hoshiarpur\DSO Sign\DSO Sign.png" },
-                        { "Jalandhar", $@"{baseDirectory}\Jalandhar\DSO Sign\DSO Sign.png" },
-                        { "Ludhiana", $@"{baseDirectory}\Ludhiana\DSO Sign\DSO Sign.png" },
-                        { "Malerkotla", $@"{baseDirectory}\Malerkotla\DSO Sign\DSO Sign.png" },
-                        { "Mansa", $@"{baseDirectory}\Mansa\DSO Sign\DSO Sign.png" },
-                        { "PATIALA", $@"{baseDirectory}\Patiala\DSO Sign\DSO Sign.png" },
-                        { "Rupnagar", $@"{baseDirectory}\Rupnagar\DSO Sign\DSO Sign.png" },
-                        { "Sangrur", $@"{baseDirectory}\Sangrur\DSO Sign\DSO Sign.png" },
-                        { "SAS Nagar", $@"{baseDirectory}\SAS Nagar\DSO Sign\DSO Sign.png" },
-                        { "SBS Nagar", $@"{baseDirectory}\SBS Nagar\DSO Sign\DSO Sign.png" }
+                        { "AMRITSAR", $@"{baseDirectory}/Amritsar/DSO Sign/Amritsar DSO.png" },
+                        { "BARNALA", $@"{baseDirectory}/Barnala/DSO Sign/DSO Sign.png" },
+                        { "BATHINDA", $@"{baseDirectory}/Bathinda/DSO Sign/DSo Sign.png" },
+                        { "FARIDKOT", $@"{baseDirectory}/Faridkot/DSO Sign/DSO Sign.png" },
+                        { "FATEHGARH SAHIB", $@"{baseDirectory}/Fatehgarh Sahib/DSO Sign/DSO Sign.png" },
+                        { "HOSHIARPUR", $@"{baseDirectory}/Hoshiarpur/DSO Sign/DSO Sign.png" },
+                        { "JALANDHAR", $@"{baseDirectory}/Jalandhar/DSO Sign/DSO Sign.png" },
+                        { "LUDHIANA", $@"{baseDirectory}/Ludhiana/DSO Sign/DSO Sign.png" },
+                        { "MALERKOTLA", $@"{baseDirectory}/Malerkotla/DSO Sign/DSO Sign.png" },
+                        { "MANSA", $@"{baseDirectory}/Mansa/DSO Sign/DSO Sign.png" },
+                        { "PATIALA", $@"{baseDirectory}/Patiala/DSO Sign/DSO Sign.png" },
+                        { "RUPNAGAR", $@"{baseDirectory}/Rupnagar/DSO Sign/DSO Sign.png" },
+                        { "SANGRUR", $@"{baseDirectory}/Sangrur/DSO Sign/DSO Sign.png" },
+                        { "SAS NAGAR", $@"{baseDirectory}/SAS Nagar/DSO Sign/DSO Sign.png" },
+                        { "SBSNAGAR", $@"{baseDirectory}/SBS Nagar/DSO Sign/DSO Sign.png" }
                     };
 
             districtName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(districtName);
@@ -3401,72 +3407,74 @@ namespace ServicePlusAPIs.Controllers
             //to get Game From and To Date
             var gameFromToDate = new Dictionary<(string, string), (string fromDate, string toDate)>
         {
-           // Amritsar
-                                { ("Amritsar", "Gatka"), ("07-11-2024", "10-11-2024") },
-                                { ("Amritsar", "Rugby"), ("07-11-2024", "10-11-2024") },
+
+
+                                { ("AMRITSAR", "GATKA"), ("07-11-2024", "10-11-2024") },
+                                { ("AMRITSAR", "RUGBY"), ("07-11-2024", "10-11-2024") },
 
                                 // Barnala
-                                { ("Barnala", "Netball"), ("25-11-2024", "30-11-2024") },
-                                { ("Barnala", "Table Tennis"), ("25-11-2024", "30-11-2024") },
-                                { ("Barnala", "Badminton"), ("25-11-2024", "30-11-2024") },
+                                { ("BARNALA", "NETBALL"), ("25-11-2024", "30-11-2024") },
+                                { ("BARNALA", "TABLE TENNIS"), ("25-11-2024", "30-11-2024") },
+                                { ("BARNALA", "BADMINTON"), ("25-11-2024", "30-11-2024") },
 
                                 // Bathinda
-                                { ("Bathinda", "Hockey"), ("17-10-2024", "24-10-2024") },
-                                { ("Bathinda", "Powerlifting"), ("19-10-2024", "24-10-2024") },
+                                { ("BATHINDA", "HOCKEY"), ("17-10-2024", "24-10-2024") },
+                                { ("BATHINDA", "POWERLIFTING"), ("19-10-2024", "24-10-2024") },
 
                                 // Faridkot
-                                { ("Faridkot", "Basketball"), ("09-12-2024", "14-12-2024") },
-                                { ("Faridkot", "Taekwondo"), ("09-12-2024", "14-12-2024") },
+                                {  ("FARIDKOT", "BASKETBALL"), ("09-12-2024", "14-12-2024") },
+                                { ("FARIDKOT", "TAEKWONDO"), ("09-12-2024", "14-12-2024") },
 
                                 // Fatehgarh Sahib
-                                { ("Fatehgarh Sahib", "Fencing"), ("19-10-2024", "24-10-2024") },
-                                { ("Fatehgarh Sahib", "Softball"), ("19-10-2024", "24-10-2024") },
+                                { ("FATEHGARH SAHIB", "FENCING"), ("19-10-2024", "24-10-2024") },
+                                { ("FATEHGARH SAHIB", "SOFTBALL"), ("19-10-2024", "24-10-2024") },
 
                                 // Hoshiarpur
-                                { ("Hoshiarpur", "Football"), ("04-11-2024", "10-11-2024") },
+                                { ("HOSHIARPUR", "FOOTBALL"), ("04-11-2024", "10-11-2024") },
 
                                 // Jalandhar
-                                { ("Jalandhar", "Chess"), ("15-11-2024", "22-11-2024") },
-                                { ("Jalandhar", "Volleyball Smashing"), ("15-11-2024", "22-11-2024") },
+                                { ("JALANDHAR", "CHESS"), ("15-11-2024", "22-11-2024") },
+                                { ("JALANDHAR", "VOLLEYBALL SMASHING"), ("15-11-2024", "22-11-2024") },
 
                                 // Ludhiana
-                                { ("Ludhiana", "Athletics"), ("04-11-2024", "09-11-2024") },
-                                { ("Ludhiana", "Baseball"), ("04-11-2024", "09-11-2024") },
-                                { ("Ludhiana", "Cycling"), ("27-11-2024", "29-11-2024") },
-                                { ("Ludhiana", "Kick Boxing"), ("04-11-2024", "09-11-2024") },
-                                { ("Ludhiana", "Lawn Tennis"), ("04-11-2024", "09-11-2024") },
+                                { ("LUDHIANA", "ATHLETICS"), ("04-11-2024", "09-11-2024") },
+                                { ("LUDHIANA", "BASEBALL"), ("04-11-2024", "09-11-2024") },
+                                { ("LUDHIANA", "CYCLING"),    ("27-11-2024", "29-11-2024") },
+                                { ("LUDHIANA", "KICK BOXING"), ("04-11-2024", "09-11-2024") },
+                                { ("LUDHIANA", "LAWN TENNIS"), ("04-11-2024", "09-11-2024") },
 
                                 // Malerkotla
-                                { ("Malerkotla", "Volleyball Shooting"), ("06-11-2024", "09-11-2024") },
+                                { ("MALERKOTLA", "VOLLEYBALL SHOOTING"), ("06-11-2024", "09-11-2024") },
 
                                 // Mansa
-                                { ("Mansa", "Judo"), ("19-10-2024", "24-10-2024") },
-                                { ("Mansa", "Wrestling"), ("19-10-2024", "24-10-2024") },
+                                { ("MANSA", "JUDO"),      ("19-10-2024", "24-10-2024") },
+                                { ("MANSA", "WRESTLING"), ("19-10-2024", "24-10-2024") },
 
                                 // Patiala
-                                { ("PATIALA", "Archery"), ("04-11-2024", "09-11-2024") },
-                                { ("PATIALA", "Gymnastics"), ("08-11-2024", "11-11-2024") },
-                                { ("PATIALA", "KABADDI CIRCLE"), ("04-11-2024", "09-11-2024") },
-                                { ("PATIALA", "KHO KHO"), ("04-11-2024", "09-11-2024") },
+                                { ("PATIALA", "ARCHERY"),        ("04-11-2024", "09-11-2024") },
+                                { ("PATIALA", "GYMNASTICS"),     ("08-11-2024", "11-11-2024") },
+                                { ("PATIALA", "CIRCLE KABADDI"), ("04-11-2024", "09-11-2024") },
+                                { ("PATIALA", "KHO KHO"),          ("04-11-2024", "09-11-2024") },
 
                                 // Rupnagar
-                                { ("Rupnagar", "Handball"), ("16-11-2024", "21-11-2024") },
-                                { ("Rupnagar", "Kayaking"), ("16-11-2024", "21-11-2024") },
-                                { ("Rupnagar", "Rowing"), ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "HANDBALL"), ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "KAYAKING"), ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "ROWING"),   ("16-11-2024", "21-11-2024") },
 
                                 // Sangrur
-                                { ("SANGRUR", "Kabaddi"), ("16-11-2024", "21-11-2024") },
-                                { ("SANGRUR", "ROLLER SKATING"), ("16-11-2024", "21-11-2024") },
+                                {  ("SANGRUR", "KABADDI NATIONAL STYLE"),        ("16-11-2024", "21-11-2024") },
+                                {  ("SANGRUR", "ROLLER SKATING"), ("16-11-2024", "21-11-2024") },
                                 { ("SANGRUR", "WEIGHT LIFTING"), ("16-11-2024", "21-11-2024") },
-                                { ("SANGRUR", "Wushu"), ("16-11-2024", "21-11-2024") },
+                                { ("SANGRUR", "WUSHU"),           ("16-11-2024", "21-11-2024") },
 
+                                 
                                 // SAS Nagar
-                                { ("SAS Nagar", "Equestrian"), ("20-11-2024", "24-11-2024") },
-                                { ("SAS Nagar", "Shooting"), ("13-11-2024", "17-11-2024") },
-                                { ("SAS Nagar", "Swimming"), ("21-10-2024", "24-10-2024") },
+                                { ("SAS NAGAR", "EQUESTRAIN"), ("20-11-2024", "24-11-2024") },
+                                { ("SAS NAGAR", "SHOOTING"),   ("13-11-2024", "17-11-2024") },
+                                { ("SAS NAGAR", "SWIMMING"),   ("21-10-2024", "24-10-2024") },
 
                                 // SBS Nagar
-                                { ("SBS Nagar", "Boxing"), ("16-11-2024", "24-11-2024") },
+                                { ("SBSNAGAR", "BOXING"), ("16-11-2024", "24-11-2024") },
             };
 
 
@@ -3592,7 +3600,7 @@ namespace ServicePlusAPIs.Controllers
             font-weight: bold; 
             font-family: 'Gurmukhi', Arial, sans-serif;'>ਰਾਜ ਪੱਧਰੀ ਟੂਰਨਾਮੈਂਟ</div>
               
-             <div style=' font-size: 20px; margin-top: 3px; font-weight: bold;'>{await TranslateToPunjabi(player.GameHeldDistrict)}</div>
+             <div style=' font-size: 20px; margin-top: 3px; font-weight: bold;'>{ player.GameHeldDistrictPB}</div>
                     <div style='margin: 10px 0; font-size: 18px; font-weight: bold;'>
                         ਮਿਤੀ <strong>{fromDate}</strong> ਤੋਂ ਮਿਤੀ  <strong>{toDate} ਤੱਕ </strong>
                     </div> 
@@ -3600,26 +3608,26 @@ namespace ServicePlusAPIs.Controllers
                             ਤਸਦੀਕ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ 
                             <strong>
                                 <span style='display: inline-block; width: 83%; text-align: center;  border-bottom: 0.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>
-                                    {await TranslateToPunjabi(player.ApplicantFullName)}
+                                    {   player.ApplicantFullNamePB}
                                 </span>
                             </strong><br>
                             ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ 
-                            <strong><span style='display: inline-block; width: 39%; text-align: center; border-bottom:0.2px dashed #000; min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(player.ApplicantFatherName)}</span></strong>
+                            <strong><span style='display: inline-block; width: 39%; text-align: center; border-bottom:0.2px dashed #000; min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{ player.ApplicantFatherNamePB}</span></strong>
                              ਜਨਮ ਮਿਤੀ 
                             <strong><span style='display: inline-block; width: 43%; text-align: center; border-bottom: 0.3px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.ApplicantDOB}</span></strong><br>
                             ਨੇ ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024 ਵਿੱਚ ਜ਼ਿਲ੍ਹਾ 
-                            <strong><span style='display: inline-block; width: 72%; text-align: center; border-bottom: 0.4px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(player.GameRepresentingDistrict)}</span></strong> <br>
+                            <strong><span style='display: inline-block; width: 72%; text-align: center; border-bottom: 0.4px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{ player.GameRepresentingDistrictPB}</span></strong> <br>
                             ਵਲੋਂ ਖੇਡ 
-                            <strong><span style='display: inline-block; width: 44%; text-align: center; border-bottom: 0.6px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(await GetPunjabiGameName(player.ApplicantGame)).ToLower()}</span></strong>  
+                            <strong><span style='display: inline-block; width: 44%; text-align: center; border-bottom: 0.6px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{ (player.ApplicantGamePB)}</span></strong>  
                             ਈਵੈਂਟ/ਵਰਗ 
-                            <strong><span style='display: inline-block; width: 41%; text-align: center; border-bottom: 0.7px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(player.ApplicantEvent.Contains("NA") ? "----" : await TranslateToPunjabi(player.ApplicantEvent))}</span></strong> <br>
+                            <strong><span style='display: inline-block; width: 41%; text-align: center; border-bottom: 0.7px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.ApplicantEventPB}</span></strong> <br>
                             ਈਵੈਂਟ ਸਮਾਂ/ਦੂਰੀ/ਉਚਾਈ/ਭਾਰ 
-                            <strong><span style='display: inline-block; width: 35%; text-align: center; border-bottom: 0.8px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(player.Score.Contains("NA") ? "----" : await TranslateToPunjabi(player.Score))}</span></strong>  
+                            <strong><span style='display: inline-block; width: 35%; text-align: center; border-bottom: 0.8px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{ (player.ScorePB)}</span></strong>  
                             ਵਿਚ ਭਾਗ ਲਿਆ ਅਤੇ 
-                            <strong><span style='display: inline-block; width: 22%; text-align: center; border-bottom: 0.9px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await GetScoreInPunjabi(player.Position)}</span></strong>  
+                            <strong><span style='display: inline-block; width: 22%; text-align: center; border-bottom: 0.9px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.Position}</span></strong>  
                             ਸਥਾਨ ਪ੍ਰਾਪਤ ਕੀਤਾ <br>
                             ਉਮਰ ਵਰਗ (ਸਾਲ)
-                            <strong><span style='display: inline-block; width: 42%; text-align: center; border-bottom: 1.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(player.ApplicantAgeGroup)}</span></strong>
+                            <strong><span style='display: inline-block; width: 42%; text-align: center; border-bottom: 1.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.ApplicantAgeGroupPB}</span></strong>
                         <strong><span style='display:  inline-block; width: 45%; text-align: center; border-bottom: 0px dashed #000;'> </span></strong>
                      </div>                
 
@@ -3672,21 +3680,29 @@ namespace ServicePlusAPIs.Controllers
                 newCertificates.Add(new PlayerIssuedCertificate
                 {
                     GameHeldDistrict = districtName,
+                    GameHeldDistrictPB = player.GameHeldDistrictPB,
                     ApplicantGame = gameName,
+                    ApplicantGamePB = player.ApplicantGamePB,
                     ApplicantAgeGroup = ageGroup,
+                    ApplicantAgeGroupPB = player.ApplicantAgeGroupPB,
                     ApplicantFullName = player.ApplicantFullName,
+                    ApplicantFullNamePB = player.ApplicantFullNamePB,
                     ApplicantFatherName = player.ApplicantFatherName,
+                    ApplicantFatherNamePB = player.ApplicantFatherNamePB,
                     ApplicantDOB = player.ApplicantDOB,
                     ApplicantEvent = player.ApplicantEvent,
+                    ApplicantEventPB = player.ApplicantEventPB,
                     CertificateSerialNo = certificateNo,
                     CertificatePath = filePath,
                     TournamentFrom = fromDate,
                     TournamentTo = toDate,
                     GameRepresentingDistrict = player.GameRepresentingDistrict,
+                    GameRepresentingDistrictPB = player.GameRepresentingDistrictPB,
                     Score = player.Score,
-                    ApplicantMobileNo=player.ApplicantMobileNo,
+                    ScorePB = player.ScorePB,
+                    ApplicantMobileNo = player.ApplicantMobileNo,
                     Position = player.Position,
-                    ConveyorName=player.ConveyorName,
+                    ConveyorName = player.ConveyorName,
                     CertificateGeneratedTime = DateTime.UtcNow,
 
                 });
@@ -3875,72 +3891,72 @@ namespace ServicePlusAPIs.Controllers
             Dictionary<(string, string), string> gameSignatures = new Dictionary<(string, string), string>
 {
                     //Amritsar
-                    { ("Amritsar", "Gatka"), $@"{baseDirectory}\Amritsar\Gatka Convenor Sign\Gatka Convenor Sign.png" },
-                    { ("Amritsar", "Rugby"), $@"{baseDirectory}\Amritsar\Rugby Convenor Sign\Rugby Convenor Sign.png" },
+                    { ("Amritsar", "Gatka"), $@"{baseDirectory}/Amritsar/Gatka Convenor Sign/Gatka Convenor Sign.png" },
+                    { ("Amritsar", "Rugby"), $@"{baseDirectory}/Amritsar/Rugby Convenor Sign/Rugby Convenor Sign.png" },
 
                     //Barnala
-                    { ("Barnala", "Netball"), $@"{baseDirectory}\Barnala\Netball Convenor Sign\Netball English Convenor Sign.png" },
-                    { ("Barnala", "Table Tennis"), $@"{baseDirectory}\Barnala\Table Tennis Convenor Sign\Table Tennis Convenor Sign.png" },
-                    { ("Barnala", "Badminton"), $@"{baseDirectory}\Barnala\Badminton Convenor Sign\BADMINTON Convenor Sign.png" },
+                    { ("Barnala", "Netball"), $@"{baseDirectory}/Barnala/Netball Convenor Sign/Netball English Convenor Sign.png" },
+                    { ("Barnala", "Table Tennis"), $@"{baseDirectory}/Barnala/Table Tennis Convenor Sign/Table Tennis Convenor Sign.png" },
+                    { ("Barnala", "Badminton"), $@"{baseDirectory}/Barnala/Badminton Convenor Sign/BADMINTON Convenor Sign.png" },
 
                     //Bathinda
-                    { ("Bathinda", "Hockey"), $@"{baseDirectory}\Bathinda\Hocky Convenor Sign\HOCKEY Convenor Sign.png" },
-                    { ("Bathinda", "Powerlifting"), $@"{baseDirectory}\Bathinda\Powerlifting Convenor Sign\POWERLIFTING Convenor Sign.png" },
+                    { ("Bathinda", "Hockey"), $@"{baseDirectory}/Bathinda/Hocky Convenor Sign/HOCKEY Convenor Sign.png" },
+                    { ("Bathinda", "Powerlifting"), $@"{baseDirectory}/Bathinda/Powerlifting Convenor Sign/POWERLIFTING Convenor Sign.png" },
 
                     //Faridkot
-                    { ("Faridkot", "Basketball"), $@"{baseDirectory}\Faridkot\Basketball Convenor Sign\Basketball Convenor Sign.png" },
-                    { ("Faridkot", "Taekwondo"), $@"{baseDirectory}\Faridkot\Taekwondo Convenor Sign\Taekwondo Convenor Sign.png" },
+                    { ("Faridkot", "Basketball"), $@"{baseDirectory}/Faridkot/Basketball Convenor Sign/Basketball Convenor Sign.png" },
+                    { ("Faridkot", "Taekwondo"), $@"{baseDirectory}/Faridkot/Taekwondo Convenor Sign/Taekwondo Convenor Sign.png" },
 
                     //Fatehgarh Sahib
-                    { ("Fatehgarh Sahib", "Fencing"), $@"{baseDirectory}\Fatehgarh Sahib\Fencing Convenor Sign\FENCING Convenor Sign.png" },
-                    { ("Fatehgarh Sahib", "Softball"), $@"{baseDirectory}\Fatehgarh Sahib\Softball Convenor Sign\SOFT Convenor Sign.png" },
+                    { ("Fatehgarh Sahib", "Fencing"), $@"{baseDirectory}/Fatehgarh Sahib/Fencing Convenor Sign/FENCING Convenor Sign.png" },
+                    { ("Fatehgarh Sahib", "Softball"), $@"{baseDirectory}/Fatehgarh Sahib/Softball Convenor Sign/SOFT Convenor Sign.png" },
 
                     //Hoshiarpur
-                    { ("Hoshiarpur", "Football"), $@"{baseDirectory}\Hoshiarpur\Football Convenor Sign\Football Convenor Sign.png" },
+                    { ("Hoshiarpur", "Football"), $@"{baseDirectory}/Hoshiarpur/Football Convenor Sign/Football Convenor Sign.png" },
 
                     //Jalandhar
-                    { ("Jalandhar", "Chess"), $@"{baseDirectory}\Jalandhar\Chess Convenor Sign\Chess Convenor Sign.png" },
-                    { ("Jalandhar", "Volleyball Smashing"), $@"{baseDirectory}\Jalandhar\Volleyball Smashing Convenor Sign\Volleyball Smashing Convener sign.png" },
+                    { ("Jalandhar", "Chess"), $@"{baseDirectory}/Jalandhar/Chess Convenor Sign/Chess Convenor Sign.png" },
+                    { ("Jalandhar", "Volleyball Smashing"), $@"{baseDirectory}/Jalandhar/Volleyball Smashing Convenor Sign/Volleyball Smashing Convener sign.png" },
 
                     //Ludhiana
-                    { ("Ludhiana", "Athletics"), $@"{baseDirectory}\Ludhiana\Athletics Convenor Sign\ATHLETICS Convenor Sign.png" },
-                    { ("Ludhiana", "Baseball"), $@"{baseDirectory}\Ludhiana\Baseball Convenor Sign\BASEBALL Convenor Sign.png" },
-                    { ("Ludhiana", "Cycling"), $@"{baseDirectory}\Ludhiana\Cycling Convenor Sign\CYCLING Convenor Sign.png" },
-                    { ("Ludhiana", "Kick Boxing"), $@"{baseDirectory}\Ludhiana\Kick Boxing Convenor Sign\KICKBOXING-removebg-preview.png" },
-                    { ("Ludhiana", "Lawn Tennis"), $@"{baseDirectory}\Ludhiana\Lawn Tennis Convenor Sign\image-removebg-preview.png" },
+                    { ("Ludhiana", "Athletics"), $@"{baseDirectory}/Ludhiana/Athletics Convenor Sign/ATHLETICS Convenor Sign.png" },
+                    { ("Ludhiana", "Baseball"), $@"{baseDirectory}/Ludhiana/Baseball Convenor Sign/BASEBALL Convenor Sign.png" },
+                    { ("Ludhiana", "Cycling"), $@"{baseDirectory}/Ludhiana/Cycling Convenor Sign/CYCLING Convenor Sign.png" },
+                    { ("Ludhiana", "Kick Boxing"), $@"{baseDirectory}/Ludhiana/Kick Boxing Convenor Sign/KICKBOXING-removebg-preview.png" },
+                    { ("Ludhiana", "Lawn Tennis"), $@"{baseDirectory}/Ludhiana/Lawn Tennis Convenor Sign/image-removebg-preview.png" },
 
                     //Malerkotla
-                    { ("Malerkotla", "Volleyball Shooting"), $@"{baseDirectory}\Malerkotla\Volleyball Shooting Convenor Sign\Volleyball Shooting Sign.png" },
+                    { ("Malerkotla", "Volleyball Shooting"), $@"{baseDirectory}/Malerkotla/Volleyball Shooting Convenor Sign/Volleyball Shooting Sign.png" },
 
                     //Mansa
-                    { ("Mansa", "Judo"), $@"{baseDirectory}\Mansa\Judo Convenor Sign\JUDO Convenor Sign.png" },
-                    { ("Mansa", "Wrestling"), $@"{baseDirectory}\Mansa\Wrestling Convenor Sign\Wrestling Convenor Sign.png" },
+                    { ("Mansa", "Judo"), $@"{baseDirectory}/Mansa/Judo Convenor Sign/JUDO Convenor Sign.png" },
+                    { ("Mansa", "Wrestling"), $@"{baseDirectory}/Mansa/Wrestling Convenor Sign/Wrestling Convenor Sign.png" },
 
                     //Patiala
-                    { ("PATIALA", "Archary"), $@"{baseDirectory}\Patiala\Archary Convenor Sign\ARCHERY Convenor Sign.png" },
-                    { ("PATIALA", "Gymnastics"), $@"{baseDirectory}\Patiala\Gymnastics Convenor Sign\GYMNASTICS Convenor Sign.png" },
-                    { ("PATIALA", "KABADDI CIRCLE"), $@"{baseDirectory}\Patiala\Kabbadi circle style Convenor Sign\KABADDI CS Convenor Sign.png" },
-                    { ("PATIALA", "Kho-Kho"), $@"{baseDirectory}\Patiala\Kho-Kho Convenor Sign\KHO KHO Convenor Sign.png" },
+                    { ("PATIALA", "Archary"), $@"{baseDirectory}/Patiala/Archary Convenor Sign/ARCHERY Convenor Sign.png" },
+                    { ("PATIALA", "Gymnastics"), $@"{baseDirectory}/Patiala/Gymnastics Convenor Sign/GYMNASTICS Convenor Sign.png" },
+                    { ("PATIALA", "KABADDI CIRCLE"), $@"{baseDirectory}/Patiala/Kabbadi circle style Convenor Sign/KABADDI CS Convenor Sign.png" },
+                    { ("PATIALA", "Kho-Kho"), $@"{baseDirectory}/Patiala/Kho-Kho Convenor Sign/KHO KHO Convenor Sign.png" },
 
                     //Rupnagar
-                    { ("Rupnagar", "Handball"), $@"{baseDirectory}\Rupnagar\Handball Convenor Sign\Handball Convenor Sign.png" },
-                    { ("Rupnagar", "Kayking"), $@"{baseDirectory}\Rupnagar\Kayking and Canoining Convenor Sign\Kayaking__Canoeing.png" },
-                    { ("Rupnagar", "Rowing"), $@"{baseDirectory}\Rupnagar\Rowing Convenor Sign\Rowing_Convenor Sign.png" },
+                    { ("Rupnagar", "Handball"), $@"{baseDirectory}/Rupnagar/Handball Convenor Sign/Handball Convenor Sign.png" },
+                    { ("Rupnagar", "Kayking"), $@"{baseDirectory}/Rupnagar/Kayking and Canoining Convenor Sign/Kayaking__Canoeing.png" },
+                    { ("Rupnagar", "Rowing"), $@"{baseDirectory}/Rupnagar/Rowing Convenor Sign/Rowing_Convenor Sign.png" },
                     
                     //Sangrur
-                    { ("Sangrur", "Kabaddi"), $@"{baseDirectory}\Sangrur\Kabaddi National Style Convenor Sign\Kabaddi National Convenor Sign.png" },
-                    { ("Sangrur", "Roller Skating"), $@"{baseDirectory}\Sangrur\Roller Skating Convenor Sign\Rollar Skating Convenor Sign.png" },
-                    { ("Sangrur", "Roller Skating Speed Skating"), $@"{baseDirectory}\Sangrur\Roller Skating Convenor Sign\Rollar Skating Convenor Sign.png" },
-                    { ("Sangrur", "Weightlifting"), $@"{baseDirectory}\Sangrur\Weightlifting Convenor SIgn\WL Convenor Sign.png" },
-                    { ("Sangrur", "Wushu"), $@"{baseDirectory}\Sangrur\Wushu Convenor Sign\WUSHU Convenor Sign.png" },
+                    { ("Sangrur", "Kabaddi"), $@"{baseDirectory}/Sangrur/Kabaddi National Style Convenor Sign/Kabaddi National Convenor Sign.png" },
+                    { ("Sangrur", "Roller Skating"), $@"{baseDirectory}/Sangrur/Roller Skating Convenor Sign/Rollar Skating Convenor Sign.png" },
+                    { ("Sangrur", "Roller Skating Speed Skating"), $@"{baseDirectory}/Sangrur/Roller Skating Convenor Sign/Rollar Skating Convenor Sign.png" },
+                    { ("Sangrur", "Weightlifting"), $@"{baseDirectory}/Sangrur/Weightlifting Convenor SIgn/WL Convenor Sign.png" },
+                    { ("Sangrur", "Wushu"), $@"{baseDirectory}/Sangrur/Wushu Convenor Sign/WUSHU Convenor Sign.png" },
 
                     //SAS Nagar
-                    { ("SAS Nagar", "Equestrian"), $@"{baseDirectory}\SAS Nagar\Equestrian Convenor Sign\Equestrian Convenor Sign.png" },
-                    { ("SAS Nagar", "Shooting"), $@"{baseDirectory}\SAS Nagar\Shooting Convenor Sign\Shooting Convenor Sign.png" },
-                    { ("SAS Nagar", "Swimming"), $@"{baseDirectory}\SAS Nagar\Swimming Convenor Sign\Swimming Convenor Sign.png" },
+                    { ("SAS Nagar", "Equestrian"), $@"{baseDirectory}/SAS Nagar/Equestrian Convenor Sign/Equestrian Convenor Sign.png" },
+                    { ("SAS Nagar", "Shooting"), $@"{baseDirectory}/SAS Nagar/Shooting Convenor Sign/Shooting Convenor Sign.png" },
+                    { ("SAS Nagar", "Swimming"), $@"{baseDirectory}/SAS Nagar/Swimming Convenor Sign/Swimming Convenor Sign.png" },
 
                     //SAS Nagar
-                    { ("SBS Nagar", "Boxing"), $@"{baseDirectory}\SBS Nagar\Boxing Convenor Sign\Boxing Convenor Sign.png" },
+                    { ("SBS Nagar", "Boxing"), $@"{baseDirectory}/SBS Nagar/Boxing Convenor Sign/Boxing Convenor Sign.png" },
 
                 };
 
@@ -3959,21 +3975,21 @@ namespace ServicePlusAPIs.Controllers
 
             Dictionary<string, string> dsoSignatures = new Dictionary<string, string>
 {
-                        { "Amritsar", $@"{baseDirectory}\Amritsar\DSO Sign\Amritsar DSO.png" },
-                        { "Barnala", $@"{baseDirectory}\Barnala\DSO Sign\DSO Sign.png" },
-                        { "Bathinda", $@"{baseDirectory}\Bathinda\DSO Sign\DSo Sign.png" },
-                        { "Faridkot", $@"{baseDirectory}\Faridkot\DSO Sign\DSO Sign.png" },
-                        { "Fatehgarh Sahib", $@"{baseDirectory}\Fatehgarh Sahib\DSO Sign\DSO Sign.png" },
-                        { "Hoshiarpur", $@"{baseDirectory}\Hoshiarpur\DSO Sign\DSO Sign.png" },
-                        { "Jalandhar", $@"{baseDirectory}\Jalandhar\DSO Sign\DSO Sign.png" },
-                        { "Ludhiana", $@"{baseDirectory}\Ludhiana\DSO Sign\DSO Sign.png" },
-                        { "Malerkotla", $@"{baseDirectory}\Malerkotla\DSO Sign\DSO Sign.png" },
-                        { "Mansa", $@"{baseDirectory}\Mansa\DSO Sign\DSO Sign.png" },
-                        { "PATIALA", $@"{baseDirectory}\Patiala\DSO Sign\DSO Sign.png" },
-                        { "Rupnagar", $@"{baseDirectory}\Rupnagar\DSO Sign\DSO Sign.png" },
-                        { "Sangrur", $@"{baseDirectory}\Sangrur\DSO Sign\DSO Sign.png" },
-                        { "SAS Nagar", $@"{baseDirectory}\SAS Nagar\DSO Sign\DSO Sign.png" },
-                        { "SBS Nagar", $@"{baseDirectory}\SBS Nagar\DSO Sign\DSO Sign.png" }
+                        { "Amritsar", $@"{baseDirectory}/Amritsar/DSO Sign/Amritsar DSO.png" },
+                        { "Barnala", $@"{baseDirectory}/Barnala/DSO Sign/DSO Sign.png" },
+                        { "Bathinda", $@"{baseDirectory}/Bathinda/DSO Sign/DSo Sign.png" },
+                        { "Faridkot", $@"{baseDirectory}/Faridkot/DSO Sign/DSO Sign.png" },
+                        { "Fatehgarh Sahib", $@"{baseDirectory}/Fatehgarh Sahib/DSO Sign/DSO Sign.png" },
+                        { "Hoshiarpur", $@"{baseDirectory}/Hoshiarpur/DSO Sign/DSO Sign.png" },
+                        { "Jalandhar", $@"{baseDirectory}/Jalandhar/DSO Sign/DSO Sign.png" },
+                        { "Ludhiana", $@"{baseDirectory}/Ludhiana/DSO Sign/DSO Sign.png" },
+                        { "Malerkotla", $@"{baseDirectory}/Malerkotla/DSO Sign/DSO Sign.png" },
+                        { "Mansa", $@"{baseDirectory}/Mansa/DSO Sign/DSO Sign.png" },
+                        { "PATIALA", $@"{baseDirectory}/Patiala/DSO Sign/DSO Sign.png" },
+                        { "Rupnagar", $@"{baseDirectory}/Rupnagar/DSO Sign/DSO Sign.png" },
+                        { "Sangrur", $@"{baseDirectory}/Sangrur/DSO Sign/DSO Sign.png" },
+                        { "SAS Nagar", $@"{baseDirectory}/SAS Nagar/DSO Sign/DSO Sign.png" },
+                        { "SBS Nagar", $@"{baseDirectory}/SBS Nagar/DSO Sign/DSO Sign.png" }
                     };
 
             //districtName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(districtName);
@@ -4103,7 +4119,7 @@ namespace ServicePlusAPIs.Controllers
             font-weight: bold; 
             font-family: 'Gurmukhi', Arial, sans-serif;'>ਰਾਜ ਪੱਧਰੀ ਟੂਰਨਾਮੈਂਟ</div>
               
-             <div style=' font-size: 20px; margin-top: 3px; font-weight: bold;'>{await TranslateToPunjabi(existingCertificates.GameHeldDistrict)}</div>
+             <div style=' font-size: 20px; margin-top: 3px; font-weight: bold;'>{existingCertificates.GameHeldDistrictPB}</div>
                     <div style='margin: 10px 0; font-size: 18px; font-weight: bold;'>
                         ਮਿਤੀ <strong>{fromDate}</strong> ਤੋਂ ਮਿਤੀ  <strong>{toDate} ਤੱਕ </strong>
                     </div> 
@@ -4111,26 +4127,26 @@ namespace ServicePlusAPIs.Controllers
                             ਤਸਦੀਕ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ 
                             <strong>
                                 <span style='display: inline-block; width: 83%; text-align: center;  border-bottom: 0.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>
-                                    {await TranslateToPunjabi(existingCertificates.ApplicantFullName)}
+                                    {existingCertificates.ApplicantFullNamePB}
                                 </span>
                             </strong><br>
                             ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ 
-                            <strong><span style='display: inline-block; width: 39%; text-align: center; border-bottom:0.2px dashed #000; min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(existingCertificates.ApplicantFatherName)}</span></strong>
+                            <strong><span style='display: inline-block; width: 39%; text-align: center; border-bottom:0.2px dashed #000; min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.ApplicantFatherNamePB}</span></strong>
                              ਜਨਮ ਮਿਤੀ 
                             <strong><span style='display: inline-block; width: 43%; text-align: center; border-bottom: 0.3px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.ApplicantDOB}</span></strong><br>
                             ਨੇ ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024 ਵਿੱਚ ਜ਼ਿਲ੍ਹਾ 
-                            <strong><span style='display: inline-block; width: 72%; text-align: center; border-bottom: 0.4px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(existingCertificates.GameRepresentingDistrict)}</span></strong> <br>
+                            <strong><span style='display: inline-block; width: 72%; text-align: center; border-bottom: 0.4px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.GameRepresentingDistrictPB}</span></strong> <br>
                             ਵਲੋਂ ਖੇਡ 
-                            <strong><span style='display: inline-block; width: 44%; text-align: center; border-bottom: 0.6px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(await GetPunjabiGameName(existingCertificates.ApplicantGame)).ToLower()}</span></strong>  
+                            <strong><span style='display: inline-block; width: 44%; text-align: center; border-bottom: 0.6px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(existingCertificates.ApplicantGamePB)}</span></strong>  
                             ਈਵੈਂਟ/ਵਰਗ 
-                            <strong><span style='display: inline-block; width: 41%; text-align: center; border-bottom: 0.7px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(existingCertificates.ApplicantEvent.Contains("NA") ? "----" : await TranslateToPunjabi(existingCertificates.ApplicantEvent))}</span></strong> <br>
+                            <strong><span style='display: inline-block; width: 41%; text-align: center; border-bottom: 0.7px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.ApplicantEventPB}</span></strong> <br>
                             ਈਵੈਂਟ ਸਮਾਂ/ਦੂਰੀ/ਉਚਾਈ/ਭਾਰ 
-                            <strong><span style='display: inline-block; width: 35%; text-align: center; border-bottom: 0.8px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(existingCertificates.Score.Contains("NA") ? "----" : await TranslateToPunjabi(existingCertificates.Score))}</span></strong>  
+                            <strong><span style='display: inline-block; width: 35%; text-align: center; border-bottom: 0.8px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(existingCertificates.ScorePB)}</span></strong>  
                             ਵਿਚ ਭਾਗ ਲਿਆ ਅਤੇ 
-                            <strong><span style='display: inline-block; width: 22%; text-align: center; border-bottom: 0.9px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await GetScoreInPunjabi(existingCertificates.Position)}</span></strong>  
+                            <strong><span style='display: inline-block; width: 22%; text-align: center; border-bottom: 0.9px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.Position}</span></strong>  
                             ਸਥਾਨ ਪ੍ਰਾਪਤ ਕੀਤਾ <br>
                             ਉਮਰ ਵਰਗ (ਸਾਲ)
-                            <strong><span style='display: inline-block; width: 42%; text-align: center; border-bottom: 1.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{await TranslateToPunjabi(existingCertificates.ApplicantAgeGroup)}</span></strong>
+                            <strong><span style='display: inline-block; width: 42%; text-align: center; border-bottom: 1.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.ApplicantAgeGroupPB}</span></strong>
                         <strong><span style='display:  inline-block; width: 45%; text-align: center; border-bottom: 0px dashed #000;'> </span></strong>
                      </div>                
 
@@ -4168,7 +4184,7 @@ namespace ServicePlusAPIs.Controllers
         </body>
         </html>";
 
-             
+
             if (certificateVerifyDetails != null)
             {
                 certificateVerifyDetails.CertificateHashKey = hasCertificateId;

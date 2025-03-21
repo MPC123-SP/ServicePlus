@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ServicePlusAPIs.Context;
@@ -11,9 +12,11 @@ using ServicePlusAPIs.Context;
 namespace ServicePlusAPIs.Migrations.ServicePlus
 {
     [DbContext(typeof(ServicePlusContext))]
-    partial class ServicePlusContextModelSnapshot : ModelSnapshot
+    [Migration("20250321055306_ChangesInPlayerCertificate")]
+    partial class ChangesInPlayerCertificate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -610,34 +613,19 @@ namespace ServicePlusAPIs.Migrations.ServicePlus
                     b.Property<string>("ApplicantAgeGroup")
                         .HasColumnType("text");
 
-                    b.Property<string>("ApplicantAgeGroupPB")
-                        .HasColumnType("text");
-
                     b.Property<string>("ApplicantDOB")
                         .HasColumnType("text");
 
                     b.Property<string>("ApplicantEvent")
                         .HasColumnType("text");
 
-                    b.Property<string>("ApplicantEventPB")
-                        .HasColumnType("text");
-
                     b.Property<string>("ApplicantFatherName")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ApplicantFatherNamePB")
                         .HasColumnType("text");
 
                     b.Property<string>("ApplicantFullName")
                         .HasColumnType("text");
 
-                    b.Property<string>("ApplicantFullNamePB")
-                        .HasColumnType("text");
-
                     b.Property<string>("ApplicantGame")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ApplicantGamePB")
                         .HasColumnType("text");
 
                     b.Property<string>("ApplicantMobileNo")
@@ -655,28 +643,16 @@ namespace ServicePlusAPIs.Migrations.ServicePlus
                     b.Property<string>("ConveyorName")
                         .HasColumnType("text");
 
-                    b.Property<string>("ConveyorNamePB")
-                        .HasColumnType("text");
-
                     b.Property<string>("GameHeldDistrict")
                         .HasColumnType("text");
 
-                    b.Property<string>("GameHeldDistrictPB")
-                        .HasColumnType("text");
-
                     b.Property<string>("GameRepresentingDistrict")
-                        .HasColumnType("text");
-
-                    b.Property<string>("GameRepresentingDistrictPB")
                         .HasColumnType("text");
 
                     b.Property<string>("Position")
                         .HasColumnType("text");
 
                     b.Property<string>("Score")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ScorePB")
                         .HasColumnType("text");
 
                     b.Property<string>("TournamentFrom")
