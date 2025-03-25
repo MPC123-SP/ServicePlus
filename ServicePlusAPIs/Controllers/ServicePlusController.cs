@@ -1,13 +1,10 @@
 ﻿using AutoMapper;
-using DocumentFormat.OpenXml.InkML;
-using iText.Kernel.Exceptions;
-using iText.Kernel.Pdf;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
-using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Security;
+using PdfSharp.Pdf;
+using PdfSharp.Pdf.IO;
 using PuppeteerSharp;
 using PuppeteerSharp.Media;
 using ServicePlusAPIs.AuthenticateModels;
@@ -33,7 +30,6 @@ using System.Data;
 using System.Globalization;
 using System.Reflection;
 using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -3163,7 +3159,37 @@ namespace ServicePlusAPIs.Controllers
         [HttpPost]
         public async Task<IActionResult> GetPlayerCertificateDetail(string district, string gameName, string AgeGroup)
         {
-            return Ok(await GeneratePlayerCertificate(district, gameName , AgeGroup) + " Record Updated Successfully");
+            return Ok(await GeneratePlayerCertificate(district, gameName, AgeGroup) + " Record Updated Successfully");
+        }
+        [Route("GetPlayerCertificateInBulk")]
+        [HttpPost]
+        public async Task<IActionResult> GetPlayerCertificateDetail()
+        {
+
+            // Define allowed districts
+            var allowedDistricts = new List<string> { "RUPNAGAR", "SAS NAGAR", "SBSNAGAR" };
+            foreach (var gameHeldDistrict in allowedDistricts)
+            {
+                // Fetch distinct games for the allowed districts
+                var getGames = await _servicePlusContext.PlayerCertificateDetails
+                    .Where(d => d.GameHeldDistrict == gameHeldDistrict)
+                    .Select(d => d.ApplicantGame)
+                    .Distinct()
+                    .ToListAsync();
+                foreach (var game in getGames)
+                {
+                    var getAgeGroups = await _servicePlusContext.PlayerCertificateDetails
+                        .Where(d => d.GameHeldDistrict == gameHeldDistrict && d.ApplicantGame == game)
+                        .Select(d => d.ApplicantAgeGroup)
+                        .Distinct()
+                        .ToListAsync();
+                    foreach (var ageGroup in getAgeGroups)
+                    {
+                        await GeneratePlayerCertificate(gameHeldDistrict, game, ageGroup);
+                    }
+                }
+            }
+            return Ok(" Record Updated Successfully");
         }
 
         [Route("UpdateCertificatePlayers")]
@@ -3208,9 +3234,9 @@ namespace ServicePlusAPIs.Controllers
         { "PATHANKOT", "PKT" },
         { "PATIALA", "PAT" },
         { "RUPNAGAR", "RPR" },
-        { "S.A.S NAGAR", "SAS" },
+        { "SAS NAGAR", "SAS" },
         { "SANGRUR", "SGR" },
-        { "SHAHID BHAGAT SINGH NAGAR", "SBS" },
+        { "SBSNAGAR", "SBS" },
         { "SRI MUKTSAR SAHIB", "SMS" },
         { "TARN TARAN", "TTN" }
 
@@ -3329,6 +3355,8 @@ namespace ServicePlusAPIs.Controllers
                     //Rupnagar
                     { ("RUPNAGAR", "HANDBALL"), $@"{baseDirectory}/Rupnagar/Handball Convenor Sign/Handball Convenor Sign.png" },
                     { ("RUPNAGAR", "KAYAKING"), $@"{baseDirectory}/Rupnagar/Kayking and Canoining Convenor Sign/Kayaking__Canoeing.png" },
+                    { ("RUPNAGAR", "CANOEING"), $@"{baseDirectory}/Rupnagar/Kayking and Canoining Convenor Sign/Kayaking__Canoeing.png" },
+                    { ("RUPNAGAR", "DRAGON BOAT"), $@"{baseDirectory}/Rupnagar/Kayking and Canoining Convenor Sign/Kayaking__Canoeing.png" },
                     { ("RUPNAGAR", "ROWING"), $@"{baseDirectory}/Rupnagar/Rowing Convenor Sign/Rowing_Convenor Sign.png" },
                     
                     //Sangrur
@@ -3465,8 +3493,10 @@ namespace ServicePlusAPIs.Controllers
                                 // Rupnagar
                                 { ("RUPNAGAR", "HANDBALL"), ("16-11-2024", "21-11-2024") },
                                 { ("RUPNAGAR", "KAYAKING"), ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "CANOEING"),   ("16-11-2024", "21-11-2024") },
                                 { ("RUPNAGAR", "ROWING"),   ("16-11-2024", "21-11-2024") },
-
+                                { ("RUPNAGAR", "DRAGON BOAT"),   ("16-11-2024", "21-11-2024") },
+                                  
                                 // Sangrur
                                 {  ("SANGRUR", "KABADDI NATIONAL STYLE"),        ("16-11-2024", "21-11-2024") },
                                 {  ("SANGRUR", "ROLLER SKATING"), ("16-11-2024", "21-11-2024") },
@@ -3606,7 +3636,7 @@ namespace ServicePlusAPIs.Controllers
             font-weight: bold; 
             font-family: 'Gurmukhi', Arial, sans-serif;'>ਰਾਜ ਪੱਧਰੀ ਟੂਰਨਾਮੈਂਟ</div>
               
-             <div style=' font-size: 20px; margin-top: 3px; font-weight: bold;'>{ player.GameHeldDistrictPB}</div>
+             <div style=' font-size: 20px; margin-top: 3px; font-weight: bold;'>{player.GameHeldDistrictPB}</div>
                     <div style='margin: 10px 0; font-size: 18px; font-weight: bold;'>
                         ਮਿਤੀ <strong>{fromDate}</strong> ਤੋਂ ਮਿਤੀ  <strong>{toDate} ਤੱਕ </strong>
                     </div> 
@@ -3614,21 +3644,21 @@ namespace ServicePlusAPIs.Controllers
                             ਤਸਦੀਕ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ 
                             <strong>
                                 <span style='display: inline-block; width: 83%; text-align: center;  border-bottom: 0.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>
-                                    {   player.ApplicantFullNamePB}
+                                    {player.ApplicantFullNamePB}
                                 </span>
                             </strong><br>
                             ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ 
-                            <strong><span style='display: inline-block; width: 39%; text-align: center; border-bottom:0.2px dashed #000; min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{ player.ApplicantFatherNamePB}</span></strong>
+                            <strong><span style='display: inline-block; width: 39%; text-align: center; border-bottom:0.2px dashed #000; min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.ApplicantFatherNamePB}</span></strong>
                              ਜਨਮ ਮਿਤੀ 
                             <strong><span style='display: inline-block; width: 43%; text-align: center; border-bottom: 0.3px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.ApplicantDOB}</span></strong><br>
                             ਨੇ ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024 ਵਿੱਚ ਜ਼ਿਲ੍ਹਾ 
-                            <strong><span style='display: inline-block; width: 72%; text-align: center; border-bottom: 0.4px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{ player.GameRepresentingDistrictPB}</span></strong> <br>
+                            <strong><span style='display: inline-block; width: 72%; text-align: center; border-bottom: 0.4px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.GameRepresentingDistrictPB}</span></strong> <br>
                             ਵਲੋਂ ਖੇਡ 
-                            <strong><span style='display: inline-block; width: 44%; text-align: center; border-bottom: 0.6px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{ (player.ApplicantGamePB)}</span></strong>  
+                            <strong><span style='display: inline-block; width: 44%; text-align: center; border-bottom: 0.6px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(player.ApplicantGamePB)}</span></strong>  
                             ਈਵੈਂਟ/ਵਰਗ 
                             <strong><span style='display: inline-block; width: 41%; text-align: center; border-bottom: 0.7px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.ApplicantEventPB}</span></strong> <br>
                             ਈਵੈਂਟ ਸਮਾਂ/ਦੂਰੀ/ਉਚਾਈ/ਭਾਰ 
-                            <strong><span style='display: inline-block; width: 35%; text-align: center; border-bottom: 0.8px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{ (player.ScorePB)}</span></strong>  
+                            <strong><span style='display: inline-block; width: 35%; text-align: center; border-bottom: 0.8px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(player.ScorePB)}</span></strong>  
                             ਵਿਚ ਭਾਗ ਲਿਆ ਅਤੇ 
                             <strong><span style='display: inline-block; width: 22%; text-align: center; border-bottom: 0.9px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.Position}</span></strong>  
                             ਸਥਾਨ ਪ੍ਰਾਪਤ ਕੀਤਾ <br>
@@ -4348,50 +4378,68 @@ namespace ServicePlusAPIs.Controllers
 
             // Get original file path from DB
             string formattedPath = certificateRecord.CertificatePath.Replace(directoryToRemove, "").Replace("\\", "/");
-            string fullFilePath = Path.Combine(@"D:\Test1\", "TestFile.pdf");  // Ensure actual file path
+            string fullFilePath = Path.Combine(baseDirectory, formattedPath);  // Ensure actual file path
+            //string fullFilePath = "D:\\GeneratedCertificates1\\GeneratedCertificates\\RUPNAGAR\\CANOEING\\Under-14\\RPR-2024-000165.pdf";  // Ensure actual file path
 
             // Ensure file exists before proceeding
             if (!System.IO.File.Exists(fullFilePath))
             {
                 return NotFound("PDF file not found.");
             }
-
+            bool isPasswordProtected = IsPdfPasswordProtected(fullFilePath);
+            if (isPasswordProtected)
+            {
+                return Ok(new { CertificatePath = fullFilePath, Password =  "" });
+               
+            }
             // Generate password (First 4 uppercase letters of name + DOB in ddMMyyyy)
             string uppercaseLetters = new string(applicantFullName.Where(char.IsUpper).ToArray());
-            string password = (uppercaseLetters.Length >= 4 ? uppercaseLetters.Substring(0, 4) : uppercaseLetters.PadRight(4, 'X')) + applicantDOB;
+            string password = (uppercaseLetters.Length >= 4 ? uppercaseLetters.Substring(0, 4) : uppercaseLetters.PadRight(4, 'X')) + applicantDOB.Replace("/", "");
 
-            // Secured PDF file path
-            string securedFilePath = fullFilePath.Replace(".pdf", "_secured.pdf");
+             
 
+            // Create a temporary file
+            string tempFilePath = fullFilePath + ".tmp";
+            // Apply password protection and save as temporary file
+            using (PdfDocument document = PdfReader.Open(fullFilePath, PdfDocumentOpenMode.Modify))
+            {
+              
+                document.SecuritySettings.UserPassword = password;
+                document.SecuritySettings.OwnerPassword = "sports2025";
+                //document.SecuritySettings.PermitAccessibilityExtractContent = false;
+                document.SecuritySettings.PermitAnnotations = false;
+                document.SecuritySettings.PermitExtractContent = false;
+                document.SecuritySettings.PermitFormsFill = false;
+                document.SecuritySettings.PermitModifyDocument = false;
+                document.SecuritySettings.PermitPrint = true; // Optional: Disable printing
+
+                document.Save(tempFilePath);
+            }
+
+            // Replace the original file with the secured version
+            System.IO.File.Delete(fullFilePath);
+            System.IO.File.Move(tempFilePath, fullFilePath);
+
+            return Ok(new { CertificatePath = fullFilePath  });
+
+
+        }
+        private bool IsPdfPasswordProtected(string filePath)
+        {
             try
             {
-                // Encrypt PDF using iText7
-                using (PdfReader pdfReader = new PdfReader(fullFilePath))
-                using (PdfWriter pdfWriter = new PdfWriter(securedFilePath, new WriterProperties()
-                    .SetStandardEncryption(
-                        Encoding.UTF8.GetBytes(password),  // User Password
-                        Encoding.UTF8.GetBytes(password),  // Owner Password
-                        EncryptionConstants.ALLOW_PRINTING,
-                        EncryptionConstants.ENCRYPTION_AES_256)))  // Use AES 256-bit for better security
-                using (PdfDocument pdfDoc = new PdfDocument(pdfReader, pdfWriter))
+                using (PdfDocument document = PdfReader.Open(filePath, PdfDocumentOpenMode.Import))
                 {
-                    pdfDoc.Close();
+                    // If the document is password protected, PdfSharpCore will throw an exception
+                    return false;
                 }
-
-                // Return secured file path
-                string finalPath = formattedPath.Replace(".pdf", "_secured.pdf");
-                return Ok(new { CertificatePath = finalPath, Password = password });
             }
-            catch (PdfException ex)
+            catch (PdfReaderException)
             {
-                return StatusCode(500, "Error securing the PDF: " + ex.Message);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "Unexpected error: " + ex.Message);
+                // If exception is thrown, the PDF is password protected
+                return true;
             }
         }
-
         #endregion
 
         #region Under Development
