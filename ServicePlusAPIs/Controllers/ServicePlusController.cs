@@ -1,9 +1,13 @@
 ﻿using AutoMapper;
 using DocumentFormat.OpenXml.InkML;
+using iText.Kernel.Exceptions;
+using iText.Kernel.Pdf;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Security;
 using PuppeteerSharp;
 using PuppeteerSharp.Media;
 using ServicePlusAPIs.AuthenticateModels;
@@ -4277,6 +4281,45 @@ namespace ServicePlusAPIs.Controllers
             });
         }
 
+        //[HttpGet("GetCertificatePath")]
+        //public async Task<IActionResult> GetCertificatePath(string applicantFullName, string applicantDOB, string applicantGame, string applicantAgeGroup)
+        //{
+        //    if (string.IsNullOrWhiteSpace(applicantFullName) ||
+        //        string.IsNullOrWhiteSpace(applicantDOB) ||
+        //        string.IsNullOrWhiteSpace(applicantGame) ||
+        //        string.IsNullOrWhiteSpace(applicantAgeGroup))
+        //    {
+        //        return BadRequest("All parameters are required.");
+        //    }
+
+        //    string baseDirectory = @"http://10.147.24.36:8082/SSD/";
+        //    string directoryToRemove = @"C:\Users\Mohit\Documents\GitHub\ServicePlus\ServicePlusAPIs\";
+
+        //    var certificateRecord = await _servicePlusContext.PlayerIssuedCertificate
+        //        .Where(p => EF.Functions.ILike(p.ApplicantFullName, applicantFullName) &&
+        //                    EF.Functions.ILike(p.ApplicantDOB, applicantDOB) &&
+        //                    EF.Functions.ILike(p.ApplicantGame, applicantGame) &&
+        //                    EF.Functions.ILike(p.ApplicantAgeGroup, applicantAgeGroup))
+        //        .FirstOrDefaultAsync();
+
+        //    if (certificateRecord == null)
+        //    {
+        //        return NotFound("Certificate not found.");
+        //    }
+
+        //    // Remove the base directory and format the path
+        //    string formattedPath = certificateRecord.CertificatePath.Replace(directoryToRemove, "").Replace("\\", "/");
+
+        //    // Create final URL
+        //    string finalPath = baseDirectory + formattedPath;
+
+        //    // ✅ Update the path in the database
+        //    certificateRecord.CertificatePath = finalPath;
+        //    _servicePlusContext.PlayerIssuedCertificate.Update(certificateRecord);
+        //    await _servicePlusContext.SaveChangesAsync(); // Save changes
+
+        //    return Ok(new { CertificatePath = finalPath });
+        //}
         [HttpGet("GetCertificatePath")]
         public async Task<IActionResult> GetCertificatePath(string applicantFullName, string applicantDOB, string applicantGame, string applicantAgeGroup)
         {
@@ -4303,18 +4346,50 @@ namespace ServicePlusAPIs.Controllers
                 return NotFound("Certificate not found.");
             }
 
-            // Remove the base directory and format the path
+            // Get original file path from DB
             string formattedPath = certificateRecord.CertificatePath.Replace(directoryToRemove, "").Replace("\\", "/");
+            string fullFilePath = Path.Combine(@"D:\Test1\", "TestFile.pdf");  // Ensure actual file path
 
-            // Create final URL
-            string finalPath = baseDirectory + formattedPath;
+            // Ensure file exists before proceeding
+            if (!System.IO.File.Exists(fullFilePath))
+            {
+                return NotFound("PDF file not found.");
+            }
 
-            // ✅ Update the path in the database
-            certificateRecord.CertificatePath = finalPath;
-            _servicePlusContext.PlayerIssuedCertificate.Update(certificateRecord);
-            await _servicePlusContext.SaveChangesAsync(); // Save changes
+            // Generate password (First 4 uppercase letters of name + DOB in ddMMyyyy)
+            string uppercaseLetters = new string(applicantFullName.Where(char.IsUpper).ToArray());
+            string password = (uppercaseLetters.Length >= 4 ? uppercaseLetters.Substring(0, 4) : uppercaseLetters.PadRight(4, 'X')) + applicantDOB;
 
-            return Ok(new { CertificatePath = finalPath });
+            // Secured PDF file path
+            string securedFilePath = fullFilePath.Replace(".pdf", "_secured.pdf");
+
+            try
+            {
+                // Encrypt PDF using iText7
+                using (PdfReader pdfReader = new PdfReader(fullFilePath))
+                using (PdfWriter pdfWriter = new PdfWriter(securedFilePath, new WriterProperties()
+                    .SetStandardEncryption(
+                        Encoding.UTF8.GetBytes(password),  // User Password
+                        Encoding.UTF8.GetBytes(password),  // Owner Password
+                        EncryptionConstants.ALLOW_PRINTING,
+                        EncryptionConstants.ENCRYPTION_AES_256)))  // Use AES 256-bit for better security
+                using (PdfDocument pdfDoc = new PdfDocument(pdfReader, pdfWriter))
+                {
+                    pdfDoc.Close();
+                }
+
+                // Return secured file path
+                string finalPath = formattedPath.Replace(".pdf", "_secured.pdf");
+                return Ok(new { CertificatePath = finalPath, Password = password });
+            }
+            catch (PdfException ex)
+            {
+                return StatusCode(500, "Error securing the PDF: " + ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Unexpected error: " + ex.Message);
+            }
         }
 
         #endregion
