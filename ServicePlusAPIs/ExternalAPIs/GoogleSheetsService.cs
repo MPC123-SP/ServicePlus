@@ -2,11 +2,10 @@
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.EntityFrameworkCore;
 using ServicePlusAPIs.Context;
+using ServicePlusAPIs.Models;
 using ServicePlusAPIs.Models.SportsModel;
-using ServicePlusAPIs.ViewModels.PublicModel;
-using System.Collections.Concurrent;
 
 namespace ServicePlusAPIs.ExternalAPIs
 {
@@ -77,7 +76,7 @@ namespace ServicePlusAPIs.ExternalAPIs
                         ApplicantAgeGroupPB = row.ElementAtOrDefault(16)?.ToString()?.Trim(),
                         Score = row.ElementAtOrDefault(17)?.ToString()?.Trim(),
                         ScorePB = row.ElementAtOrDefault(18)?.ToString()?.Trim(),
-                        Position = row.ElementAtOrDefault(19)?.ToString()?.Trim(), 
+                        Position = row.ElementAtOrDefault(19)?.ToString()?.Trim(),
                         ConveyorName = row.ElementAtOrDefault(20)?.ToString()?.Trim(),
                         ConveyorNamePB = row.ElementAtOrDefault(21)?.ToString()?.Trim(),
                     })
@@ -144,6 +143,86 @@ namespace ServicePlusAPIs.ExternalAPIs
                 return false;
             }
         }
+  
+        public async Task<BulkUpdateResult> BulkUpdateNameFieldsFromSheet()
+        {
+            var result = new BulkUpdateResult();
+
+            try
+            {
+                GoogleCredential credential;
+                using (var stream = new FileStream(CredentialsFilePath, FileMode.Open, FileAccess.Read))
+                {
+                    credential = GoogleCredential.FromStream(stream).CreateScoped(Scopes);
+                }
+
+                var service = new SheetsService(new BaseClientService.Initializer
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = ApplicationName,
+                });
+
+                var sheetName = "Sheet4";
+                var range = $"'{sheetName}'!A1:AB";
+
+                var request = service.Spreadsheets.Values.Get(SpreadsheetId, range);
+                ValueRange response = await request.ExecuteAsync();
+                var values = response.Values;
+
+                if (values == null || values.Count <= 1)
+                    return result;
+
+                var sheetData = values
+                    .Skip(1)
+                    .Where(r => r.Count > 22 && !string.IsNullOrWhiteSpace(r[18]?.ToString()))
+                    .Select(r => new
+                    {
+                        CertificateSerialNo = r[18]?.ToString()?.Trim(),
+                        ApplicantFatherNamePB = r[21]?.ToString()?.Trim(),
+                        ApplicantFullNamePB = r[22]?.ToString()?.Trim(),
+                    })
+                    .GroupBy(x => x.CertificateSerialNo)
+                    .Select(g => g.First())
+                    .ToDictionary(x => x.CertificateSerialNo, x => x);
+
+                if (!sheetData.Any())
+                    return result;
+
+                var serialNumbers = sheetData.Keys.ToList();
+
+                var dbRecords = await _servicePlusContext.PlayerIssuedCertificate
+                    .Where(p => serialNumbers.Contains(p.CertificateSerialNo))
+                    .ToListAsync();
+
+                if (!dbRecords.Any())
+                    return result;
+
+                int updateCount = 0;
+
+                foreach (var record in dbRecords)
+                {
+                    if (sheetData.TryGetValue(record.CertificateSerialNo, out var data))
+                    {
+                        record.ApplicantFullNamePB = data.ApplicantFullNamePB;
+                        record.ApplicantFatherNamePB = data.ApplicantFatherNamePB;
+                        updateCount++;
+                    }
+                      _servicePlusContext.PlayerIssuedCertificate.Update(record);
+                }
+                
+                await _servicePlusContext.SaveChangesAsync();
+
+                result.Success = true;
+                result.UpdatedCount = updateCount;
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Bulk update error: {ex.Message}");
+                return result;
+            }
+        }
+        
 
     }
 

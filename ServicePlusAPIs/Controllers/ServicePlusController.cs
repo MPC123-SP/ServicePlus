@@ -3758,6 +3758,43 @@ namespace ServicePlusAPIs.Controllers
             }
             return newCertificates.Count.ToString();
         }
+        [HttpPost("BulkUpdateNameFieldsFromSheet")]
+        public async Task<IActionResult> BulkUpdateNameFieldsFromSheet()
+        {
+            // Create the service (if not injected via constructor)
+            var googleSheetsService = new GoogleSheetsService(_servicePlusContext);
+
+            // Call the method and store result
+            var result = await googleSheetsService.BulkUpdateNameFieldsFromSheet();
+
+            // Return response based on result
+            if (result.Success)
+            {
+                return Ok(new
+                {
+                    Message = $"{result.UpdatedCount} record(s) updated successfully from the sheet.",
+                    UpdatedCount = result.UpdatedCount
+                });
+            }
+
+            return BadRequest(new
+            {
+                Message = "Update failed or no matching CertificateSerialNo found.",
+                UpdatedCount = 0
+            });
+        }
+
+
+
+
+
+        public class UpdateNameRequest
+        {
+            public string CertificateSerialNo { get; set; }
+            public string ApplicantFullNamePB { get; set; }
+            public string ApplicantFatherNamePB { get; set; }
+        }
+
 
         private async Task<string> GetScoreInPunjabi(string score)
         {
