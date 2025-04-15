@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -3161,6 +3162,7 @@ namespace ServicePlusAPIs.Controllers
         {
             return Ok(await GeneratePlayerCertificate(district, gameName, AgeGroup) + " Record Updated Successfully");
         }
+
         [Route("GetPlayerCertificateInBulk")]
         [HttpPost]
         public async Task<IActionResult> GetPlayerCertificateDetail()
@@ -3192,25 +3194,39 @@ namespace ServicePlusAPIs.Controllers
             return Ok(" Record Updated Successfully");
         }
 
-        [Route("UpdateCertificatePlayers")]
+        [Route("UpdateExistingCertificate")]
         [HttpPost]
-        public async Task<IActionResult> UpdateCertificatePlayers()
+        public async Task<IActionResult> UpdateExistingCertificate()
         {
-
-            var googleSheetsService = new GoogleSheetsService(_servicePlusContext); // Pass the context here
-            var playerDetails = await googleSheetsService.GetFilteredPlayerCertificateDetails();
-
-            if (playerDetails)
+            var getDistrict = await _servicePlusContext.PlayerIssuedCertificate
+              .Select(d => d.GameHeldDistrict)
+              .Distinct()
+              .ToListAsync();
+            foreach (var gameHeldDistrict in getDistrict)
             {
+                // Fetch distinct games for the allowed districts
+                var getGames = await _servicePlusContext.PlayerIssuedCertificate
+                    .Where(d => d.GameHeldDistrict == gameHeldDistrict)
+                    .Select(d => d.ApplicantGame)
+                    .Distinct()
+                    .ToListAsync();
+                foreach (var game in getGames)
+                {
+                    var getAgeGroups = await _servicePlusContext.PlayerIssuedCertificate
+                        .Where(d => d.GameHeldDistrict == gameHeldDistrict && d.ApplicantGame == game)
+                        .Select(d => d.ApplicantAgeGroup)
+                        .Distinct()
+                        .ToListAsync();
+                    foreach (var ageGroup in getAgeGroups)
+                    {
+                        await UpdateExistingCertificate(gameHeldDistrict, game, ageGroup);
+                    }
+                }
+            }
+            return Ok();
 
-                return Ok("Record Updated Successfully");
-            }
-            else
-            {
-                return BadRequest(new { message = "No record found" });
-            }
         }
-
+       
         private async Task<string> GeneratePlayerCertificate(string districtName, string gameName, string ageGroup)
         {
             // District-wise serial number prefixes to create Folder Name
@@ -3758,6 +3774,7 @@ namespace ServicePlusAPIs.Controllers
             }
             return newCertificates.Count.ToString();
         }
+     
         [HttpPost("BulkUpdateNameFieldsFromSheet")]
         public async Task<IActionResult> BulkUpdateNameFieldsFromSheet()
         {
@@ -3795,6 +3812,468 @@ namespace ServicePlusAPIs.Controllers
             public string ApplicantFatherNamePB { get; set; }
         }
 
+
+        [Route("UpdateCertificatePlayers")]
+        [HttpPost]
+        public async Task<IActionResult> UpdateCertificatePlayers()
+        {
+
+            var googleSheetsService = new GoogleSheetsService(_servicePlusContext); // Pass the context here
+            var playerDetails = await googleSheetsService.GetFilteredPlayerCertificateDetails();
+
+            if (playerDetails)
+            {
+
+                return Ok("Record Updated Successfully");
+            }
+            else
+            {
+                return BadRequest(new { message = "No record found" });
+            }
+        }
+
+        private async Task<string> UpdateExistingCertificate(string districtName, string gameName, string ageGroup)
+        {
+            // District-wise serial number prefixes to create Folder Name
+            var districtPrefixes = new Dictionary<string, string>
+    {
+        { "AMRITSAR", "ASR" },
+        { "BARNALA", "BNL" },
+        { "BATHINDA", "BAT" },
+        { "FARIDKOT", "FDK" },
+        { "FATEHGARH SAHIB", "FGS" },
+        { "FAZILKA", "FAZ" },
+        { "FEROZEPUR", "FZR" },
+        { "GURDASPUR", "GSP" },
+        { "HOSHIARPUR", "HSP" },
+        { "JALANDHAR", "JAL" },
+        { "KAPURTHALA", "KPT" },
+        { "LUDHIANA", "LDH" },
+        { "MALERKOTLA", "MLK" },
+        { "MANSA", "MAN" },
+        { "MOGA", "MOG" },
+        { "PATHANKOT", "PKT" },
+        { "PATIALA", "PAT" },
+        { "RUPNAGAR", "RPR" },
+        { "SAS NAGAR", "SAS" },
+        { "SANGRUR", "SGR" },
+        { "SBSNAGAR", "SBS" },
+        { "SRI MUKTSAR SAHIB", "SMS" },
+        { "TARN TARAN", "TTN" }
+
+        // Add more districts as needed
+    };
+
+            // Get the prefix for the given district, default to "GEN000" if not found
+            string randomDistrictSr = districtPrefixes.ContainsKey(districtName.ToUpper())
+                ? districtPrefixes[districtName.ToUpper()]
+                : "GEN000";
+
+            // Fetch issued certificates first (executed on DB)
+            var existingCertificates = await _servicePlusContext.PlayerIssuedCertificate
+                .Where(c => c.GameHeldDistrict == districtName
+                            && c.ApplicantGame == gameName
+                            && c.ApplicantAgeGroup == ageGroup
+                            && c.CertificateSerialNo != null)
+                .ToListAsync(); // Move data to memory
+
+            
+            //  var getSigns = playerCertificateDetails.FirstOrDefault();
+
+            // Signature For Convenor
+            // Define the base directory where images are stored
+            string baseDirectory = @"http://10.147.24.36:8082/SSD/Sports_Signature";
+
+            // Dictionary to store (district, game) as key and image path as value
+            Dictionary<(string, string), string> gameSignatures = new Dictionary<(string, string), string>
+{
+                    //Amritsar
+                    { ("AMRITSAR", "GATKA"), $@"{baseDirectory}/Amritsar/Gatka Convenor Sign/Gatka Convenor Sign.png" },
+                    { ("AMRITSAR", "RUGBY"), $@"{baseDirectory}/Amritsar/Rugby Convenor Sign/Rugby Convenor Sign.png" },
+
+                    //Barnala
+                    { ("BARNALA", "NETBALL"), $@"{baseDirectory}/Barnala/Netball Convenor Sign/Netball English Convenor Sign.png" },
+                    { ("BARNALA", "TABLE TENNIS"), $@"{baseDirectory}/Barnala/Table Tennis Convenor Sign/Table Tennis Convenor Sign.png" },
+                    { ("BARNALA", "BADMINTON"), $@"{baseDirectory}/Barnala/Badminton Convenor Sign/BADMINTON Convenor Sign.png" },
+
+                    //Bathinda
+                    { ("BATHINDA", "HOCKEY"), $@"{baseDirectory}/Bathinda/Hocky Convenor Sign/HOCKEY Convenor Sign.png" },
+                    { ("BATHINDA", "POWERLIFTING"), $@"{baseDirectory}/Bathinda/Powerlifting Convenor Sign/POWERLIFTING Convenor Sign.png" },
+
+                    //Faridkot
+                    { ("FARIDKOT", "BASKETBALL"), $@"{baseDirectory}/Faridkot/Basketball Convenor Sign/Basketball Convenor Sign.png" },
+                    { ("FARIDKOT", "TAEKWONDO"), $@"{baseDirectory}/Faridkot/Taekwondo Convenor Sign/Taekwondo Convenor Sign.png" },
+
+                    //Fatehgarh Sahib
+                    { ("FATEHGARH SAHIB", "FENCING"), $@"{baseDirectory}/Fatehgarh Sahib/Fencing Convenor Sign/FENCING Convenor Sign.png" },
+                    { ("FATEHGARH SAHIB", "SOFTBALL"), $@"{baseDirectory}/Fatehgarh Sahib/Softball Convenor Sign/SOFT Convenor Sign.png" },
+
+                    //Hoshiarpur
+                    { ("HOSHIARPUR", "FOOTBALL"), $@"{baseDirectory}/Hoshiarpur/Football Convenor Sign/Football Convenor Sign.png" },
+
+                    //Jalandhar
+                    { ("JALANDHAR", "CHESS"), $@"{baseDirectory}/Jalandhar/Chess Convenor Sign/Chess Convenor Sign.png" },
+                    { ("JALANDHAR", "VOLLEYBALL SMASHING"), $@"{baseDirectory}/Jalandhar/Volleyball Smashing Convenor Sign/Volleyball Smashing Convener sign.png" },
+
+                    //Ludhiana
+                    { ("LUDHIANA", "ATHLETICS"), $@"{baseDirectory}/Ludhiana/Athletics Convenor Sign/ATHLETICS Convenor Sign.png" },
+                    { ("LUDHIANA", "BASEBALL"), $@"{baseDirectory}/Ludhiana/Baseball Convenor Sign/BASEBALL Convenor Sign.png" },
+                    { ("LUDHIANA", "CYCLING"), $@"{baseDirectory}/Ludhiana/Cycling Convenor Sign/CYCLING Convenor Sign.png" },
+                    { ("LUDHIANA", "KICK BOXING"), $@"{baseDirectory}/Ludhiana/Kick Boxing Convenor Sign/KICKBOXING-removebg-preview.png" },
+                    { ("LUDHIANA", "LAWN TENNIS"), $@"{baseDirectory}/Ludhiana/Lawn Tennis Convenor Sign/image-removebg-preview.png" },
+
+                    //Malerkotla
+                    { ("MALERKOTLA", "VOLLEYBALL SHOOTING"), $@"{baseDirectory}/Malerkotla/Volleyball Shooting Convenor Sign/Volleyball Shooting Sign.png" },
+
+                    //Mansa
+                    { ("MANSA", "JUDO"), $@"{baseDirectory}/Mansa/Judo Convenor Sign/JUDO Convenor Sign.png" },
+                    { ("MANSA", "WRESTLING"), $@"{baseDirectory}/Mansa/Wrestling Convenor Sign/Wrestling Convenor Sign.png" },
+
+                    //Patiala
+                    { ("PATIALA", "ARCHERY"), $@"{baseDirectory}/Patiala/Archary Convenor Sign/ARCHERY Convenor Sign.png" },
+                    { ("PATIALA", "GYMNASTICS"), $@"{baseDirectory}/Patiala/Gymnastics Convenor Sign/GYMNASTICS Convenor Sign.png" },
+                    { ("PATIALA", "CIRCLE KABADDI"), $@"{baseDirectory}/Patiala/Kabbadi circle style Convenor Sign/KABADDI CS Convenor Sign.png" },
+                    { ("PATIALA", "KHO KHO"), $@"{baseDirectory}/Patiala/Kho-Kho Convenor Sign/KHO KHO Convenor Sign.png" },
+
+                    //Rupnagar
+                    { ("RUPNAGAR", "HANDBALL"), $@"{baseDirectory}/Rupnagar/Handball Convenor Sign/Handball Convenor Sign.png" },
+                    { ("RUPNAGAR", "KAYAKING"), $@"{baseDirectory}/Rupnagar/Kayking and Canoining Convenor Sign/Kayaking__Canoeing.png" },
+                    { ("RUPNAGAR", "CANOEING"), $@"{baseDirectory}/Rupnagar/Kayking and Canoining Convenor Sign/Kayaking__Canoeing.png" },
+                    { ("RUPNAGAR", "DRAGON BOAT"), $@"{baseDirectory}/Rupnagar/Kayking and Canoining Convenor Sign/Kayaking__Canoeing.png" },
+                    { ("RUPNAGAR", "ROWING"), $@"{baseDirectory}/Rupnagar/Rowing Convenor Sign/Rowing_Convenor Sign.png" },
+                    
+                    //Sangrur
+                    { ("SANGRUR", "KABADDI NATIONAL STYLE"), $@"{baseDirectory}/Sangrur/Kabaddi National Style Convenor Sign/Kabaddi National Convenor Sign.png" },
+                    { ("SANGRUR", "ROLLER SKATING"), $@"{baseDirectory}/Sangrur/Roller Skating Convenor Sign/Rollar Skating Convenor Sign.png" },
+                    { ("SANGRUR", "Roller Skating Speed Skating"), $@"{baseDirectory}/Sangrur/Roller Skating Convenor Sign/Rollar Skating Convenor Sign.png" },
+                    { ("SANGRUR", "WEIGHT LIFTING"), $@"{baseDirectory}/Sangrur/Weightlifting Convenor SIgn/WL Convenor Sign.png" },
+                    { ("SANGRUR", "WUSHU"), $@"{baseDirectory}/Sangrur/Wushu Convenor Sign/WUSHU Convenor Sign.png" },
+
+                    //SAS Nagar
+                    { ("SAS NAGAR", "EQUESTRAIN"), $@"{baseDirectory}/SAS Nagar/Equestrian Convenor Sign/Equestrian Convenor Sign.png" },
+                    { ("SAS NAGAR", "SHOOTING"), $@"{baseDirectory}/SAS Nagar/Shooting Convenor Sign/Shooting Convenor Sign.png" },
+                    { ("SAS NAGAR", "SWIMMING"), $@"{baseDirectory}/SAS Nagar/Swimming Convenor Sign/Swimming Convenor Sign.png" },
+
+                    //SAS Nagar
+                    { ("SBSNAGAR", "BOXING"), $@"{baseDirectory}/SBS Nagar/Boxing Convenor Sign/Boxing Convenor Sign.png" },
+
+                };
+
+            // Normalize input (Trim spaces and capitalize first letter)
+            districtName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(districtName);
+            gameName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(gameName);
+
+            // Try to get the image path from the dictionary
+            if (!gameSignatures.TryGetValue((districtName, gameName), out string ConveyorImagePath))
+            {
+                ConveyorImagePath = "./images/default-sign.png"; // Fallback image if not found
+            }
+
+
+
+
+            Dictionary<string, string> dsoSignatures = new Dictionary<string, string>
+{
+                        { "AMRITSAR", $@"{baseDirectory}/Amritsar/DSO Sign/Amritsar DSO.png" },
+                        { "BARNALA", $@"{baseDirectory}/Barnala/DSO Sign/DSO Sign.png" },
+                        { "BATHINDA", $@"{baseDirectory}/Bathinda/DSO Sign/DSo Sign.png" },
+                        { "FARIDKOT", $@"{baseDirectory}/Faridkot/DSO Sign/DSO Sign.png" },
+                        { "FATEHGARH SAHIB", $@"{baseDirectory}/Fatehgarh Sahib/DSO Sign/DSO Sign.png" },
+                        { "HOSHIARPUR", $@"{baseDirectory}/Hoshiarpur/DSO Sign/DSO Sign.png" },
+                        { "JALANDHAR", $@"{baseDirectory}/Jalandhar/DSO Sign/DSO Sign.png" },
+                        { "LUDHIANA", $@"{baseDirectory}/Ludhiana/DSO Sign/DSO Sign.png" },
+                        { "MALERKOTLA", $@"{baseDirectory}/Malerkotla/DSO Sign/DSO Sign.png" },
+                        { "MANSA", $@"{baseDirectory}/Mansa/DSO Sign/DSO Sign.png" },
+                        { "PATIALA", $@"{baseDirectory}/Patiala/DSO Sign/DSO Sign.png" },
+                        { "RUPNAGAR", $@"{baseDirectory}/Rupnagar/DSO Sign/DSO Sign.png" },
+                        { "SANGRUR", $@"{baseDirectory}/Sangrur/DSO Sign/DSO Sign.png" },
+                        { "SAS NAGAR", $@"{baseDirectory}/SAS Nagar/DSO Sign/DSO Sign.png" },
+                        { "SBSNAGAR", $@"{baseDirectory}/SBS Nagar/DSO Sign/DSO Sign.png" }
+                    };
+
+            districtName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(districtName);
+
+            // Try to get the image path from the dictionary
+            if (!dsoSignatures.TryGetValue((districtName), out string dsoImagePath))
+            {
+                dsoImagePath = "./images/default-sign.png"; // Fallback image if not found
+            }
+
+            
+             
+            
+            string fromDate = "";
+            string toDate = "";
+            //to get Game From and To Date
+            var gameFromToDate = new Dictionary<(string, string), (string fromDate, string toDate)>
+        {
+
+
+                                { ("AMRITSAR", "GATKA"), ("07-11-2024", "10-11-2024") },
+                                { ("AMRITSAR", "RUGBY"), ("07-11-2024", "10-11-2024") },
+
+                                // Barnala
+                                { ("BARNALA", "NETBALL"), ("25-11-2024", "30-11-2024") },
+                                { ("BARNALA", "TABLE TENNIS"), ("25-11-2024", "30-11-2024") },
+                                { ("BARNALA", "BADMINTON"), ("25-11-2024", "30-11-2024") },
+
+                                // Bathinda
+                                { ("BATHINDA", "HOCKEY"), ("17-10-2024", "24-10-2024") },
+                                { ("BATHINDA", "POWERLIFTING"), ("19-10-2024", "24-10-2024") },
+
+                                // Faridkot
+                                {  ("FARIDKOT", "BASKETBALL"), ("09-12-2024", "14-12-2024") },
+                                { ("FARIDKOT", "TAEKWONDO"), ("09-12-2024", "14-12-2024") },
+
+                                // Fatehgarh Sahib
+                                { ("FATEHGARH SAHIB", "FENCING"), ("19-10-2024", "24-10-2024") },
+                                { ("FATEHGARH SAHIB", "SOFTBALL"), ("19-10-2024", "24-10-2024") },
+
+                                // Hoshiarpur
+                                { ("HOSHIARPUR", "FOOTBALL"), ("04-11-2024", "10-11-2024") },
+
+                                // Jalandhar
+                                { ("JALANDHAR", "CHESS"), ("15-11-2024", "22-11-2024") },
+                                { ("JALANDHAR", "VOLLEYBALL SMASHING"), ("15-11-2024", "22-11-2024") },
+
+                                // Ludhiana
+                                { ("LUDHIANA", "ATHLETICS"), ("04-11-2024", "09-11-2024") },
+                                { ("LUDHIANA", "BASEBALL"), ("04-11-2024", "09-11-2024") },
+                                { ("LUDHIANA", "CYCLING"),    ("27-11-2024", "29-11-2024") },
+                                { ("LUDHIANA", "KICK BOXING"), ("04-11-2024", "09-11-2024") },
+                                { ("LUDHIANA", "LAWN TENNIS"), ("04-11-2024", "09-11-2024") },
+
+                                // Malerkotla
+                                { ("MALERKOTLA", "VOLLEYBALL SHOOTING"), ("06-11-2024", "09-11-2024") },
+
+                                // Mansa
+                                { ("MANSA", "JUDO"),      ("19-10-2024", "24-10-2024") },
+                                { ("MANSA", "WRESTLING"), ("19-10-2024", "24-10-2024") },
+
+                                // Patiala
+                                { ("PATIALA", "ARCHERY"),        ("04-11-2024", "09-11-2024") },
+                                { ("PATIALA", "GYMNASTICS"),     ("08-11-2024", "11-11-2024") },
+                                { ("PATIALA", "CIRCLE KABADDI"), ("04-11-2024", "09-11-2024") },
+                                { ("PATIALA", "KHO KHO"),          ("04-11-2024", "09-11-2024") },
+
+                                // Rupnagar
+                                { ("RUPNAGAR", "HANDBALL"), ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "KAYAKING"), ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "CANOEING"),   ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "ROWING"),   ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "DRAGON BOAT"),   ("16-11-2024", "21-11-2024") },
+                                  
+                                // Sangrur
+                                {  ("SANGRUR", "KABADDI NATIONAL STYLE"),        ("16-11-2024", "21-11-2024") },
+                                {  ("SANGRUR", "ROLLER SKATING"), ("16-11-2024", "21-11-2024") },
+                                { ("SANGRUR", "WEIGHT LIFTING"), ("16-11-2024", "21-11-2024") },
+                                { ("SANGRUR", "WUSHU"),           ("16-11-2024", "21-11-2024") },
+
+                                 
+                                // SAS Nagar
+                                { ("SAS NAGAR", "EQUESTRAIN"), ("20-11-2024", "24-11-2024") },
+                                { ("SAS NAGAR", "SHOOTING"),   ("13-11-2024", "17-11-2024") },
+                                { ("SAS NAGAR", "SWIMMING"),   ("21-10-2024", "24-10-2024") },
+
+                                // SBS Nagar
+                                { ("SBSNAGAR", "BOXING"), ("16-11-2024", "24-11-2024") },
+            };
+
+
+            (fromDate, toDate) = GetGameDates(districtName, gameName, gameFromToDate);
+            static (string fromDate, string toDate) GetGameDates(string district, string game, Dictionary<(string, string), (string fromDate, string toDate)> gameFromToDate)
+            {
+                // Check if the dictionary contains the key (district, game)
+                if (gameFromToDate.TryGetValue((district, game), out var dates))
+                {
+                    return dates; // If found, return the dates
+                }
+
+                return ("", ""); // If not found, return default message
+            }
+            
+            await new BrowserFetcher().DownloadAsync();
+            await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+            {
+                Headless = true,
+                Args = new[] {
+                "--font-render-hinting=none",
+                "--force-color-profile=srgb"
+            }
+            });
+            var getAllVerifiedCertificate = await _servicePlusContext.VerifyCertificates.AsNoTracking().ToListAsync();
+            await using var page = await browser.NewPageAsync();
+            await page.SetUserAgentAsync("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36");
+            await page.EmulateMediaTypeAsync(MediaType.Screen);
+
+            foreach (var player in existingCertificates)
+            {
+                
+
+                //string certificateNo = newSerialNumber.ToString("D6");
+
+                string formattedGameName = gameName.Replace(" ", ""); // Remove spaces
+                string certificateNo = player.CertificateSerialNo;
+                // Define folder hierarchy
+                string baseFolder = "GeneratedCertificates"; // First folder
+                string districtFolder = $"{districtName}"; // Second folder
+                string gameFolder = gameName; // Third folder
+                string ageGroupFolder = ageGroup; // Fourth folder
+               
+                // Combine paths to create full directory structure
+                string folderPath = Path.Combine(Directory.GetCurrentDirectory(), baseFolder, districtFolder, gameFolder, ageGroupFolder);
+
+                // Check if directory exists, if not, create it
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
+
+
+                // Define certificate filename
+                string fileName = $"{certificateNo}.pdf";
+                string filePath = Path.Combine(folderPath, fileName);
+                // Further processing...
+
+                var hasCertificateId = getAllVerifiedCertificate.Where(d=>d.CertificateSerialNo==player.CertificateSerialNo).Select(d=>d.CertificateHashKey).FirstOrDefault();
+
+                string htmlContent = $@"<html>
+        <head>
+            <style>
+                body {{ margin: 0; padding: 0; font-family: Arial, sans-serif; }}
+                #certificate-container {{
+                    position: fixed;
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
+                }}
+                #background-img {{
+                    position: fixed;
+                    padding-left:6px;
+                    padding-right:4px;
+                    padding-top:6px;
+                    padding-bottom:6px;
+
+                    width: 99%;
+                    height: 98%;
+                }}
+                .text-bold {{ font-weight: bold; }}
+            </style>
+        </head>
+        <body>
+            <img id='background-img' src='http://10.147.24.36:8082/SSD/SportsCertificateBgNew.png' />
+            <div id='certificate-container'>
+                <div style='position: absolute; top: 16%; left: 10%; width: 80%; height:100%; padding: 30px; border-radius: 10px; box-sizing: border-box; text-align: center;'>
+                    <div style='margin: 8px 0; font-size: 16px; font-weight: bold; position: absolute; top: -12%; right: 3%;'>
+                        ਸਰਟੀਫਿਕੇਟ ਨੰ. : {certificateNo}
+                    <div style='text-align: center; margin-top: 15px;margin-left:30px;'>
+                        <img src='data:image/png;base64,{await GetBase64QRCode(hasCertificateId)}' width='100' height='100'/>
+                        <p style='margin-top: 3px;'>Scan to verify</p>
+                    </div>
+
+                    </div>
+                    <div class='text-bold' style=' font-size: 25px; font-weight: bold; padding-top: 2px;'>ਖੇਡਾਂ ਅਤੇ ਯੁਵਾ ਮਾਮਲੇ ਵਿਭਾਗ</div>
+<img style='width: 42%;height: 3%;' src='http://10.147.24.36:8082/SSD/arrow.png'>
+                    <div style='margin: 3px 0;  '>
+                        <span style='font-size:35px; color: #3d387c;'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024 (ਸੀਜ਼ਨ-3)</strong></span>
+                    </div>
+    <div style='margin: 5px 0; font-size: 22px; margin-top: 3px; font-weight: bold;'>ਮੈਰਿਟ ਸਰਟੀਫਿਕੇਟ</div>
+              <div style='
+            display: inline-block; 
+            background-color: #d32f2f; 
+            color: white; 
+            padding: 6px 18px; 
+            border-radius: 20px 0 20px 0; 
+            font-size: 16px; 
+            font-weight: bold; 
+            font-family: 'Gurmukhi', Arial, sans-serif;'>ਰਾਜ ਪੱਧਰੀ ਟੂਰਨਾਮੈਂਟ</div>
+              
+             <div style=' font-size: 20px; margin-top: 3px; font-weight: bold;'>{player.GameHeldDistrictPB}</div>
+                    <div style='margin: 10px 0; font-size: 18px; font-weight: bold;'>
+                        ਮਿਤੀ <strong>{fromDate}</strong> ਤੋਂ ਮਿਤੀ  <strong>{toDate} ਤੱਕ </strong>
+                    </div> 
+                   <div style='text-align: justify; margin-top: 5px; font-size: 16px;line-height:2.5;'>
+                            ਤਸਦੀਕ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ 
+                            <strong>
+                                <span style='display: inline-block; width: 83%; text-align: center;  border-bottom: 0.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>
+                                    {player.ApplicantFullNamePB}
+                                </span>
+                            </strong><br>
+                            ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ 
+                            <strong><span style='display: inline-block; width: 39%; text-align: center; border-bottom:0.2px dashed #000; min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.ApplicantFatherNamePB}</span></strong>
+                             ਜਨਮ ਮਿਤੀ 
+                            <strong><span style='display: inline-block; width: 43%; text-align: center; border-bottom: 0.3px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.ApplicantDOB}</span></strong><br>
+                            ਨੇ ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024 ਵਿੱਚ ਜ਼ਿਲ੍ਹਾ 
+                            <strong><span style='display: inline-block; width: 72%; text-align: center; border-bottom: 0.4px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.GameRepresentingDistrictPB}</span></strong> <br>
+                            ਵਲੋਂ ਖੇਡ 
+                            <strong><span style='display: inline-block; width: 44%; text-align: center; border-bottom: 0.6px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(player.ApplicantGamePB)}</span></strong>  
+                            ਈਵੈਂਟ/ਵਰਗ 
+                            <strong><span style='display: inline-block; width: 41%; text-align: center; border-bottom: 0.7px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.ApplicantEventPB}</span></strong> <br>
+                            ਈਵੈਂਟ ਸਮਾਂ/ਦੂਰੀ/ਉਚਾਈ/ਭਾਰ 
+                            <strong><span style='display: inline-block; width: 35%; text-align: center; border-bottom: 0.8px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(player.ScorePB)}</span></strong>  
+                            ਵਿਚ ਭਾਗ ਲਿਆ ਅਤੇ 
+                            <strong><span style='display: inline-block; width: 22%; text-align: center; border-bottom: 0.9px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.Position}</span></strong>  
+                            ਸਥਾਨ ਪ੍ਰਾਪਤ ਕੀਤਾ <br>
+                            ਉਮਰ ਵਰਗ (ਸਾਲ)
+                            <strong><span style='display: inline-block; width: 42%; text-align: center; border-bottom: 1.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.ApplicantAgeGroupPB}</span></strong>
+                        <strong><span style='display:  inline-block; width: 45%; text-align: center; border-bottom: 0px dashed #000;'> </span></strong>
+                     </div>                
+
+                    <div style='display: flex; justify-content: space-between; align-items: center; margin: 60px 0 0; text-align: center; flex-direction: column; position: relative;'>
+
+            <!-- Image Section -->
+            <div style='display: flex; justify-content: space-between; width: 100%; position: relative;'>
+                <div style='width: 33.33%; position: relative;'>
+                    <img src='{ConveyorImagePath}' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -38px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                </div>
+                <div style='width: 33.33%; position: relative;'>
+                    <img src='{dsoImagePath}' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -43px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                </div>
+                <div style='width: 35%; position: relative;'>
+                    <img src='' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -43px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                </div>
+            </div>
+        
+            <!-- Text Section -->
+            <div style='display: flex; justify-content: space-between; width: 100%; position: relative;'>
+                <div style='width: 33.33%; position: relative;'>
+                    <span style='font-size: 18px; display: block;'>ਕਨਵੀਨਰ</span>
+                </div>
+                <div style='width: 33.33%; position: relative;'>
+                    <span style='font-size: 18px; display: block;'>ਜ਼ਿਲ੍ਹਾ ਖੇਡ ਅਫ਼ਸਰ</span>
+                </div>
+                <div style='width: 35%; text-align:center; position: relative;'>
+                    <span style='font-size: 18px; display: block;'>ਡਾਇਰੈਕਟਰ ਸਪੋਰਟਸ <br />ਪੰਜਾਬ</span>
+                </div>
+            </div>
+        
+        </div>
+                </div>
+            </div>
+        </body>
+        </html>";
+
+                await page.SetContentAsync(htmlContent);
+
+                await page.PdfAsync(filePath, new PdfOptions
+                {
+                    PrintBackground = true,
+                    Format = PaperFormat.Legal,
+                    Landscape = true,
+                    Width = "90%",
+                });
+
+
+                // Add the new record to the list
+              
+            }
+            // **Save all records at once**
+            
+            return existingCertificates.Count().ToString();
+        }
 
         private async Task<string> GetScoreInPunjabi(string score)
         {
@@ -3910,6 +4389,7 @@ namespace ServicePlusAPIs.Controllers
             return Ok(" Record Updated Successfully");
 
         }
+       
         private async Task<bool> GenerateIndividualPlayerCertificate(string certificateSerialNo)
         {
             // District-wise serial number prefixes to create Folder Name
@@ -4387,13 +4867,17 @@ namespace ServicePlusAPIs.Controllers
 
         //    return Ok(new { CertificatePath = finalPath });
         //}
+       
         [HttpGet("GetCertificatePath")]
-        public async Task<IActionResult> GetCertificatePath(string applicantFullName, string applicantDOB, string applicantGame, string applicantAgeGroup)
+        public async Task<IActionResult> GetCertificatePath(string applicantFullName, string applicantDOB, string applicantGame, string applicantEvent, string applicantAgeGroup, string applicantPosition)
         {
             if (string.IsNullOrWhiteSpace(applicantFullName) ||
                 string.IsNullOrWhiteSpace(applicantDOB) ||
                 string.IsNullOrWhiteSpace(applicantGame) ||
-                string.IsNullOrWhiteSpace(applicantAgeGroup))
+                string.IsNullOrWhiteSpace(applicantEvent) ||
+                string.IsNullOrWhiteSpace(applicantAgeGroup) ||
+                string.IsNullOrWhiteSpace(applicantPosition)
+                )
             {
                 return BadRequest("All parameters are required.");
             }
@@ -4405,59 +4889,24 @@ namespace ServicePlusAPIs.Controllers
                 .Where(p => EF.Functions.ILike(p.ApplicantFullName, applicantFullName) &&
                             EF.Functions.ILike(p.ApplicantDOB, applicantDOB) &&
                             EF.Functions.ILike(p.ApplicantGame, applicantGame) &&
-                            EF.Functions.ILike(p.ApplicantAgeGroup, applicantAgeGroup))
+                            EF.Functions.ILike(p.ApplicantEvent, applicantEvent) &&
+                            EF.Functions.ILike(p.ApplicantAgeGroup, applicantAgeGroup) &&
+                            EF.Functions.ILike(p.Position, applicantPosition)
+                            )
                 .FirstOrDefaultAsync();
 
             if (certificateRecord == null)
             {
-                return NotFound("Certificate not found.");
+                return BadRequest(new { IsSucced = false, CertificatePath = "" });
             }
 
             // Get original file path from DB
             string formattedPath = certificateRecord.CertificatePath.Replace(directoryToRemove, "").Replace("\\", "/");
-            string fullFilePath = Path.Combine(baseDirectory, formattedPath);  // Ensure actual file path
-            //string fullFilePath = "D:\\GeneratedCertificates1\\GeneratedCertificates\\RUPNAGAR\\CANOEING\\Under-14\\RPR-2024-000165.pdf";  // Ensure actual file path
+            string serveFilePath = Path.Combine(baseDirectory, formattedPath);  // Ensure actual file path
 
-            // Ensure file exists before proceeding
-            if (!System.IO.File.Exists(fullFilePath))
-            {
-                return NotFound("PDF file not found.");
-            }
-            bool isPasswordProtected = IsPdfPasswordProtected(fullFilePath);
-            if (isPasswordProtected)
-            {
-                return Ok(new { CertificatePath = fullFilePath, Password =  "" });
-               
-            }
-            // Generate password (First 4 uppercase letters of name + DOB in ddMMyyyy)
-            string uppercaseLetters = new string(applicantFullName.Where(char.IsUpper).ToArray());
-            string password = (uppercaseLetters.Length >= 4 ? uppercaseLetters.Substring(0, 4) : uppercaseLetters.PadRight(4, 'X')) + applicantDOB.Replace("/", "");
 
-             
 
-            // Create a temporary file
-            string tempFilePath = fullFilePath + ".tmp";
-            // Apply password protection and save as temporary file
-            using (PdfDocument document = PdfReader.Open(fullFilePath, PdfDocumentOpenMode.Modify))
-            {
-              
-                document.SecuritySettings.UserPassword = password;
-                document.SecuritySettings.OwnerPassword = "sports2025";
-                //document.SecuritySettings.PermitAccessibilityExtractContent = false;
-                document.SecuritySettings.PermitAnnotations = false;
-                document.SecuritySettings.PermitExtractContent = false;
-                document.SecuritySettings.PermitFormsFill = false;
-                document.SecuritySettings.PermitModifyDocument = false;
-                document.SecuritySettings.PermitPrint = true; // Optional: Disable printing
-
-                document.Save(tempFilePath);
-            }
-
-            // Replace the original file with the secured version
-            System.IO.File.Delete(fullFilePath);
-            System.IO.File.Move(tempFilePath, fullFilePath);
-
-            return Ok(new { CertificatePath = fullFilePath  });
+            return Ok(new { IsSucced = true, CertificatePath = serveFilePath });
 
 
         }
@@ -4477,6 +4926,456 @@ namespace ServicePlusAPIs.Controllers
                 return true;
             }
         }
+
+
+        [Route("GenerateExistingCertificateByRefNO")]
+        [HttpPost]
+        public async Task<IActionResult> GenerateExistingCertificateByRefNO(string certificateSerialNo)
+        {
+            await GenerateCertificateByRefNO(certificateSerialNo);
+            return Ok(" Record Updated Successfully");
+
+        }
+
+
+        private async Task<string> GenerateCertificateByRefNO(string certificateSerialNo )
+        {
+            // Fetch issued certificates first (executed on DB)
+            var existingCertificates = await _servicePlusContext.PlayerIssuedCertificate
+                .Where(c =>   c.CertificateSerialNo == certificateSerialNo)
+                .FirstOrDefaultAsync(); // Move data to memory
+            // District-wise serial number prefixes to create Folder Name
+            var districtPrefixes = new Dictionary<string, string>
+    {
+        { "AMRITSAR", "ASR" },
+        { "BARNALA", "BNL" },
+        { "BATHINDA", "BAT" },
+        { "FARIDKOT", "FDK" },
+        { "FATEHGARH SAHIB", "FGS" },
+        { "FAZILKA", "FAZ" },
+        { "FEROZEPUR", "FZR" },
+        { "GURDASPUR", "GSP" },
+        { "HOSHIARPUR", "HSP" },
+        { "JALANDHAR", "JAL" },
+        { "KAPURTHALA", "KPT" },
+        { "LUDHIANA", "LDH" },
+        { "MALERKOTLA", "MLK" },
+        { "MANSA", "MAN" },
+        { "MOGA", "MOG" },
+        { "PATHANKOT", "PKT" },
+        { "PATIALA", "PAT" },
+        { "RUPNAGAR", "RPR" },
+        { "SAS NAGAR", "SAS" },
+        { "SANGRUR", "SGR" },
+        { "SBSNAGAR", "SBS" },
+        { "SRI MUKTSAR SAHIB", "SMS" },
+        { "TARN TARAN", "TTN" }
+
+        // Add more districts as needed
+    };
+
+            // Get the prefix for the given district, default to "GEN000" if not found
+            string randomDistrictSr = districtPrefixes.ContainsKey(existingCertificates.GameHeldDistrict.ToUpper())
+                ? districtPrefixes[existingCertificates.GameHeldDistrict.ToUpper()]
+                : "GEN000";
+
+           
+
+
+            //  var getSigns = playerCertificateDetails.FirstOrDefault();
+
+            // Signature For Convenor
+            // Define the base directory where images are stored
+            string baseDirectory = @"http://10.147.24.36:8082/SSD/Sports_Signature";
+
+            // Dictionary to store (district, game) as key and image path as value
+            Dictionary<(string, string), string> gameSignatures = new Dictionary<(string, string), string>
+{
+                    //Amritsar
+                    { ("AMRITSAR", "GATKA"), $@"{baseDirectory}/Amritsar/Gatka Convenor Sign/Gatka Convenor Sign.png" },
+                    { ("AMRITSAR", "RUGBY"), $@"{baseDirectory}/Amritsar/Rugby Convenor Sign/Rugby Convenor Sign.png" },
+
+                    //Barnala
+                    { ("BARNALA", "NETBALL"), $@"{baseDirectory}/Barnala/Netball Convenor Sign/Netball English Convenor Sign.png" },
+                    { ("BARNALA", "TABLE TENNIS"), $@"{baseDirectory}/Barnala/Table Tennis Convenor Sign/Table Tennis Convenor Sign.png" },
+                    { ("BARNALA", "BADMINTON"), $@"{baseDirectory}/Barnala/Badminton Convenor Sign/BADMINTON Convenor Sign.png" },
+
+                    //Bathinda
+                    { ("BATHINDA", "HOCKEY"), $@"{baseDirectory}/Bathinda/Hocky Convenor Sign/HOCKEY Convenor Sign.png" },
+                    { ("BATHINDA", "POWERLIFTING"), $@"{baseDirectory}/Bathinda/Powerlifting Convenor Sign/POWERLIFTING Convenor Sign.png" },
+
+                    //Faridkot
+                    { ("FARIDKOT", "BASKETBALL"), $@"{baseDirectory}/Faridkot/Basketball Convenor Sign/Basketball Convenor Sign.png" },
+                    { ("FARIDKOT", "TAEKWONDO"), $@"{baseDirectory}/Faridkot/Taekwondo Convenor Sign/Taekwondo Convenor Sign.png" },
+
+                    //Fatehgarh Sahib
+                    { ("FATEHGARH SAHIB", "FENCING"), $@"{baseDirectory}/Fatehgarh Sahib/Fencing Convenor Sign/FENCING Convenor Sign.png" },
+                    { ("FATEHGARH SAHIB", "SOFTBALL"), $@"{baseDirectory}/Fatehgarh Sahib/Softball Convenor Sign/SOFT Convenor Sign.png" },
+
+                    //Hoshiarpur
+                    { ("HOSHIARPUR", "FOOTBALL"), $@"{baseDirectory}/Hoshiarpur/Football Convenor Sign/Football Convenor Sign.png" },
+
+                    //Jalandhar
+                    { ("JALANDHAR", "CHESS"), $@"{baseDirectory}/Jalandhar/Chess Convenor Sign/Chess Convenor Sign.png" },
+                    { ("JALANDHAR", "VOLLEYBALL SMASHING"), $@"{baseDirectory}/Jalandhar/Volleyball Smashing Convenor Sign/Volleyball Smashing Convener sign.png" },
+
+                    //Ludhiana
+                    { ("LUDHIANA", "ATHLETICS"), $@"{baseDirectory}/Ludhiana/Athletics Convenor Sign/ATHLETICS Convenor Sign.png" },
+                    { ("LUDHIANA", "BASEBALL"), $@"{baseDirectory}/Ludhiana/Baseball Convenor Sign/BASEBALL Convenor Sign.png" },
+                    { ("LUDHIANA", "CYCLING"), $@"{baseDirectory}/Ludhiana/Cycling Convenor Sign/CYCLING Convenor Sign.png" },
+                    { ("LUDHIANA", "KICK BOXING"), $@"{baseDirectory}/Ludhiana/Kick Boxing Convenor Sign/KICKBOXING-removebg-preview.png" },
+                    { ("LUDHIANA", "LAWN TENNIS"), $@"{baseDirectory}/Ludhiana/Lawn Tennis Convenor Sign/image-removebg-preview.png" },
+
+                    //Malerkotla
+                    { ("MALERKOTLA", "VOLLEYBALL SHOOTING"), $@"{baseDirectory}/Malerkotla/Volleyball Shooting Convenor Sign/Volleyball Shooting Sign.png" },
+
+                    //Mansa
+                    { ("MANSA", "JUDO"), $@"{baseDirectory}/Mansa/Judo Convenor Sign/JUDO Convenor Sign.png" },
+                    { ("MANSA", "WRESTLING"), $@"{baseDirectory}/Mansa/Wrestling Convenor Sign/Wrestling Convenor Sign.png" },
+
+                    //Patiala
+                    { ("PATIALA", "ARCHERY"), $@"{baseDirectory}/Patiala/Archary Convenor Sign/ARCHERY Convenor Sign.png" },
+                    { ("PATIALA", "GYMNASTICS"), $@"{baseDirectory}/Patiala/Gymnastics Convenor Sign/GYMNASTICS Convenor Sign.png" },
+                    { ("PATIALA", "CIRCLE KABADDI"), $@"{baseDirectory}/Patiala/Kabbadi circle style Convenor Sign/KABADDI CS Convenor Sign.png" },
+                    { ("PATIALA", "KHO KHO"), $@"{baseDirectory}/Patiala/Kho-Kho Convenor Sign/KHO KHO Convenor Sign.png" },
+
+                    //Rupnagar
+                    { ("RUPNAGAR", "HANDBALL"), $@"{baseDirectory}/Rupnagar/Handball Convenor Sign/Handball Convenor Sign.png" },
+                    { ("RUPNAGAR", "KAYAKING"), $@"{baseDirectory}/Rupnagar/Kayking and Canoining Convenor Sign/Kayaking__Canoeing.png" },
+                    { ("RUPNAGAR", "CANOEING"), $@"{baseDirectory}/Rupnagar/Kayking and Canoining Convenor Sign/Kayaking__Canoeing.png" },
+                    { ("RUPNAGAR", "DRAGON BOAT"), $@"{baseDirectory}/Rupnagar/Kayking and Canoining Convenor Sign/Kayaking__Canoeing.png" },
+                    { ("RUPNAGAR", "ROWING"), $@"{baseDirectory}/Rupnagar/Rowing Convenor Sign/Rowing_Convenor Sign.png" },
+                    
+                    //Sangrur
+                    { ("SANGRUR", "KABADDI NATIONAL STYLE"), $@"{baseDirectory}/Sangrur/Kabaddi National Style Convenor Sign/Kabaddi National Convenor Sign.png" },
+                    { ("SANGRUR", "ROLLER SKATING"), $@"{baseDirectory}/Sangrur/Roller Skating Convenor Sign/Rollar Skating Convenor Sign.png" },
+                    { ("SANGRUR", "Roller Skating Speed Skating"), $@"{baseDirectory}/Sangrur/Roller Skating Convenor Sign/Rollar Skating Convenor Sign.png" },
+                    { ("SANGRUR", "WEIGHT LIFTING"), $@"{baseDirectory}/Sangrur/Weightlifting Convenor SIgn/WL Convenor Sign.png" },
+                    { ("SANGRUR", "WUSHU"), $@"{baseDirectory}/Sangrur/Wushu Convenor Sign/WUSHU Convenor Sign.png" },
+
+                    //SAS Nagar
+                    { ("SAS NAGAR", "EQUESTRAIN"), $@"{baseDirectory}/SAS Nagar/Equestrian Convenor Sign/Equestrian Convenor Sign.png" },
+                    { ("SAS NAGAR", "SHOOTING"), $@"{baseDirectory}/SAS Nagar/Shooting Convenor Sign/Shooting Convenor Sign.png" },
+                    { ("SAS NAGAR", "SWIMMING"), $@"{baseDirectory}/SAS Nagar/Swimming Convenor Sign/Swimming Convenor Sign.png" },
+
+                    //SAS Nagar
+                    { ("SBSNAGAR", "BOXING"), $@"{baseDirectory}/SBS Nagar/Boxing Convenor Sign/Boxing Convenor Sign.png" },
+
+                };
+
+            // Normalize input (Trim spaces and capitalize first letter)
+            existingCertificates.GameHeldDistrict = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(existingCertificates.GameHeldDistrict);
+            existingCertificates.GameHeldDistrict = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(existingCertificates.GameHeldDistrict);
+
+            // Try to get the image path from the dictionary
+            if (!gameSignatures.TryGetValue((existingCertificates.GameHeldDistrict, existingCertificates.ApplicantGame), out string ConveyorImagePath))
+            {
+                ConveyorImagePath = "./images/default-sign.png"; // Fallback image if not found
+            }
+
+
+
+
+            Dictionary<string, string> dsoSignatures = new Dictionary<string, string>
+{
+                        { "AMRITSAR", $@"{baseDirectory}/Amritsar/DSO Sign/Amritsar DSO.png" },
+                        { "BARNALA", $@"{baseDirectory}/Barnala/DSO Sign/DSO Sign.png" },
+                        { "BATHINDA", $@"{baseDirectory}/Bathinda/DSO Sign/DSo Sign.png" },
+                        { "FARIDKOT", $@"{baseDirectory}/Faridkot/DSO Sign/DSO Sign.png" },
+                        { "FATEHGARH SAHIB", $@"{baseDirectory}/Fatehgarh Sahib/DSO Sign/DSO Sign.png" },
+                        { "HOSHIARPUR", $@"{baseDirectory}/Hoshiarpur/DSO Sign/DSO Sign.png" },
+                        { "JALANDHAR", $@"{baseDirectory}/Jalandhar/DSO Sign/DSO Sign.png" },
+                        { "LUDHIANA", $@"{baseDirectory}/Ludhiana/DSO Sign/DSO Sign.png" },
+                        { "MALERKOTLA", $@"{baseDirectory}/Malerkotla/DSO Sign/DSO Sign.png" },
+                        { "MANSA", $@"{baseDirectory}/Mansa/DSO Sign/DSO Sign.png" },
+                        { "PATIALA", $@"{baseDirectory}/Patiala/DSO Sign/DSO Sign.png" },
+                        { "RUPNAGAR", $@"{baseDirectory}/Rupnagar/DSO Sign/DSO Sign.png" },
+                        { "SANGRUR", $@"{baseDirectory}/Sangrur/DSO Sign/DSO Sign.png" },
+                        { "SAS NAGAR", $@"{baseDirectory}/SAS Nagar/DSO Sign/DSO Sign.png" },
+                        { "SBSNAGAR", $@"{baseDirectory}/SBS Nagar/DSO Sign/DSO Sign.png" }
+                    };
+
+            existingCertificates.GameHeldDistrict = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(existingCertificates.GameHeldDistrict);
+
+            // Try to get the image path from the dictionary
+            if (!dsoSignatures.TryGetValue((existingCertificates.GameHeldDistrict), out string dsoImagePath))
+            {
+                dsoImagePath = "./images/default-sign.png"; // Fallback image if not found
+            }
+
+
+
+
+            string fromDate = "";
+            string toDate = "";
+            //to get Game From and To Date
+            var gameFromToDate = new Dictionary<(string, string), (string fromDate, string toDate)>
+        {
+
+
+                                { ("AMRITSAR", "GATKA"), ("07-11-2024", "10-11-2024") },
+                                { ("AMRITSAR", "RUGBY"), ("07-11-2024", "10-11-2024") },
+
+                                // Barnala
+                                { ("BARNALA", "NETBALL"), ("25-11-2024", "30-11-2024") },
+                                { ("BARNALA", "TABLE TENNIS"), ("25-11-2024", "30-11-2024") },
+                                { ("BARNALA", "BADMINTON"), ("25-11-2024", "30-11-2024") },
+
+                                // Bathinda
+                                { ("BATHINDA", "HOCKEY"), ("17-10-2024", "24-10-2024") },
+                                { ("BATHINDA", "POWERLIFTING"), ("19-10-2024", "24-10-2024") },
+
+                                // Faridkot
+                                {  ("FARIDKOT", "BASKETBALL"), ("09-12-2024", "14-12-2024") },
+                                { ("FARIDKOT", "TAEKWONDO"), ("09-12-2024", "14-12-2024") },
+
+                                // Fatehgarh Sahib
+                                { ("FATEHGARH SAHIB", "FENCING"), ("19-10-2024", "24-10-2024") },
+                                { ("FATEHGARH SAHIB", "SOFTBALL"), ("19-10-2024", "24-10-2024") },
+
+                                // Hoshiarpur
+                                { ("HOSHIARPUR", "FOOTBALL"), ("04-11-2024", "10-11-2024") },
+
+                                // Jalandhar
+                                { ("JALANDHAR", "CHESS"), ("15-11-2024", "22-11-2024") },
+                                { ("JALANDHAR", "VOLLEYBALL SMASHING"), ("15-11-2024", "22-11-2024") },
+
+                                // Ludhiana
+                                { ("LUDHIANA", "ATHLETICS"), ("04-11-2024", "09-11-2024") },
+                                { ("LUDHIANA", "BASEBALL"), ("04-11-2024", "09-11-2024") },
+                                { ("LUDHIANA", "CYCLING"),    ("27-11-2024", "29-11-2024") },
+                                { ("LUDHIANA", "KICK BOXING"), ("04-11-2024", "09-11-2024") },
+                                { ("LUDHIANA", "LAWN TENNIS"), ("04-11-2024", "09-11-2024") },
+
+                                // Malerkotla
+                                { ("MALERKOTLA", "VOLLEYBALL SHOOTING"), ("06-11-2024", "09-11-2024") },
+
+                                // Mansa
+                                { ("MANSA", "JUDO"),      ("19-10-2024", "24-10-2024") },
+                                { ("MANSA", "WRESTLING"), ("19-10-2024", "24-10-2024") },
+
+                                // Patiala
+                                { ("PATIALA", "ARCHERY"),        ("04-11-2024", "09-11-2024") },
+                                { ("PATIALA", "GYMNASTICS"),     ("08-11-2024", "11-11-2024") },
+                                { ("PATIALA", "CIRCLE KABADDI"), ("04-11-2024", "09-11-2024") },
+                                { ("PATIALA", "KHO KHO"),          ("04-11-2024", "09-11-2024") },
+
+                                // Rupnagar
+                                { ("RUPNAGAR", "HANDBALL"), ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "KAYAKING"), ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "CANOEING"),   ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "ROWING"),   ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "DRAGON BOAT"),   ("16-11-2024", "21-11-2024") },
+                                  
+                                // Sangrur
+                                {  ("SANGRUR", "KABADDI NATIONAL STYLE"),        ("16-11-2024", "21-11-2024") },
+                                {  ("SANGRUR", "ROLLER SKATING"), ("16-11-2024", "21-11-2024") },
+                                { ("SANGRUR", "WEIGHT LIFTING"), ("16-11-2024", "21-11-2024") },
+                                { ("SANGRUR", "WUSHU"),           ("16-11-2024", "21-11-2024") },
+
+                                 
+                                // SAS Nagar
+                                { ("SAS NAGAR", "EQUESTRAIN"), ("20-11-2024", "24-11-2024") },
+                                { ("SAS NAGAR", "SHOOTING"),   ("13-11-2024", "17-11-2024") },
+                                { ("SAS NAGAR", "SWIMMING"),   ("21-10-2024", "24-10-2024") },
+
+                                // SBS Nagar
+                                { ("SBSNAGAR", "BOXING"), ("16-11-2024", "24-11-2024") },
+            };
+
+
+            (fromDate, toDate) = GetGameDates(existingCertificates.GameHeldDistrict, existingCertificates.ApplicantGame, gameFromToDate);
+            static (string fromDate, string toDate) GetGameDates(string district, string game, Dictionary<(string, string), (string fromDate, string toDate)> gameFromToDate)
+            {
+                // Check if the dictionary contains the key (district, game)
+                if (gameFromToDate.TryGetValue((district, game), out var dates))
+                {
+                    return dates; // If found, return the dates
+                }
+
+                return ("", ""); // If not found, return default message
+            }
+
+            await new BrowserFetcher().DownloadAsync();
+            await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+            {
+                Headless = true,
+                Args = new[] {
+                "--font-render-hinting=none",
+                "--force-color-profile=srgb"
+            }
+            });
+            var getAllVerifiedCertificate = await _servicePlusContext.VerifyCertificates.AsNoTracking().ToListAsync();
+            await using var page = await browser.NewPageAsync();
+            await page.SetUserAgentAsync("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36");
+            await page.EmulateMediaTypeAsync(MediaType.Screen);
+ 
+
+
+                //string certificateNo = newSerialNumber.ToString("D6");
+
+                string formattedGameName = existingCertificates.ApplicantGame.Replace(" ", ""); // Remove spaces
+                string certificateNo = existingCertificates.CertificateSerialNo;
+                // Define folder hierarchy
+                string baseFolder = "GeneratedCertificates"; // First folder
+                string districtFolder = $"{existingCertificates.GameHeldDistrict}"; // Second folder
+                string gameFolder = existingCertificates.ApplicantGame; // Third folder
+                string ageGroupFolder = existingCertificates.ApplicantAgeGroup; // Fourth folder
+
+                // Combine paths to create full directory structure
+                string folderPath = Path.Combine(Directory.GetCurrentDirectory(), baseFolder, districtFolder, gameFolder, ageGroupFolder);
+
+                // Check if directory exists, if not, create it
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
+
+
+                // Define certificate filename
+                string fileName = $"{certificateNo}.pdf";
+                string filePath = Path.Combine(folderPath, fileName);
+                // Further processing...
+
+                var hasCertificateId = getAllVerifiedCertificate.Where(d => d.CertificateSerialNo == existingCertificates.CertificateSerialNo).Select(d => d.CertificateHashKey).FirstOrDefault();
+
+                string htmlContent = $@"<html>
+        <head>
+            <style>
+                body {{ margin: 0; padding: 0; font-family: Arial, sans-serif; }}
+                #certificate-container {{
+                    position: fixed;
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
+                }}
+                #background-img {{
+                    position: fixed;
+                    padding-left:6px;
+                    padding-right:4px;
+                    padding-top:6px;
+                    padding-bottom:6px;
+
+                    width: 99%;
+                    height: 98%;
+                }}
+                .text-bold {{ font-weight: bold; }}
+            </style>
+        </head>
+        <body>
+            <img id='background-img' src='http://10.147.24.36:8082/SSD/SportsCertificateBgNew.png' />
+            <div id='certificate-container'>
+                <div style='position: absolute; top: 16%; left: 10%; width: 80%; height:100%; padding: 30px; border-radius: 10px; box-sizing: border-box; text-align: center;'>
+                    <div style='margin: 8px 0; font-size: 16px; font-weight: bold; position: absolute; top: -12%; right: 3%;'>
+                        ਸਰਟੀਫਿਕੇਟ ਨੰ. : {certificateNo}
+                    <div style='text-align: center; margin-top: 15px;margin-left:30px;'>
+                        <img src='data:image/png;base64,{await GetBase64QRCode(hasCertificateId)}' width='100' height='100'/>
+                        <p style='margin-top: 3px;'>Scan to verify</p>
+                    </div>
+
+                    </div>
+                    <div class='text-bold' style=' font-size: 25px; font-weight: bold; padding-top: 2px;'>ਖੇਡਾਂ ਅਤੇ ਯੁਵਾ ਮਾਮਲੇ ਵਿਭਾਗ</div>
+<img style='width: 42%;height: 3%;' src='http://10.147.24.36:8082/SSD/arrow.png'>
+                    <div style='margin: 3px 0;  '>
+                        <span style='font-size:35px; color: #3d387c;'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024 (ਸੀਜ਼ਨ-3)</strong></span>
+                    </div>
+    <div style='margin: 5px 0; font-size: 22px; margin-top: 3px; font-weight: bold;'>ਮੈਰਿਟ ਸਰਟੀਫਿਕੇਟ</div>
+              <div style='
+            display: inline-block; 
+            background-color: #d32f2f; 
+            color: white; 
+            padding: 6px 18px; 
+            border-radius: 20px 0 20px 0; 
+            font-size: 16px; 
+            font-weight: bold; 
+            font-family: 'Gurmukhi', Arial, sans-serif;'>ਰਾਜ ਪੱਧਰੀ ਟੂਰਨਾਮੈਂਟ</div>
+              
+             <div style=' font-size: 20px; margin-top: 3px; font-weight: bold;'>{existingCertificates.GameHeldDistrictPB}</div>
+                    <div style='margin: 10px 0; font-size: 18px; font-weight: bold;'>
+                        ਮਿਤੀ <strong>{fromDate}</strong> ਤੋਂ ਮਿਤੀ  <strong>{toDate} ਤੱਕ </strong>
+                    </div> 
+                   <div style='text-align: justify; margin-top: 5px; font-size: 16px;line-height:2.5;'>
+                            ਤਸਦੀਕ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ 
+                            <strong>
+                                <span style='display: inline-block; width: 83%; text-align: center;  border-bottom: 0.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>
+                                    {existingCertificates.ApplicantFullNamePB}
+                                </span>
+                            </strong><br>
+                            ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ 
+                            <strong><span style='display: inline-block; width: 39%; text-align: center; border-bottom:0.2px dashed #000; min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.ApplicantFatherNamePB}</span></strong>
+                             ਜਨਮ ਮਿਤੀ 
+                            <strong><span style='display: inline-block; width: 43%; text-align: center; border-bottom: 0.3px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.ApplicantDOB}</span></strong><br>
+                            ਨੇ ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024 ਵਿੱਚ ਜ਼ਿਲ੍ਹਾ 
+                            <strong><span style='display: inline-block; width: 72%; text-align: center; border-bottom: 0.4px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.GameRepresentingDistrictPB}</span></strong> <br>
+                            ਵਲੋਂ ਖੇਡ 
+                            <strong><span style='display: inline-block; width: 44%; text-align: center; border-bottom: 0.6px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(existingCertificates.ApplicantGamePB)}</span></strong>  
+                            ਈਵੈਂਟ/ਵਰਗ 
+                            <strong><span style='display: inline-block; width: 41%; text-align: center; border-bottom: 0.7px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.ApplicantEventPB}</span></strong> <br>
+                            ਈਵੈਂਟ ਸਮਾਂ/ਦੂਰੀ/ਉਚਾਈ/ਭਾਰ 
+                            <strong><span style='display: inline-block; width: 35%; text-align: center; border-bottom: 0.8px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(existingCertificates.ScorePB)}</span></strong>  
+                            ਵਿਚ ਭਾਗ ਲਿਆ ਅਤੇ 
+                            <strong><span style='display: inline-block; width: 22%; text-align: center; border-bottom: 0.9px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.Position}</span></strong>  
+                            ਸਥਾਨ ਪ੍ਰਾਪਤ ਕੀਤਾ <br>
+                            ਉਮਰ ਵਰਗ (ਸਾਲ)
+                            <strong><span style='display: inline-block; width: 42%; text-align: center; border-bottom: 1.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.ApplicantAgeGroupPB}</span></strong>
+                        <strong><span style='display:  inline-block; width: 45%; text-align: center; border-bottom: 0px dashed #000;'> </span></strong>
+                     </div>                
+
+                    <div style='display: flex; justify-content: space-between; align-items: center; margin: 60px 0 0; text-align: center; flex-direction: column; position: relative;'>
+
+            <!-- Image Section -->
+            <div style='display: flex; justify-content: space-between; width: 100%; position: relative;'>
+                <div style='width: 33.33%; position: relative;'>
+                    <img src='{ConveyorImagePath}' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -38px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                </div>
+                <div style='width: 33.33%; position: relative;'>
+                    <img src='{dsoImagePath}' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -43px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                </div>
+                <div style='width: 35%; position: relative;'>
+                    <img src='' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -43px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                </div>
+            </div>
+        
+            <!-- Text Section -->
+            <div style='display: flex; justify-content: space-between; width: 100%; position: relative;'>
+                <div style='width: 33.33%; position: relative;'>
+                    <span style='font-size: 18px; display: block;'>ਕਨਵੀਨਰ</span>
+                </div>
+                <div style='width: 33.33%; position: relative;'>
+                    <span style='font-size: 18px; display: block;'>ਜ਼ਿਲ੍ਹਾ ਖੇਡ ਅਫ਼ਸਰ</span>
+                </div>
+                <div style='width: 35%; text-align:center; position: relative;'>
+                    <span style='font-size: 18px; display: block;'>ਡਾਇਰੈਕਟਰ ਸਪੋਰਟਸ <br />ਪੰਜਾਬ</span>
+                </div>
+            </div>
+        
+        </div>
+                </div>
+            </div>
+        </body>
+        </html>";
+
+                await page.SetContentAsync(htmlContent);
+
+                await page.PdfAsync(filePath, new PdfOptions
+                {
+                    PrintBackground = true,
+                    Format = PaperFormat.Legal,
+                    Landscape = true,
+                    Width = "90%",
+                });
+
+
+                // Add the new record to the list
+
+         
+
+            return "Done";
+        }
+
         #endregion
 
         #region Under Development
