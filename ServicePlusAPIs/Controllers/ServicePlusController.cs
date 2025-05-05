@@ -3194,9 +3194,14 @@ namespace ServicePlusAPIs.Controllers
             return Ok(" Record Updated Successfully");
         }
 
-        [Route("UpdateExistingCertificate")]
+
+        /// <summary>
+        /// It will only generate existing certifcate without saving any record in DB
+        /// </summary>
+        /// <returns></returns>
+        [Route("UpdateExistingCertificates")]
         [HttpPost]
-        public async Task<IActionResult> UpdateExistingCertificate()
+        public async Task<IActionResult> UpdateExistingCertificates()
         {
             var getDistrict = await _servicePlusContext.PlayerIssuedCertificate
               .Select(d => d.GameHeldDistrict)
@@ -3219,7 +3224,7 @@ namespace ServicePlusAPIs.Controllers
                         .ToListAsync();
                     foreach (var ageGroup in getAgeGroups)
                     {
-                        await UpdateExistingCertificate(gameHeldDistrict, game, ageGroup);
+                        await GenerateExistingCertificates(gameHeldDistrict, game, ageGroup);
                     }
                 }
             }
@@ -3813,9 +3818,9 @@ namespace ServicePlusAPIs.Controllers
         }
 
 
-        [Route("UpdateCertificatePlayers")]
+        [Route("UpdateCertificatePlayersFromSpreadSheet")]
         [HttpPost]
-        public async Task<IActionResult> UpdateCertificatePlayers()
+        public async Task<IActionResult> UpdateCertificatePlayersFromSpreadSheet()
         {
 
             var googleSheetsService = new GoogleSheetsService(_servicePlusContext); // Pass the context here
@@ -3832,7 +3837,7 @@ namespace ServicePlusAPIs.Controllers
             }
         }
 
-        private async Task<string> UpdateExistingCertificate(string districtName, string gameName, string ageGroup)
+        private async Task<string> GenerateExistingCertificates(string districtName, string gameName, string ageGroup)
         {
             // District-wise serial number prefixes to create Folder Name
             var districtPrefixes = new Dictionary<string, string>
