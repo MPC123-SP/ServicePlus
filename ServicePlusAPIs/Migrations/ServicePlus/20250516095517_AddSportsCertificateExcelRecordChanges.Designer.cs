@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ServicePlusAPIs.Context;
@@ -11,9 +12,11 @@ using ServicePlusAPIs.Context;
 namespace ServicePlusAPIs.Migrations.ServicePlus
 {
     [DbContext(typeof(ServicePlusContext))]
-    partial class ServicePlusContextModelSnapshot : ModelSnapshot
+    [Migration("20250516095517_AddSportsCertificateExcelRecordChanges")]
+    partial class AddSportsCertificateExcelRecordChanges
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -786,11 +789,8 @@ namespace ServicePlusAPIs.Migrations.ServicePlus
 
             modelBuilder.Entity("ServicePlusAPIs.Models.SportsModel.SportsCertificateExcelRecord", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
 
                     b.Property<string>("ApplicantAgeGroup")
                         .HasColumnType("text");
@@ -827,6 +827,9 @@ namespace ServicePlusAPIs.Migrations.ServicePlus
 
                     b.Property<string>("ApplicantMobileNo")
                         .HasColumnType("text");
+
+                    b.Property<DateTime?>("CertificateGeneratedTime")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("CertificatePath")
                         .HasColumnType("text");
