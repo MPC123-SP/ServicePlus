@@ -5504,6 +5504,22 @@ namespace ServicePlusAPIs.Controllers
         //        return Ok(result);
         //    }
         #endregion
+
+
+
+        #region Social Security Service
+
+        [HttpGet("GetAnganwadiDetails")]
+        public async Task<IActionResult> GetAnganwadiDetails(int postType , int lgdCode)
+        {
+            var list = await _servicePlusContext.AnganWadiDetails.Where(d => d.PostType == postType && d.VillageLGDCode == lgdCode).ToListAsync();
+           if(list is null)
+            {
+                return NotFound();
+            }
+            return Ok(list);
+        }
+        #endregion
     }
 
 

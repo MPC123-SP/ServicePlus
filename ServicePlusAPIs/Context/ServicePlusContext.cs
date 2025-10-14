@@ -8,6 +8,7 @@ using ServicePlusAPIs.Models.ExecutionModel;
 using ServicePlusAPIs.Models.InitiatedModel;
 using ServicePlusAPIs.Models.ServiceWiseModels.PSEB_Execution_OfficialFormDetails;
 using ServicePlusAPIs.Models.ServiceWiseModels.PSEB_Initiated_AttributeDetails;
+using ServicePlusAPIs.Models.SocialSecurityServiceModel;
 using ServicePlusAPIs.Models.SportsModel;
 using ServicePlusAPIs.UserModels;
 using System;
@@ -39,6 +40,7 @@ namespace ServicePlusAPIs.Context
         public DbSet<PlayerCertificateDetails> PlayerCertificateDetails { get; set; }
         public DbSet<PlayerIssuedCertificate> PlayerIssuedCertificate { get; set; }
         public DbSet<VerifyCertificate> VerifyCertificates { get; set; }
+        public DbSet<AnganWadiDetail> AnganWadiDetails { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // Configure primary keys for related entities

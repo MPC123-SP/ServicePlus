@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ServicePlusAPIs.Context;
@@ -11,9 +12,11 @@ using ServicePlusAPIs.Context;
 namespace ServicePlusAPIs.Migrations.ServicePlus
 {
     [DbContext(typeof(ServicePlusContext))]
-    partial class ServicePlusContextModelSnapshot : ModelSnapshot
+    [Migration("20251014092433_addedAnganWadiTable")]
+    partial class addedAnganWadiTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -522,8 +525,8 @@ namespace ServicePlusAPIs.Migrations.ServicePlus
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<long>("CenterCode")
-                        .HasColumnType("bigint");
+                    b.Property<int>("CenterCode")
+                        .HasColumnType("integer");
 
                     b.Property<string>("CenterName")
                         .IsRequired()
