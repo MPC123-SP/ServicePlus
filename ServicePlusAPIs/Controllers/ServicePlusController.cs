@@ -4892,12 +4892,12 @@ namespace ServicePlusAPIs.Controllers
             string directoryToRemove = @"C:\Users\Mohit\Documents\GitHub\ServicePlus\ServicePlusAPIs\";
 
             var certificateRecord = await _servicePlusContext.PlayerIssuedCertificate
-                .Where(p => EF.Functions.ILike(p.ApplicantFullName, applicantFullName) &&
-                            EF.Functions.ILike(p.ApplicantDOB, applicantDOB) &&
-                            EF.Functions.ILike(p.ApplicantGame, applicantGame) &&
-                            EF.Functions.ILike(p.ApplicantEvent, applicantEvent) &&
-                            EF.Functions.ILike(p.ApplicantAgeGroup, applicantAgeGroup) &&
-                            EF.Functions.ILike(p.Position, applicantPosition)
+                .Where(p => EF.Functions.ILike(p.ApplicantFullName, applicantFullName.Trim()) &&
+                            EF.Functions.ILike(p.ApplicantDOB, applicantDOB.Trim()) &&
+                            EF.Functions.ILike(p.ApplicantGame, applicantGame.Trim()) &&
+                            EF.Functions.ILike(p.ApplicantEvent, applicantEvent.Trim()) &&
+                            EF.Functions.ILike(p.ApplicantAgeGroup, applicantAgeGroup.Trim()) &&
+                            EF.Functions.ILike(p.Position, applicantPosition.Trim())
                             )
                 .FirstOrDefaultAsync();
 
