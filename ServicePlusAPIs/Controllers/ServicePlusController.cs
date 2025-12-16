@@ -4895,7 +4895,7 @@ namespace ServicePlusAPIs.Controllers
                             EF.Functions.ILike(p.ApplicantDOB, applicantDOB.Trim()) &&
                             EF.Functions.ILike(p.ApplicantGame, applicantGame.Trim()) &&
                            // EF.Functions.ILike(p.ApplicantEvent, applicantEvent.Trim()) &&
-                            EF.Functions.ILike(Uri.EscapeDataString(p.ApplicantEvent), applicantEvent.Trim()) &&                           
+                            EF.Functions.ILike(p.ApplicantEvent, Uri.EscapeDataString(applicantEvent.Trim())) &&                           
                             EF.Functions.ILike(p.ApplicantAgeGroup, applicantAgeGroup.Trim()) &&
                             EF.Functions.ILike(p.Position, applicantPosition.Trim())
                             )
