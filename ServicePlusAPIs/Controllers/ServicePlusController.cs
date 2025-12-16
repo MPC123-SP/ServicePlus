@@ -4894,7 +4894,8 @@ namespace ServicePlusAPIs.Controllers
                 .Where(p => EF.Functions.ILike(p.ApplicantFullName, applicantFullName.Trim()) &&
                             EF.Functions.ILike(p.ApplicantDOB, applicantDOB.Trim()) &&
                             EF.Functions.ILike(p.ApplicantGame, applicantGame.Trim()) &&
-                            EF.Functions.ILike(p.ApplicantEvent, applicantEvent.Trim()) &&
+                           // EF.Functions.ILike(p.ApplicantEvent, applicantEvent.Trim()) &&
+                            EF.Functions.ILike(Uri.EscapeDataString(p.ApplicantEvent), applicantEvent.Trim()) &&                           
                             EF.Functions.ILike(p.ApplicantAgeGroup, applicantAgeGroup.Trim()) &&
                             EF.Functions.ILike(p.Position, applicantPosition.Trim())
                             )
@@ -4915,6 +4916,8 @@ namespace ServicePlusAPIs.Controllers
 
 
         }
+
+
         private bool IsPdfPasswordProtected(string filePath)
         {
             try
