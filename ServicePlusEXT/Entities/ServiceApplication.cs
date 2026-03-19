@@ -4,17 +4,28 @@ namespace ServicePlusEXT.Entities
 {
     public class ServiceApplication
     {
-        [Key]
-        public int Id { get; set; } // PK
+        public int Id { get; set; }
 
-        public string ApplicationId { get; set; } = string.Empty;
+        public string ApplRefNo { get; set; } = string.Empty;
 
-        public int ServiceId { get; set; }
+        public string ApplId { get; set; } = string.Empty;
 
-        public string ApplicantName { get; set; } = string.Empty;
+        public string AppliedBy { get; set; } = string.Empty;
 
-        public string Status { get; set; } = string.Empty;
+        // Navigation
+        public List<ApplicationAttribute> Attributes { get; set; } = new();
+    }
+    public class ApplicationAttribute
+    {
+        public int Id { get; set; }
 
-        public DateTime Date { get; set; }
+        public int ServiceApplicationId { get; set; } // FK
+
+        public string Key { get; set; } = string.Empty;
+
+        public string Value { get; set; } = string.Empty;
+
+        // Navigation
+        public ServiceApplication ServiceApplication { get; set; } = null!;
     }
 }

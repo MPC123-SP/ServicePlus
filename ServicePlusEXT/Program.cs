@@ -24,12 +24,10 @@ var app = builder.Build();
 app.MapScalarApiReference(options =>
 {
     options.Title = "ServicePlus API";
-    options.Theme = ScalarTheme.BluePlanet;
+    options.Theme = ScalarTheme.Laserwave;
 });
 
-app.UseHttpsRedirection();
-
-app.MapPost("/get-service-details", async (
+app.UseHttpsRedirection(); app.MapPost("/get-service-details", async (
     HttpClient http,
     ServiceDetailsRequest dto,
     AppDbContext db) =>
@@ -46,31 +44,46 @@ app.MapPost("/get-service-details", async (
 
     var response = await http.SendAsync(request);
     var json = await response.Content.ReadAsStringAsync();
-    Console.WriteLine(json);
+
     if (!response.IsSuccessStatusCode)
         return Results.BadRequest(json);
 
-    // ✅ Parse raw JSON (no DTO)
     using var doc = JsonDocument.Parse(json);
 
-    // ⚠️ Adjust this path based on actual API response
-    // assuming response like: { data: [ ... ] }
-    if (!doc.RootElement.TryGetProperty("data", out var dataArray) || dataArray.ValueKind != JsonValueKind.Array)
+    var root = doc.RootElement;
+
+    if (root.ValueKind != JsonValueKind.Array)
+        return Results.BadRequest("Expected array");
+
+    foreach (var item in root.EnumerateArray().Take(3)) // first 3
     {
-        return Results.BadRequest("Invalid JSON structure");
+        var appEntity = new ServiceApplication
+        {
+            ApplRefNo = item.GetProperty("appl_ref_no").GetString() ?? "",
+            ApplId = item.GetProperty("appl_id").GetString() ?? "",
+            AppliedBy = item.GetProperty("applied_by").GetString() ?? ""
+        };
+
+        // 🔥 Dynamic attributes
+        if (item.TryGetProperty("application_form_attributes", out var attrs) &&
+            attrs.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var prop in attrs.EnumerateObject())
+            {
+                appEntity.Attributes.Add(new ApplicationAttribute
+                {
+                    Key = prop.Name,
+                    Value = prop.Value.ToString()
+                });
+            }
+        }
+
+       await db.ServiceApplications.AddAsync(appEntity);
     }
 
-    // ✅ Take first 3 records
-    var first3 = dataArray.EnumerateArray().Take(3);
+    await db.SaveChangesAsync();
 
-    // Convert back to JSON
-    var resultList = new List<JsonElement>();
-    foreach (var item in first3)
-    {
-        resultList.Add(item);
-    }
-
-    return Results.Json(resultList);
+    return Results.Ok("Saved successfully");
 });
 app.Run();
 
