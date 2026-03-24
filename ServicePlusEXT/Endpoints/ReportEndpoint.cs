@@ -138,7 +138,11 @@ namespace ServicePlusEXT.Endpoints
                 .ToListAsync(cancellationToken);
 
             var rootDirectory = Path.Combine(Directory.GetCurrentDirectory(), "PSSSB");
+            var photoDirectory = Path.Combine(rootDirectory, "Photo");
+            var signatureDirectory = Path.Combine(rootDirectory, "Signature");
             Directory.CreateDirectory(rootDirectory);
+            Directory.CreateDirectory(photoDirectory);
+            Directory.CreateDirectory(signatureDirectory);
 
             var exportedApplicantImages = 0;
             var exportedSignatures = 0;
@@ -156,15 +160,18 @@ namespace ServicePlusEXT.Endpoints
                         continue;
                     }
 
-                    var suffix =
-                        attribute.Key == ServiceApplicationReportDefinition.ApplicantProfileAttributeKey
-                            ? "_photo.jpg"
-                            : "_sign.jpg";
+                    var isPhoto =
+                        attribute.Key == ServiceApplicationReportDefinition.ApplicantProfileAttributeKey;
 
-                    var filePath = Path.Combine(rootDirectory, $"{safeFileName}{suffix}");
+                    var fileName = isPhoto
+                        ? $"{safeFileName}_photo.jpg"
+                        : $"{safeFileName}_sign.jpg";
+
+                    var targetDirectory = isPhoto ? photoDirectory : signatureDirectory;
+                    var filePath = Path.Combine(targetDirectory, fileName);
                     await File.WriteAllBytesAsync(filePath, imageBytes, cancellationToken);
 
-                    if (attribute.Key == ServiceApplicationReportDefinition.ApplicantProfileAttributeKey)
+                    if (isPhoto)
                     {
                         exportedApplicantImages++;
                     }
@@ -178,6 +185,8 @@ namespace ServicePlusEXT.Endpoints
             return Results.Ok(new
             {
                 rootDirectory,
+                photoDirectory,
+                signatureDirectory,
                 exportedApplicantImages,
                 exportedSignatures,
                 skippedImages
