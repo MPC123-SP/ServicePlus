@@ -55,7 +55,7 @@ app.UseHttpsRedirection(); app.MapPost("/get-service-details", async (
     if (root.ValueKind != JsonValueKind.Array)
         return Results.BadRequest("Expected array");
 
-    foreach (var item in root.EnumerateArray().Take(3)) // first 3
+    foreach (var item in root.EnumerateArray()) // first 3
     {
         var appEntity = new ServiceApplication
         {
