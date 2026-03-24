@@ -1,14 +1,15 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ServicePlusEXT.Entities
 {
     [Index(nameof(ApplRefNo), IsUnique = true)]
     [Index(nameof(ApplId), IsUnique = true)]
+    [Table("ServiceApplications")]
     public class ServiceApplication
     {
         public int Id { get; set; }
-
 
         [Required]
         public string ApplRefNo { get; set; } = string.Empty;
@@ -18,20 +19,20 @@ namespace ServicePlusEXT.Entities
 
         public string AppliedBy { get; set; } = string.Empty;
 
-        // Navigation
         public List<ApplicationAttribute> Attributes { get; set; } = new();
     }
+
+    [Table("ApplicationAttribute")]
     public class ApplicationAttribute
     {
         public int Id { get; set; }
 
-        public int ServiceApplicationId { get; set; } // FK
+        public int ServiceApplicationId { get; set; }
 
         public string Key { get; set; } = string.Empty;
 
         public string Value { get; set; } = string.Empty;
 
-        // Navigation
         public ServiceApplication ServiceApplication { get; set; } = null!;
     }
 }
