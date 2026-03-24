@@ -4,6 +4,7 @@ using ServicePlusEXT.Context;
 using ServicePlusEXT.Dtos;
 using ServicePlusEXT.Entities;
 using ServicePlusEXT.ResponseDtos;
+using ServicePlusEXT.Shared.Services;
 using System.Text;
 using System.Text.Json;
 
@@ -17,8 +18,8 @@ builder.Services.AddDbContextPool<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 var app = builder.Build();
 
- 
-    app.MapOpenApi(); 
+app.MapEndpoints();
+app.MapOpenApi(); 
 
 // ✅ Scalar UI
 app.MapScalarApiReference(options =>
