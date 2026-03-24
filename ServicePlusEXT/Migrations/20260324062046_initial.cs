@@ -51,6 +51,18 @@ namespace ServicePlusEXT.Migrations
                 name: "IX_ApplicationAttribute_ServiceApplicationId",
                 table: "ApplicationAttribute",
                 column: "ServiceApplicationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ServiceApplications_ApplId",
+                table: "ServiceApplications",
+                column: "ApplId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ServiceApplications_ApplRefNo",
+                table: "ServiceApplications",
+                column: "ApplRefNo",
+                unique: true);
         }
 
         /// <inheritdoc />

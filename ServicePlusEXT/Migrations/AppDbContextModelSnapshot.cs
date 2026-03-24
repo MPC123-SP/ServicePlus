@@ -69,6 +69,12 @@ namespace ServicePlusEXT.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ApplId")
+                        .IsUnique();
+
+                    b.HasIndex("ApplRefNo")
+                        .IsUnique();
+
                     b.ToTable("ServiceApplications");
                 });
 
