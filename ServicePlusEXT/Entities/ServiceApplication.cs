@@ -4,8 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ServicePlusEXT.Entities
 {
-    [Index(nameof(ApplRefNo), IsUnique = true)]
-    [Index(nameof(ApplId), IsUnique = true)]
+    [Index(nameof(ApplRefNo), nameof(ApplId), IsUnique = true)]
     [Table("ServiceApplications")]
     public class ServiceApplication
     {

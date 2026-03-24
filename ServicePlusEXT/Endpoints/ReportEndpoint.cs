@@ -198,7 +198,7 @@ namespace ServicePlusEXT.Endpoints
             var sanitizedReferenceNo = Regex.Replace(
                 applicationReferenceNo,
                 "[^A-Za-z0-9._-]",
-                "_",
+                "",
                 RegexOptions.CultureInvariant);
 
             return sanitizedReferenceNo;

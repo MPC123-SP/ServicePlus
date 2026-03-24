@@ -69,10 +69,7 @@ namespace ServicePlusEXT.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ApplId")
-                        .IsUnique();
-
-                    b.HasIndex("ApplRefNo")
+                    b.HasIndex("ApplRefNo", "ApplId")
                         .IsUnique();
 
                     b.ToTable("ServiceApplications");
