@@ -25,6 +25,10 @@ namespace ServicePlusEXT.Context
                 .WithMany(s => s.Attributes)
                 .HasForeignKey(a => a.ServiceApplicationId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Optional explicit index (EF usually creates this automatically)
+            modelBuilder.Entity<ApplicationAttribute>()
+                .HasIndex(a => a.ServiceApplicationId);
         }
     }
 }

@@ -21,6 +21,7 @@ namespace ServicePlusEXT.Endpoints
                 AppDbContext db,
                 CancellationToken cancellationToken) =>
             {
+                http.Timeout = TimeSpan.FromMinutes(60);
                 var url = $"https://eservices.punjab.gov.in/v1/application/details/?serviceId={dto.serviceId}&date={dto.date}";
 
                 var request = new HttpRequestMessage(HttpMethod.Post, url)

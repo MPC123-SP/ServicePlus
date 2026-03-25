@@ -48,20 +48,24 @@ namespace ServicePlusEXT.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_ApplicationAttribute_Key",
+                table: "ApplicationAttribute",
+                column: "Key");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ApplicationAttribute_ServiceApplicationId",
                 table: "ApplicationAttribute",
                 column: "ServiceApplicationId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ServiceApplications_ApplId",
-                table: "ServiceApplications",
-                column: "ApplId",
-                unique: true);
+                name: "IX_ApplicationAttribute_ServiceApplicationId_Key",
+                table: "ApplicationAttribute",
+                columns: new[] { "ServiceApplicationId", "Key" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_ServiceApplications_ApplRefNo",
+                name: "IX_ServiceApplications_ApplRefNo_ApplId",
                 table: "ServiceApplications",
-                column: "ApplRefNo",
+                columns: new[] { "ApplRefNo", "ApplId" },
                 unique: true);
         }
 

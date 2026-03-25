@@ -21,6 +21,9 @@ namespace ServicePlusEXT.Entities
         public List<ApplicationAttribute> Attributes { get; set; } = new();
     }
 
+    [Index(nameof(ServiceApplicationId))]
+    [Index(nameof(Key))]
+    [Index(nameof(ServiceApplicationId), nameof(Key))]
     [Table("ApplicationAttribute")]
     public class ApplicationAttribute
     {

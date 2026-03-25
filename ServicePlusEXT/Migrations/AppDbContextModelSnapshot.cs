@@ -42,9 +42,13 @@ namespace ServicePlusEXT.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Key");
+
                     b.HasIndex("ServiceApplicationId");
 
-                    b.ToTable("ApplicationAttribute");
+                    b.HasIndex("ServiceApplicationId", "Key");
+
+                    b.ToTable("ApplicationAttribute", (string)null);
                 });
 
             modelBuilder.Entity("ServicePlusEXT.Entities.ServiceApplication", b =>
@@ -72,7 +76,7 @@ namespace ServicePlusEXT.Migrations
                     b.HasIndex("ApplRefNo", "ApplId")
                         .IsUnique();
 
-                    b.ToTable("ServiceApplications");
+                    b.ToTable("ServiceApplications", (string)null);
                 });
 
             modelBuilder.Entity("ServicePlusEXT.Entities.ApplicationAttribute", b =>

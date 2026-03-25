@@ -11,7 +11,7 @@ using ServicePlusEXT.Context;
 namespace ServicePlusEXT.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260324062046_initial")]
+    [Migration("20260325105700_initial")]
     partial class initial
     {
         /// <inheritdoc />
@@ -45,9 +45,13 @@ namespace ServicePlusEXT.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Key");
+
                     b.HasIndex("ServiceApplicationId");
 
-                    b.ToTable("ApplicationAttribute");
+                    b.HasIndex("ServiceApplicationId", "Key");
+
+                    b.ToTable("ApplicationAttribute", (string)null);
                 });
 
             modelBuilder.Entity("ServicePlusEXT.Entities.ServiceApplication", b =>
@@ -72,13 +76,10 @@ namespace ServicePlusEXT.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ApplId")
+                    b.HasIndex("ApplRefNo", "ApplId")
                         .IsUnique();
 
-                    b.HasIndex("ApplRefNo")
-                        .IsUnique();
-
-                    b.ToTable("ServiceApplications");
+                    b.ToTable("ServiceApplications", (string)null);
                 });
 
             modelBuilder.Entity("ServicePlusEXT.Entities.ApplicationAttribute", b =>
