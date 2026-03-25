@@ -3,6 +3,7 @@ using Npgsql;
 using ServicePlusEXT.Context;
 using ServicePlusEXT.Dtos;
 using ServicePlusEXT.Shared;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 
@@ -28,18 +29,23 @@ namespace ServicePlusEXT.Endpoints
                 {
                     Content = new StringContent(string.Empty, Encoding.UTF8, "application/json")
                 };
-
+                request.Headers.Accept.Add(
+    new MediaTypeWithQualityHeaderValue("application/json"));
                 request.Headers.Add("client_id", dto.clientId);
                 request.Headers.Add("client_secret", dto.secretId);
 
                 var response = await http.SendAsync(request, cancellationToken);
                 var json = await response.Content.ReadAsStringAsync(cancellationToken);
 
-                if (!response.IsSuccessStatusCode)
+               
+                if (!response.IsSuccessStatusCode || json.TrimStart().StartsWith("<"))
                 {
-                    return Results.BadRequest(json);
+                    return Results.BadRequest(new
+                    {
+                        status = response.StatusCode,
+                        response = json
+                    });
                 }
-
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
 
