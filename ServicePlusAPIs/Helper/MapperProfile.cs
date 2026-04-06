@@ -12,6 +12,7 @@ using ServicePlusAPIs.Models.ExecutionModel;
 using ServicePlusAPIs.Models.InitiatedModel;
 using ServicePlusAPIs.Models.ServiceWiseModels.PSEB_Execution_OfficialFormDetails;
 using ServicePlusAPIs.Models.ServiceWiseModels.PSEB_Initiated_AttributeDetails;
+using ServicePlusAPIs.Models.SportsModel;
 using ServicePlusAPIs.ReportsModel;
 using ServicePlusAPIs.ReportsViewModel;
 using ServicePlusAPIs.UserModels;
@@ -22,6 +23,7 @@ using ServicePlusAPIs.ViewModels.EnclouserDetails;
 using ServicePlusAPIs.ViewModels.ExecutionModel;
 using ServicePlusAPIs.ViewModels.InitiatedModel;
 using ServicePlusAPIs.ViewModels.ServiceWiseModels.PSEB_Execution_OfficialFormDetails;
+using ServicePlusAPIs.ViewModels.SportsModel;
 using System.Globalization;
 
 namespace ServicePlusAPIs.Helper
@@ -340,7 +342,29 @@ namespace ServicePlusAPIs.Helper
             CreateMap<JSONReceivedViewModel,JSONReceived>().ReverseMap();
             #endregion
 
-                      
+            #region SportSponsorDetailViewModel SportSponsorDetail
+            CreateMap<SportSponsorDetailViewModel,SportSponsorDetail>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
+            .ForMember(dest => dest.Address, opt => opt.MapFrom(src => src.Address))
+            .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.PhoneNumber))
+            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
+            .ForMember(dest => dest.IsStatus, opt => opt.MapFrom(src => src.IsStatus)) 
+            .ReverseMap();
+            #endregion
+
+            #region SportsPlayerViewModel SportsPlayerModel
+            CreateMap<SponsorPlayerViewModel, SponsorPlayer>() 
+            .ForMember(dest => dest.InitiatedDataId, opt => opt.MapFrom(src => src.InitiatedDataId))
+            .ForMember(dest => dest.ApplRefNo, opt => opt.MapFrom(src => src.ApplRefNo))
+            .ForMember(dest => dest.SponsorType, opt => opt.MapFrom(src => src.SponsorType))
+            .ForMember(dest => dest.CashAward, opt => opt.MapFrom(src => src.CashAward))
+            .ForMember(dest => dest.KindAward, opt => opt.MapFrom(src => src.KindAward))
+            .ForMember(dest => dest.IsApproved, opt => opt.MapFrom(src => src.IsApproved))
+            .ForMember(dest => dest.IsStatus, opt => opt.MapFrom(src => src.IsStatus))
+            .ReverseMap();
+            #endregion
+
         }
 
         //  method for converting string to UTC DateTime

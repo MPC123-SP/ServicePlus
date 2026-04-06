@@ -6,7 +6,14 @@
         public const string GetApiNamesEndPoint = "/api/ServicePlus/GetApiNames";
         public const string GetDistrictsEndPoint = "/api/ServicePlus/GetDistricts";
         public const string GetDepartmentsEndPoint = "/api/ServicePlus/GetDepartments";
-       
+        public const string PendencyReportEndPoint = "/api/ServicePlus/PendencyReport";
+        public const string GetSewaKendraZoneWiseReportEndPoint = "/api/ServicePlus/GetSewaKendraZoneWiseReport";
+        public const string GetSewaKendraWiseReportEndPoint = "/api/ServicePlus/GetSewaKendraWiseReport";
+        public const string JSONReceivedDatesEndPoint = "/api/ServicePlus/JSONReceivedDates";
+        public const string ConsolidateReportEndPoint = "/api/ServicePlus/ConsolidateReport";
+        public const string ConsolidatePendencyReportEndPoint = "/api/ServicePlus/ConsolidatePendencyReport";
+        public const string UpdatePendencyReportEndPoint = "/api/ServicePlus/UpdatePendencyReport";
+
     }
     public static class ApiAccountEndPoints
     {
@@ -21,5 +28,7 @@
         public const string DisableUserAccountByUserNameEndPoint = "/api/Authenticate/DisableUserAccountByUserName";
         public const string EnableUserAccountByUserNameEndPoint = "/api/Authenticate/EnableUserAccountByUserName";
         public const string GetAccountApiNamesEndPoint = "/api/Authenticate/GetApiNames";
+        public const string GetReportNameEndPoint = "/api/Authenticate/GetReportName";
     }
+
 }

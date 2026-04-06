@@ -17,7 +17,7 @@ namespace ServicePlusAPIs.Migrations.PostgresDb
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.11")
+                .HasAnnotation("ProductVersion", "9.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -227,11 +227,11 @@ namespace ServicePlusAPIs.Migrations.PostgresDb
 
             modelBuilder.Entity("ServicePlusAPIs.Models.EnclouserDetails.EnclosureDetail", b =>
                 {
-                    b.Property<int?>("EnclouserID")
+                    b.Property<int>("EnclouserID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int?>("EnclouserID"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("EnclouserID"));
 
                     b.Property<string>("EnclousersId")
                         .HasColumnType("text");
@@ -251,11 +251,11 @@ namespace ServicePlusAPIs.Migrations.PostgresDb
 
             modelBuilder.Entity("ServicePlusAPIs.Models.ExecutionModel.ExecutionData", b =>
                 {
-                    b.Property<int?>("ExecutionDataId")
+                    b.Property<int>("ExecutionDataId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int?>("ExecutionDataId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ExecutionDataId"));
 
                     b.Property<string>("ApplicantTaskDetails")
                         .HasColumnType("text");
@@ -275,11 +275,11 @@ namespace ServicePlusAPIs.Migrations.PostgresDb
 
             modelBuilder.Entity("ServicePlusAPIs.Models.InitiatedModel.InitiatedData", b =>
                 {
-                    b.Property<int?>("InitiatedDataId")
+                    b.Property<int>("InitiatedDataId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int?>("InitiatedDataId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("InitiatedDataId"));
 
                     b.Property<string>("Amount")
                         .HasColumnType("text");
@@ -359,11 +359,11 @@ namespace ServicePlusAPIs.Migrations.PostgresDb
 
             modelBuilder.Entity("ServicePlusAPIs.Models.ServiceWiseModels.PSEB_Execution_OfficialFormDetails.OfficialFormDetail", b =>
                 {
-                    b.Property<int?>("OfficialFormDetailID")
+                    b.Property<int>("OfficialFormDetailID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int?>("OfficialFormDetailID"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("OfficialFormDetailID"));
 
                     b.Property<int?>("ExecutionDataId")
                         .HasColumnType("integer");
@@ -384,11 +384,11 @@ namespace ServicePlusAPIs.Migrations.PostgresDb
 
             modelBuilder.Entity("ServicePlusAPIs.Models.ServiceWiseModels.PSEB_Initiated_AttributeDetails.AttributeDetail", b =>
                 {
-                    b.Property<int?>("AttributeDetailID")
+                    b.Property<int>("AttributeDetailID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int?>("AttributeDetailID"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AttributeDetailID"));
 
                     b.Property<string>("ApplicationFormFieldID")
                         .HasColumnType("text");

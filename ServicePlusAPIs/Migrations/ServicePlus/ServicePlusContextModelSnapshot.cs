@@ -17,7 +17,7 @@ namespace ServicePlusAPIs.Migrations.ServicePlus
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.11")
+                .HasAnnotation("ProductVersion", "9.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -335,11 +335,11 @@ namespace ServicePlusAPIs.Migrations.ServicePlus
 
             modelBuilder.Entity("ServicePlusAPIs.Models.EnclouserDetails.EnclosureDetail", b =>
                 {
-                    b.Property<int?>("EnclouserID")
+                    b.Property<int>("EnclouserID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int?>("EnclouserID"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("EnclouserID"));
 
                     b.Property<string>("EnclousersId")
                         .HasColumnType("text");
@@ -359,11 +359,11 @@ namespace ServicePlusAPIs.Migrations.ServicePlus
 
             modelBuilder.Entity("ServicePlusAPIs.Models.ExecutionModel.ExecutionData", b =>
                 {
-                    b.Property<int?>("ExecutionDataId")
+                    b.Property<int>("ExecutionDataId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int?>("ExecutionDataId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ExecutionDataId"));
 
                     b.Property<string>("ApplicantTaskDetails")
                         .HasColumnType("text");
@@ -383,11 +383,11 @@ namespace ServicePlusAPIs.Migrations.ServicePlus
 
             modelBuilder.Entity("ServicePlusAPIs.Models.InitiatedModel.InitiatedData", b =>
                 {
-                    b.Property<int?>("InitiatedDataId")
+                    b.Property<int>("InitiatedDataId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int?>("InitiatedDataId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("InitiatedDataId"));
 
                     b.Property<string>("Amount")
                         .HasColumnType("text");
@@ -467,11 +467,11 @@ namespace ServicePlusAPIs.Migrations.ServicePlus
 
             modelBuilder.Entity("ServicePlusAPIs.Models.ServiceWiseModels.PSEB_Execution_OfficialFormDetails.OfficialFormDetail", b =>
                 {
-                    b.Property<int?>("OfficialFormDetailID")
+                    b.Property<int>("OfficialFormDetailID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int?>("OfficialFormDetailID"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("OfficialFormDetailID"));
 
                     b.Property<int?>("ExecutionDataId")
                         .HasColumnType("integer");
@@ -492,11 +492,11 @@ namespace ServicePlusAPIs.Migrations.ServicePlus
 
             modelBuilder.Entity("ServicePlusAPIs.Models.ServiceWiseModels.PSEB_Initiated_AttributeDetails.AttributeDetail", b =>
                 {
-                    b.Property<int?>("AttributeDetailID")
+                    b.Property<int>("AttributeDetailID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int?>("AttributeDetailID"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AttributeDetailID"));
 
                     b.Property<string>("ApplicationFormFieldID")
                         .HasColumnType("text");
@@ -512,6 +512,328 @@ namespace ServicePlusAPIs.Migrations.ServicePlus
                     b.HasIndex("InitiatedDataId");
 
                     b.ToTable("AttributeDetails");
+                });
+
+            modelBuilder.Entity("ServicePlusAPIs.Models.SocialSecurityServiceModel.AnganWadiDetail", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<long>("CenterCode")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("CenterName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("NameOfPost")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("PostType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("StatusOfReservation")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("VillageLGDCode")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AnganWadiDetails");
+                });
+
+            modelBuilder.Entity("ServicePlusAPIs.Models.SportsModel.PlayerCertificateDetails", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ApplicantAgeGroup")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantAgeGroupPB")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantDOB")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantEvent")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantEventPB")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantFatherName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantFatherNamePB")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantFullName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantFullNamePB")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantGame")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantGamePB")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantMobileNo")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ConveyorName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ConveyorNamePB")
+                        .HasColumnType("text");
+
+                    b.Property<string>("GameHeldDistrict")
+                        .HasColumnType("text");
+
+                    b.Property<string>("GameHeldDistrictPB")
+                        .HasColumnType("text");
+
+                    b.Property<string>("GameRepresentingDistrict")
+                        .HasColumnType("text");
+
+                    b.Property<string>("GameRepresentingDistrictPB")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Position")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Score")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ScorePB")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("SrNo")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TournamentFrom")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TournamentTo")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PlayerCertificateDetails");
+                });
+
+            modelBuilder.Entity("ServicePlusAPIs.Models.SportsModel.PlayerIssuedCertificate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ApplicantAgeGroup")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantAgeGroupPB")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantDOB")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantEvent")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantEventPB")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantFatherName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantFatherNamePB")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantFullName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantFullNamePB")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantGame")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantGamePB")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ApplicantMobileNo")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("CertificateGeneratedTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CertificatePath")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CertificateSerialNo")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ConveyorName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ConveyorNamePB")
+                        .HasColumnType("text");
+
+                    b.Property<string>("GameHeldDistrict")
+                        .HasColumnType("text");
+
+                    b.Property<string>("GameHeldDistrictPB")
+                        .HasColumnType("text");
+
+                    b.Property<string>("GameRepresentingDistrict")
+                        .HasColumnType("text");
+
+                    b.Property<string>("GameRepresentingDistrictPB")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Position")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Score")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ScorePB")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TournamentFrom")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TournamentTo")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PlayerIssuedCertificate");
+                });
+
+            modelBuilder.Entity("ServicePlusAPIs.Models.SportsModel.SponsorPlayer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ApplRefNo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CashAward")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("InitiatedDataId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsStatus")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("KindAward")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SponsorType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("SportSponsorDetailId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SportSponsorDetailId");
+
+                    b.ToTable("SponsorPlayers");
+                });
+
+            modelBuilder.Entity("ServicePlusAPIs.Models.SportsModel.SportSponsorDetail", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsStatus")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SportSponsorDetails");
+                });
+
+            modelBuilder.Entity("ServicePlusAPIs.Models.SportsModel.VerifyCertificate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CertificateHashKey")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CertificateSerialNo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("VerifyCertificates");
                 });
 
             modelBuilder.Entity("ServicePlusAPIs.UserModels.RegisterUser", b =>
@@ -757,6 +1079,17 @@ namespace ServicePlusAPIs.Migrations.ServicePlus
                     b.Navigation("InitiatedData");
                 });
 
+            modelBuilder.Entity("ServicePlusAPIs.Models.SportsModel.SponsorPlayer", b =>
+                {
+                    b.HasOne("ServicePlusAPIs.Models.SportsModel.SportSponsorDetail", "SportSponsorDetail")
+                        .WithMany("SponsorPlayers")
+                        .HasForeignKey("SportSponsorDetailId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SportSponsorDetail");
+                });
+
             modelBuilder.Entity("ServicePlusAPIs.UserModels.RegisterUserDepartment", b =>
                 {
                     b.HasOne("ServicePlusAPIs.UserModels.RegisterUser", "User")
@@ -807,6 +1140,11 @@ namespace ServicePlusAPIs.Migrations.ServicePlus
                     b.Navigation("AttributeDetail");
 
                     b.Navigation("EnclosureDetails");
+                });
+
+            modelBuilder.Entity("ServicePlusAPIs.Models.SportsModel.SportSponsorDetail", b =>
+                {
+                    b.Navigation("SponsorPlayers");
                 });
 
             modelBuilder.Entity("ServicePlusAPIs.UserModels.RegisterUser", b =>

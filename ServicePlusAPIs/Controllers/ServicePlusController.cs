@@ -1,9 +1,17 @@
 ﻿using AutoMapper;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
+using PdfSharp.Pdf;
+using PdfSharp.Pdf.IO;
+using PuppeteerSharp;
+using PuppeteerSharp.Media;
 using ServicePlusAPIs.AuthenticateModels;
 using ServicePlusAPIs.Context;
+using ServicePlusAPIs.ExternalAPIs;
+using ServicePlusAPIs.Helper;
 using ServicePlusAPIs.HelperModels;
 using ServicePlusAPIs.HelperViewModel;
 using ServicePlusAPIs.Models;
@@ -13,14 +21,20 @@ using ServicePlusAPIs.Models.ExecutionModel;
 using ServicePlusAPIs.Models.InitiatedModel;
 using ServicePlusAPIs.Models.ServiceWiseModels.PSEB_Execution_OfficialFormDetails;
 using ServicePlusAPIs.Models.ServiceWiseModels.PSEB_Initiated_AttributeDetails;
+using ServicePlusAPIs.Models.SportsModel;
 using ServicePlusAPIs.ReportsModel;
 using ServicePlusAPIs.ReportsViewModel;
 using ServicePlusAPIs.ViewModels;
+using ServicePlusAPIs.ViewModels.PublicModel;
+using ServicePlusAPIs.ViewModels.SportsModel;
 using System.Data;
 using System.Globalization;
-using System.Linq.Expressions;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using MediaType = PuppeteerSharp.Media.MediaType;
 
 namespace ServicePlusAPIs.Controllers
 {
@@ -35,7 +49,7 @@ namespace ServicePlusAPIs.Controllers
         // Outside the action method, possibly in the controller or a service class.
         private readonly Dictionary<string, string> districtNameMap = new Dictionary<string, string>();
 
-
+        private readonly string SecretKey = "SportsServicePlus2025";  // Store this securely in your application
 
         public ServicePlusController(IMapper mapper, ILogger<ServicePlusController> logger, PostgresDbContext postgresDbContext, ServicePlusContext servicePlusContext)
         {
@@ -51,7 +65,7 @@ namespace ServicePlusAPIs.Controllers
         [Route("Add")]
         public async Task<IActionResult> IncomeAdd([FromBody] ServiceViewModel serviceViewModel)
         {
-            string json = JsonSerializer.Serialize(serviceViewModel, new JsonSerializerOptions
+            string json = System.Text.Json.JsonSerializer.Serialize(serviceViewModel, new JsonSerializerOptions
             {
                 WriteIndented = true // Makes the JSON output formatted and easier to read
             });
@@ -359,7 +373,7 @@ namespace ServicePlusAPIs.Controllers
         [Route("AddServicePlusData")]
         public async Task<IActionResult> AddServicePlusData([FromBody] ServiceViewModel serviceViewModel)
         {
-            string json = JsonSerializer.Serialize(serviceViewModel, new JsonSerializerOptions
+            string json = System.Text.Json.JsonSerializer.Serialize(serviceViewModel, new JsonSerializerOptions
             {
                 WriteIndented = true // Makes the JSON output formatted and easier to read
             });
@@ -1575,22 +1589,23 @@ namespace ServicePlusAPIs.Controllers
                         var controllerName = controllerType.Name;
                         if (controllerName == "ServicePlusController")
                         {
-                            ApiNames apiName = new ApiNames()
-                            {
-                                ApiName = method.Name
-                            };
+
 
                             // Check if the apiName already exists in the database
-                            var existingApiName = _servicePlusContext.ApiNames.FirstOrDefault(an => an.ApiName == apiName.ApiName);
+                            var existingApiName = _servicePlusContext.ApiNames.FirstOrDefault(an => an.ApiName == method.Name);
                             if (existingApiName == null)
                             {
+                                ApiNames apiName = new ApiNames()
+                                {
+                                    ApiName = method.Name
+                                };
                                 apiNames.Add(apiName);
                             }
                         }
                     }
                 }
             }
-            if (apiNames.Count > 0)
+            if (apiNames.Count <= 0)
             {
                 return StatusCode(StatusCodes.Status200OK, new Response { Status = "No Content", Message = "No New API Found" });
 
@@ -2098,6 +2113,3279 @@ namespace ServicePlusAPIs.Controllers
         #endregion
 
 
+        #region Public Sports Report
+
+
+        [Route("GetPublicIndividualSportsReport")]
+        [HttpPost]
+        public async Task<IActionResult> GetPublicIndividualSportsReport([FromBody] FilterParameter filterParameter)
+        {
+            // Build the base query
+            var query = from initiatedData in _servicePlusContext.InitiatedDatas
+                        join taskDetails in _servicePlusContext.TaskDetails on initiatedData.ApplId equals taskDetails.ApplId
+                        join officialFormDetails in _servicePlusContext.OfficialFormDetails on taskDetails.ExecutionDataId
+                        equals officialFormDetails.ExecutionDataId into groupedOfficialFormDetails
+
+                        where initiatedData.ServiceName.Contains("Punjab Sports Events Portal") && taskDetails.TaskId == 23005
+                              && groupedOfficialFormDetails.Any(ofd => ofd.OfficalFormID == "171829") == false // Fixed condition
+                        orderby initiatedData.InitiatedDataId descending
+                        select new
+                        {
+                            InitiatedDataId = initiatedData.InitiatedDataId,
+                            AttributeDetails = initiatedData.AttributeDetail
+                                .Where(attr => new[]
+                                {
+                            "169954", "169955", "169957", "169958", "169964",
+                            "170094", "170202", "170203", "170246", "170608",
+                            "170091", "170041", "170309", "171427", "170093",
+                            "170092"
+                                }.Contains(attr.ApplicationFormFieldID))
+                                .ToList(),
+                            initiatedData.ServiceId,
+                            initiatedData.ServiceName,
+                            initiatedData.ApplId,
+                            initiatedData.ApplRefNo,
+                            initiatedData.SubmissionDate,
+                            TaskDetail = new
+                            {
+                                taskDetails.TaskDetailID,
+                                taskDetails.ExecutionDataId,
+                                taskDetails.TaskName,
+                                OfficialFormDetails = groupedOfficialFormDetails
+                                    .Where(ofd => ofd.OfficalFormID == "170912" &&
+                                          (string.IsNullOrWhiteSpace(filterParameter.SearchValue) ||
+                                           ofd.OfficalFormValue.Contains(filterParameter.SearchValue)))
+                                    .ToList()
+                            }
+                        };
+
+            // Apply date filter if both dates are provided
+            if (filterParameter.StartDate.HasValue && filterParameter.EndDate.HasValue)
+            {
+                var startUtc = filterParameter.StartDate.Value.ToUniversalTime();
+                var endUtc = filterParameter.EndDate.Value.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
+                query = query.Where(data => data.SubmissionDate >= startUtc && data.SubmissionDate <= endUtc);
+            }
+
+            // Apply filters only if parameters are not empty
+            if (!string.IsNullOrWhiteSpace(filterParameter.Tournament))
+            {
+                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "171943" && attr.ApplicationFormFieldValue == filterParameter.Tournament));
+            }
+            if (!string.IsNullOrWhiteSpace(filterParameter.Gender))
+            {
+                query = query.Where(data => data.AttributeDetails.Any(attr =>
+                    (attr.ApplicationFormFieldID == "169964" || attr.ApplicationFormFieldID == "171427")
+                    && attr.ApplicationFormFieldValue == filterParameter.Gender));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filterParameter.Level))
+            {
+                query = query.Where(data => data.AttributeDetails.Any(attr =>
+                    (attr.ApplicationFormFieldID == "170091" || attr.ApplicationFormFieldID == "170041")
+                    && attr.ApplicationFormFieldValue == filterParameter.Level));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filterParameter.ApplicantGame))
+            {
+                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170094" && attr.ApplicationFormFieldValue == filterParameter.ApplicantGame));
+            }
+            if (!string.IsNullOrWhiteSpace(filterParameter.ApplicantAgeGroup))
+            {
+                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170202" && attr.ApplicationFormFieldValue == filterParameter.ApplicantAgeGroup));
+            }
+            if (!string.IsNullOrWhiteSpace(filterParameter.ApplicantGameCategory))
+            {
+                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170246" && attr.ApplicationFormFieldValue == filterParameter.ApplicantGameCategory));
+            }
+            if (!string.IsNullOrWhiteSpace(filterParameter.ApplicantEvent))
+            {
+                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170203" && attr.ApplicationFormFieldValue == filterParameter.ApplicantEvent));
+            }
+            if (!string.IsNullOrWhiteSpace(filterParameter.ApplicationType))
+            {
+                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170608" && attr.ApplicationFormFieldValue == filterParameter.ApplicationType));
+            }
+            if (!string.IsNullOrWhiteSpace(filterParameter.IsMedalist))
+            {
+                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170309" && attr.ApplicationFormFieldValue == filterParameter.IsMedalist));
+            }
+            if (!string.IsNullOrWhiteSpace(filterParameter.District))
+            {
+                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170093" && attr.ApplicationFormFieldValue == filterParameter.District));
+            }
+            if (!string.IsNullOrWhiteSpace(filterParameter.Block))
+            {
+                query = query.Where(data => data.AttributeDetails.Any(attr => attr.ApplicationFormFieldID == "170092" && attr.ApplicationFormFieldValue == filterParameter.Block));
+            }
+
+            // Sorting logic
+            //query = sortOrder.ToLower() switch
+            //{
+            //    "asc" => sortColumn.ToLower() switch
+            //    {
+            //        "submissiondate" => query.OrderBy(data => data.SubmissionDate),
+            //        "applid" => query.OrderBy(data => data.ApplId),
+            //        _ => query.OrderBy(data => data.SubmissionDate) // Default case
+            //    },
+            //    "desc" => sortColumn.ToLower() switch
+            //    {
+            //        "submissiondate" => query.OrderByDescending(data => data.SubmissionDate),
+            //        "applid" => query.OrderByDescending(data => data.ApplId),
+            //        _ => query.OrderByDescending(data => data.SubmissionDate) // Default case
+            //    },
+            //    _ => query.OrderByDescending(data => data.SubmissionDate) // Default case
+            //};
+
+
+            // Count query
+            var totalCount = await query.CountAsync();
+
+            // Paginate records
+            var paginatedRecords = await query
+                .Skip((filterParameter.page - 1) * filterParameter.pageSize)
+                .Take(filterParameter.pageSize)
+                .ToListAsync();
+
+            // Transform data into ViewModel
+            var result = paginatedRecords.Select(data => new PublicSportsViewModel
+            {
+                InitiatedDataId = data.InitiatedDataId,
+                AttributeDetailID = data.AttributeDetails
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170608")?.AttributeDetailID,
+                TaskDetailID = data.TaskDetail?.TaskDetailID,
+                ExecutionDataId = data.TaskDetail?.ExecutionDataId,
+                OfficialFormDetailID = data.TaskDetail?.OfficialFormDetails
+                    .FirstOrDefault()?.OfficialFormDetailID,
+                ApplId = data.ApplId,
+                ApplRefNo = data.ApplRefNo,
+                TaskName = data.TaskDetail?.TaskName,
+                TaskId = 23005, // Since it's filtered, we know the value
+                ServiceId = data.ServiceId,
+                ServiceName = data.ServiceName,
+                SubmissionDate = data.SubmissionDate,
+                ApplicantFirstName = data.AttributeDetails
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169954")?.ApplicationFormFieldValue,
+
+                ApplicantFatherName = CleanValue(data.AttributeDetails
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169955")?.ApplicationFormFieldValue),
+
+                ApplicantBloodGroup = CleanValue(data.AttributeDetails
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169957")?.ApplicationFormFieldValue),
+
+                ApplicantMobileNo = CleanValue(data.AttributeDetails
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169958")?.ApplicationFormFieldValue),
+
+                ApplicantGender = CleanValue(data.AttributeDetails
+    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169964")?.ApplicationFormFieldValue
+    ?? data.AttributeDetails.FirstOrDefault(attr => attr.ApplicationFormFieldID == "171427")?.ApplicationFormFieldValue),
+
+                ApplicantGame = CleanValue(data.AttributeDetails
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170094")?.ApplicationFormFieldValue),
+
+                Level = CleanValue(data.AttributeDetails
+    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170091")?.ApplicationFormFieldValue
+    ?? data.AttributeDetails.FirstOrDefault(attr => attr.ApplicationFormFieldID == "170041")?.ApplicationFormFieldValue),
+
+                ApplicationType = CleanValue(data.AttributeDetails
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170608")?.ApplicationFormFieldValue),
+                ApplicantAgeGroup = CleanValue(data.AttributeDetails
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170202")?.ApplicationFormFieldValue),
+                ApplicantEvent = CleanValue(data.AttributeDetails
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170203")?.ApplicationFormFieldValue),
+                ApplicantGameCategory = CleanValue(data.AttributeDetails
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170246")?.ApplicationFormFieldValue),
+                IsMedalist = CleanValue(data.AttributeDetails
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170309")?.ApplicationFormFieldValue),
+
+                District = CleanValue(data.AttributeDetails
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170093")?.ApplicationFormFieldValue),
+
+                Block = CleanValue(data.AttributeDetails
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170092")?.ApplicationFormFieldValue),
+
+                ApplicantMedal = DeserializeJsonStreamAsync(data.TaskDetail?.OfficialFormDetails
+                    .FirstOrDefault()?.OfficalFormValue)?.Split('~').Last()
+            }).ToList();
+
+            // Filter by medal if provided
+            if (!string.IsNullOrWhiteSpace(filterParameter.SearchValue))
+            {
+                totalCount = result.Count(d => d.ApplicantMedal != null && d.ApplicantMedal.Equals(filterParameter.SearchValue, StringComparison.OrdinalIgnoreCase));
+                result = result.Where(d => d.ApplicantMedal != null && d.ApplicantMedal.Equals(filterParameter.SearchValue, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+
+            return Ok(new
+            {
+                TotalCount = totalCount,
+                Records = result
+            });
+        }
+
+
+        private string CleanValue(string value)
+        {
+            return string.IsNullOrEmpty(value) ? null : Regex.Replace(value, @"^\d+~", "");
+        }
+
+        [Route("GetPublicTeamSportsReport")]
+        [HttpPost]
+        public async Task<IActionResult> GetPublicTeamSportsReport([FromBody] FilterParameter filterParameter)
+        {
+            var query = from taskDetails in _servicePlusContext.TaskDetails
+                        join initiatedData in _servicePlusContext.InitiatedDatas on taskDetails.ApplId equals initiatedData.ApplId
+                        join officialFormDetails in _servicePlusContext.OfficialFormDetails on taskDetails.ExecutionDataId equals officialFormDetails.ExecutionDataId into groupedOfficialFormDetails
+                        where taskDetails.TaskId == 23005
+                              && initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
+                        // && groupedOfficialFormDetails.Any(ofd => ofd.OfficalFormID == "171829") // Check if at least one exists
+                        orderby initiatedData.InitiatedDataId descending
+                        select new
+                        {
+                            initiatedData.InitiatedDataId,
+                            initiatedData.AttributeDetail,
+                            initiatedData.ServiceId,
+                            initiatedData.ServiceName,
+                            initiatedData.ApplId,
+                            initiatedData.ApplRefNo,
+                            initiatedData.SubmissionDate,
+                            TaskDetail = groupedOfficialFormDetails.Where(ofd =>
+                                ofd.OfficalFormID == "171829" &&
+                                (string.IsNullOrWhiteSpace(filterParameter.SearchValue) || ofd.OfficalFormValue.Contains(filterParameter.SearchValue))
+                            ).Select(ofd => new
+                            {
+                                taskDetails.TaskDetailID,
+                                taskDetails.ExecutionDataId,
+                                taskDetails.TaskName,
+                                OfficialFormDetail = ofd
+                            }).ToList()
+                        };
+
+
+            // Apply date filter
+            if (filterParameter.StartDate.HasValue && filterParameter.EndDate.HasValue)
+            {
+                var startUtc = filterParameter.StartDate.Value.ToUniversalTime();
+                var endUtc = filterParameter.EndDate.Value.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
+                query = query.Where(data => data.SubmissionDate >= startUtc && data.SubmissionDate <= endUtc);
+            }
+            // Apply filters only if parameters are not empty
+            if (!string.IsNullOrWhiteSpace(filterParameter.Tournament))
+            {
+                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "171943" && attr.ApplicationFormFieldValue == filterParameter.Tournament));
+            }
+            if (!string.IsNullOrWhiteSpace(filterParameter.Gender))
+            {
+                query = query.Where(data => data.AttributeDetail.Any(attr =>
+                    (attr.ApplicationFormFieldID == "169964" || attr.ApplicationFormFieldID == "171427")
+                    && attr.ApplicationFormFieldValue == filterParameter.Gender));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filterParameter.Level))
+            {
+                query = query.Where(data => data.AttributeDetail.Any(attr =>
+                    (attr.ApplicationFormFieldID == "170091" || attr.ApplicationFormFieldID == "170041")
+                    && attr.ApplicationFormFieldValue == filterParameter.Level));
+            }
+            if (!string.IsNullOrWhiteSpace(filterParameter.ApplicantGame))
+            {
+                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170094" && attr.ApplicationFormFieldValue == filterParameter.ApplicantGame));
+            }
+            if (!string.IsNullOrWhiteSpace(filterParameter.ApplicantAgeGroup))
+            {
+                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170202" && attr.ApplicationFormFieldValue == filterParameter.ApplicantAgeGroup));
+            }
+            if (!string.IsNullOrWhiteSpace(filterParameter.ApplicantGameCategory))
+            {
+                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170246" && attr.ApplicationFormFieldValue == filterParameter.ApplicantGameCategory));
+            }
+            if (!string.IsNullOrWhiteSpace(filterParameter.ApplicantEvent))
+            {
+                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170203" && attr.ApplicationFormFieldValue == filterParameter.ApplicantEvent));
+            }
+            if (!string.IsNullOrWhiteSpace(filterParameter.ApplicationType))
+            {
+                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170608" && attr.ApplicationFormFieldValue == filterParameter.ApplicationType));
+            }
+            if (!string.IsNullOrWhiteSpace(filterParameter.IsMedalist))
+            {
+                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170309" && attr.ApplicationFormFieldValue == filterParameter.IsMedalist));
+            }
+            if (!string.IsNullOrWhiteSpace(filterParameter.District))
+            {
+                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170093" && attr.ApplicationFormFieldValue == filterParameter.District));
+            }
+            if (!string.IsNullOrWhiteSpace(filterParameter.Block))
+            {
+                query = query.Where(data => data.AttributeDetail.Any(attr => attr.ApplicationFormFieldID == "170092" && attr.ApplicationFormFieldValue == filterParameter.Block));
+            }
+            // Calculate total count
+            var totalCount = await query.CountAsync();
+
+            // Paginate the query
+            var paginatedData = await query
+                .Skip((filterParameter.page - 1) * filterParameter.pageSize)
+                .Take(filterParameter.pageSize)
+                .ToListAsync();
+
+            // Process the paginated data
+            var result = paginatedData.SelectMany(data => data.TaskDetail.Select(taskDetail =>
+            {
+                var officialFormData = SportsTeamDeserializeJsonStreamAsync(taskDetail.OfficialFormDetail.OfficalFormValue);
+
+                if (officialFormData == null || !officialFormData.Any())
+                    return Enumerable.Empty<PublicSportsViewModel>();
+
+                return officialFormData.Select(form => new PublicSportsViewModel
+                {
+                    InitiatedDataId = data.InitiatedDataId,
+                    AttributeDetailID = data.AttributeDetail
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170608")?.AttributeDetailID,
+                    TaskDetailID = taskDetail.TaskDetailID,
+                    ExecutionDataId = taskDetail.ExecutionDataId,
+                    OfficialFormDetailID = taskDetail.OfficialFormDetail.OfficialFormDetailID,
+                    ApplId = data.ApplId,
+                    ApplRefNo = form.ApplicationRefNo,
+                    TaskName = taskDetail.TaskName,
+                    TaskId = 23005,
+                    ServiceId = data.ServiceId,
+                    ServiceName = data.ServiceName,
+                    SubmissionDate = data.SubmissionDate,
+                    ApplicantFirstName = form.PlayerName,
+
+                    ApplicantFatherName = CleanValue(data.AttributeDetail
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169955")?.ApplicationFormFieldValue),
+
+                    ApplicantBloodGroup = CleanValue(data.AttributeDetail
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169957")?.ApplicationFormFieldValue),
+
+                    ApplicantMobileNo = CleanValue(data.AttributeDetail
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169958")?.ApplicationFormFieldValue),
+
+                    ApplicantGender = CleanValue(data.AttributeDetail
+    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "169964")?.ApplicationFormFieldValue
+    ?? data.AttributeDetail.FirstOrDefault(attr => attr.ApplicationFormFieldID == "171427")?.ApplicationFormFieldValue),
+
+                    ApplicantGame = CleanValue(data.AttributeDetail
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170094")?.ApplicationFormFieldValue),
+
+                    Level = CleanValue(data.AttributeDetail
+    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170091")?.ApplicationFormFieldValue
+    ?? data.AttributeDetail.FirstOrDefault(attr => attr.ApplicationFormFieldID == "170041")?.ApplicationFormFieldValue),
+
+                    ApplicationType = CleanValue(data.AttributeDetail
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170608")?.ApplicationFormFieldValue),
+
+                    ApplicantAgeGroup = CleanValue(data.AttributeDetail
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170202")?.ApplicationFormFieldValue),
+                    ApplicantEvent = CleanValue(data.AttributeDetail
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170203")?.ApplicationFormFieldValue),
+
+                    District = CleanValue(data.AttributeDetail
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170093")?.ApplicationFormFieldValue),
+
+                    Block = CleanValue(data.AttributeDetail
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170092")?.ApplicationFormFieldValue),
+
+                    ApplicantGameCategory = CleanValue(data.AttributeDetail
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170246")?.ApplicationFormFieldValue),
+                    ApplicantMedal = form.Position?.Split('~').LastOrDefault() ?? string.Empty
+                });
+            }))
+            .Where(x => x != null) // Exclude null projections
+            .SelectMany(x => x)
+            .ToList();
+
+            // Filter based on searchValue if provided
+            if (!string.IsNullOrWhiteSpace(filterParameter.SearchValue))
+            {
+                result = result
+                    .Where(d => !string.IsNullOrEmpty(d.ApplicantMedal) &&
+                                d.ApplicantMedal.Equals(filterParameter.SearchValue, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                // Update totalCount after filtering
+                totalCount = result.Count;
+            }
+
+            // Return the paginated result
+            return Ok(new
+            {
+                TotalCount = totalCount,
+                Records = result.OrderBy(d => d.ApplicantGame).ToList(),
+            });
+        }
+
+        private List<PlayerDetail> SportsTeamDeserializeJsonStreamAsync(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return new List<PlayerDetail>();
+
+            var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+
+            var result = new List<PlayerDetail>();
+            var detectedKeys = data.Keys
+                .Where(k => k.StartsWith("171830_") && int.TryParse(k.Split('_')[1], out _))
+                .Select(k => new { Key = k, Index = int.Parse(k.Split('_')[1]) })
+                .ToList();
+
+            int maxIndex = detectedKeys.Select(k => k.Index).DefaultIfEmpty(0).Max();
+
+            for (int i = 1; i <= maxIndex; i++)
+            {
+                result.Add(new PlayerDetail
+                {
+                    PlayerName = data.ContainsKey($"171830_{i}") ? data[$"171830_{i}"]?.ToString() : null,
+                    DateOfBirth = data.ContainsKey($"171831_{i}") ? data[$"171831_{i}"]?.ToString() : null,
+                    MobileNumber = data.ContainsKey($"171832_{i}") ? data[$"171832_{i}"]?.ToString() : null,
+                    Email = data.ContainsKey($"171833_{i}") ? data[$"171833_{i}"]?.ToString() : null,
+                    ApplicationRefNo = data.ContainsKey($"171834_{i}") ? data[$"171834_{i}"]?.ToString() : null,
+                    Position = data.ContainsKey($"171835_{i}") ? data[$"171835_{i}"]?.ToString() : null
+                });
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// First We are getting Count of rows after choosing Any First Header ,then we are 
+        /// replacing Header Ids
+        /// </summary>
+        /// <param name="json"></param>
+        /// <returns></returns>
+        private List<PlayerEducation> PlayerEducationDeserializeJsonStreamAsync(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return new List<PlayerEducation>();
+
+            var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
+
+            if (!data.ContainsKey("data"))
+                return new List<PlayerEducation>();
+
+            var jsonData = data["data"];
+            var result = new List<PlayerEducation>();
+
+            var detectedKeys = jsonData.Keys
+                .Where(k => k.StartsWith("171648_") && int.TryParse(k.Split('_')[1], out _))
+                .Select(k => new { Key = k, Index = int.Parse(k.Split('_')[1]) })
+                .ToList();
+
+            int maxIndex = detectedKeys.Select(k => k.Index).DefaultIfEmpty(0).Max();
+
+            for (int i = 1; i <= maxIndex; i++)
+            {
+                result.Add(new PlayerEducation
+                {
+                    Qualification = jsonData.ContainsKey($"171648_{i}") && jsonData[$"171648_{i}"] != null
+    ? jsonData[$"171648_{i}"].Split('~').ElementAtOrDefault(1)
+    : null,
+                    InstituteName = jsonData.ContainsKey($"171649_{i}") ? jsonData[$"171649_{i}"]?.ToString() : null,
+                    PassingYear = jsonData.ContainsKey($"171650_{i}") ? jsonData[$"171650_{i}"]?.ToString() : null,
+
+                    // Position = GetSafeValue(jsonData, $"171835_{i}") // Uncomment if needed
+                });
+            }
+
+            return result;
+        }
+
+        public static string DeserializeJsonStreamAsync(string? jsonStream)
+        {
+            if (jsonStream == null)
+            {
+                return string.Empty;
+            }
+            var jsonData = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(jsonStream);
+
+            if (jsonData != null && jsonData.Count > 0)
+            {
+                // Get the last key-value pair
+                var lastKeyValue = jsonData.Last();
+
+                // Store the last value in a variable
+                string lastValue = Regex.Replace(lastKeyValue.Value.ToString(), @"^\d+~", "");
+
+                // Output the last value
+
+                return lastValue;
+            }
+            else
+            {
+                Console.WriteLine("Invalid JSON or empty data.");
+            }
+
+            return string.Empty; // Return empty string if no valid data
+        }
+
+        [Route("GetSportSupportDoc")]
+        [HttpGet]
+        public async Task<IActionResult> GetSportSupportDoc(int applId)
+        {
+            // Base URL where the documents are stored
+            var baseUrl = $"http://10.147.24.36:8082/SSD/";
+
+            // Construct the full file URL
+            var fileUrl = $"{baseUrl}{applId}.pdf"; // Assuming files are in PDF format
+
+            try
+            {
+                // Use HttpClient to check if the file exists and fetch its content
+                using (var httpClient = new HttpClient())
+                {
+                    var response = await httpClient.GetAsync(fileUrl);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        return NotFound(new
+                        {
+                            Message = "Document not found.",
+                            ApplId = applId
+                        });
+                    }
+
+                    // Return the file as a response
+                    return Ok(new
+                    {
+                        FileUrl = fileUrl,
+                        ApplId = applId
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the exception if needed and return an error response
+                return StatusCode(500, new
+                {
+                    Message = "An error occurred while retrieving the document.",
+                    Error = ex.Message
+                });
+            }
+        }
+
+
+        #region PlayerDetail
+        [Route("GetPlayerDetailsByAppRefNo")]
+        [HttpGet]
+        public async Task<IActionResult> GetPlayerDetailsByAppRefNo(string applRefNo)
+        {
+            var query = await (from initiatedData in _servicePlusContext.InitiatedDatas
+                               where initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
+                                     && initiatedData.ApplRefNo == applRefNo
+                                     && initiatedData.InitiatedRecordInsertionFlag == 1
+                               select new
+                               {
+                                   initiatedData.InitiatedDataId,
+                                   initiatedData.ServiceId,
+                                   initiatedData.ServiceName,
+                                   initiatedData.ApplId,
+                                   initiatedData.ApplRefNo,
+                                   initiatedData.SubmissionDate,
+                                   AttributeDetails = initiatedData.AttributeDetail
+                                       .Where(attr => new[]
+                                       {
+                                   "169954", "169955", "169957", "169958", "169964",
+                                   "170094", "170202", "170203", "170246", "170608",
+                                   "170091", "170608", "170041", "170309", "171427",
+                                   "170093", "170092", "169965", "169971", "169960",
+                                   "169972", "169969", "169970", "169959", "171762",
+                                   "169963", "169961", "169980", "169979", "169981",
+                                   "169998", "169999", "169990", "169991", "170000",
+                                   "169983", "171761", "169987", "169984", "169988",
+                                   "169985", "170308", "171647",
+                                       }.Contains(attr.ApplicationFormFieldID))
+                                       .ToList()
+                               }).FirstOrDefaultAsync();
+
+            if (query == null)
+            {
+                return NotFound(new { message = "No record found" });
+            }
+
+            var result = new
+            {
+                initiatedDataId = query.InitiatedDataId,
+                attributeDetailID = query.AttributeDetails
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170608")?.AttributeDetailID,
+                executionDataId = (int?)null,
+                officialFormDetailID = (int?)null,
+                applId = query.ApplId,
+                applRefNo = query.ApplRefNo,
+                taskId = 23005,
+                serviceId = query.ServiceId,
+                serviceName = query.ServiceName,
+                submissionDate = query.SubmissionDate,
+                applicantFirstName = GetValue(query.AttributeDetails, "169954"),
+                applicantFatherName = GetValue(query.AttributeDetails, "169955"),
+                applicantMotherName = GetValue(query.AttributeDetails, "169965"),
+                applicantDOB = GetValue(query.AttributeDetails, "169971"),
+                applicantAge = GetValue(query.AttributeDetails, "169960"),
+                stateOfBirth = GetValue(query.AttributeDetails, "169972")?.Split('~').Last(),
+                districtOfBirth = GetValue(query.AttributeDetails, "169969")?.Split('~').Last(),
+                panCardNumber = GetValue(query.AttributeDetails, "169970"),
+                applicantBloodGroup = GetValue(query.AttributeDetails, "169957")?.Split('~').Last(),
+                applicantMobileNo = GetValue(query.AttributeDetails, "169958"),
+                applicantAlternateMobileNumber = GetValue(query.AttributeDetails, "171762"),
+                applicantEmail = GetValue(query.AttributeDetails, "169959"),
+                applicantGender = GetValue(query.AttributeDetails, "169964")?.Split('~').Last() ?? GetValue(query.AttributeDetails, "171427")?.Split('~').Last(),
+                applicantGame = GetValue(query.AttributeDetails, "170094")?.Split('~').Last(),
+                level = GetValue(query.AttributeDetails, "170091")?.Split('~').Last() ?? GetValue(query.AttributeDetails, "170041"),
+                applicationType = GetValue(query.AttributeDetails, "170608")?.Split('~').Last(),
+                applicantAgeGroup = GetValue(query.AttributeDetails, "170202")?.Split('~').Last(),
+                applicantEvent = GetValue(query.AttributeDetails, "170203")?.Split('~').Last(),
+                applicantGameCategory = GetValue(query.AttributeDetails, "170246"),
+                isMedalist = GetValue(query.AttributeDetails, "170309")?.Split('~').Last(),
+                district = GetValue(query.AttributeDetails, "170093"),
+                block = GetValue(query.AttributeDetails, "170092"),
+                physicalDisability = GetValue(query.AttributeDetails, "169963")?.Split('~').Last(),
+                maritalStatus = GetValue(query.AttributeDetails, "169961")?.Split('~').Last(),
+                spouseName = GetValue(query.AttributeDetails, "169962"),
+                isEmployed = GetValue(query.AttributeDetails, "169980")?.Split('~').Last(),
+                employmentStatus = GetValue(query.AttributeDetails, "169979"),
+                jobDescription = GetValue(query.AttributeDetails, "169981"),
+                completeAddress = GetValue(query.AttributeDetails, "169998"),
+                region = GetValue(query.AttributeDetails, "169999")?.Split('~').Last(),
+                addState = GetValue(query.AttributeDetails, "169990")?.Split('~').Last(),
+                addDistrict = GetValue(query.AttributeDetails, "169991")?.Split('~').Last(),
+                addPincode = GetValue(query.AttributeDetails, "170000"),
+                accountNumber = GetValue(query.AttributeDetails, "169983"),
+                accountHolder = GetValue(query.AttributeDetails, "171761")?.Split('~').Last(),
+                ifscCode = GetValue(query.AttributeDetails, "169987"),
+                nameOnPassbook = GetValue(query.AttributeDetails, "169984"),
+                bankAddress = GetValue(query.AttributeDetails, "169988"),
+                bankName = GetValue(query.AttributeDetails, "169985"),
+                applicationToBeSubmitted = GetValue(query.AttributeDetails, "170308")?.Split('~').Last(),
+                playerEducations = PlayerEducationDeserializeJsonStreamAsync(GetValue(query.AttributeDetails, "171647"))
+            };
+
+            return Ok(result);
+        }
+
+        private string? GetValue(IEnumerable<AttributeDetail> attributes, string fieldId)
+        {
+            return attributes.FirstOrDefault(attr => attr.ApplicationFormFieldID == fieldId)?.ApplicationFormFieldValue;
+        }
+
+
+
+        private List<InterNationalAchievements> InterNationalAchievementsDeserializeJsonStreamAsync(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json) || json == "FieldSetValue")
+                return new List<InterNationalAchievements>();
+
+            var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
+            var jsonData = data["data"];
+            var result = new List<InterNationalAchievements>();
+            var detectedKeys = jsonData.Keys
+                .Where(k => k.StartsWith("171412_") && int.TryParse(k.Split('_')[1], out _))
+                .Select(k => new { Key = k, Index = int.Parse(k.Split('_')[1]) })
+                .ToList();
+
+            int maxIndex = detectedKeys.Select(k => k.Index).DefaultIfEmpty(0).Max();
+
+            for (int i = 1; i <= maxIndex; i++)
+            {
+                result.Add(new InterNationalAchievements
+                {
+                    Game = GetSafeValueForAchievement(jsonData, $"171412_{i}"),
+                    GameCategory = GetSafeValueForAchievement(jsonData, $"171413_{i}"),
+                    GameType = GetSafeValueForAchievement(jsonData, $"171414_{i}"),
+                    AgeGroup = GetSafeValueForAchievement(jsonData, $"171415_{i}"),
+                    GameEvent = GetSafeValueForAchievement(jsonData, $"171416_{i}"),
+                    TournamentName = jsonData.ContainsKey($"171417_{i}") ? jsonData[$"171417_{i}"]?.ToString() : null,
+                    TournamentFrom = jsonData.ContainsKey($"171418_{i}") ? jsonData[$"171418_{i}"]?.ToString() : null,
+                    TournamentTo = jsonData.ContainsKey($"171646_{i}") ? jsonData[$"171646_{i}"]?.ToString() : null,
+                    Position = GetSafeValueForAchievement(jsonData, $"171419_{i}")
+                });
+            }
+
+            return result;
+        }
+
+        private List<NationalAchievements> NationalAchievementsDeserializeJsonStreamAsync(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json) || json == "FieldSetValue")
+                return new List<NationalAchievements>();
+
+            var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
+            var jsonData = data["data"];
+            var result = new List<NationalAchievements>();
+
+            var detectedKeys = jsonData.Keys
+                .Where(k => k.StartsWith("171395_") && int.TryParse(k.Split('_')[1], out _))
+                .Select(k => int.Parse(k.Split('_')[1]))
+                .ToList();
+
+            int maxIndex = detectedKeys.DefaultIfEmpty(0).Max();
+
+            for (int i = 1; i <= maxIndex; i++)
+            {
+                result.Add(new NationalAchievements
+                {
+                    Game = GetSafeValueForAchievement(jsonData, $"171395_{i}"),
+                    GameCategory = GetSafeValueForAchievement(jsonData, $"171396_{i}"),
+                    GameType = GetSafeValueForAchievement(jsonData, $"171397_{i}"),
+                    AgeGroup = GetSafeValueForAchievement(jsonData, $"171398_{i}"),
+                    GameEvent = GetSafeValueForAchievement(jsonData, $"171399_{i}"),
+                    TournamentName = jsonData.ContainsKey($"171400_{i}") ? jsonData[$"171400_{i}"]?.ToString() : null,
+                    TournamentFrom = jsonData.ContainsKey($"171401_{i}") ? jsonData[$"171401_{i}"]?.ToString() : null,
+                    TournamentTo = jsonData.ContainsKey($"171645_{i}") ? jsonData[$"171645_{i}"]?.ToString() : null,
+                    Position = GetSafeValueForAchievement(jsonData, $"171402_{i}")
+                });
+            }
+
+            return result;
+        }
+
+        private List<StateAchievements> StateAchievementsDeserializeJsonStreamAsync(string json)
+        {
+            if (string.IsNullOrEmpty(json) || json == "FieldSetValue")
+                return new List<StateAchievements>();
+
+            var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
+            var jsonData = data["data"];
+            var result = new List<StateAchievements>();
+
+            var detectedKeys = jsonData.Keys
+                .Where(k => k.StartsWith("171384_") && int.TryParse(k.Split('_')[1], out _))
+                .Select(k => int.Parse(k.Split('_')[1]))
+                .ToList();
+
+            int maxIndex = detectedKeys.DefaultIfEmpty(0).Max();
+
+            for (int i = 1; i <= maxIndex; i++)
+            {
+                result.Add(new StateAchievements
+                {
+                    State = GetSafeValueForAchievement(jsonData, $"171384_{i}"),
+                    Game = GetSafeValueForAchievement(jsonData, $"171385_{i}"),
+                    GameCategory = GetSafeValueForAchievement(jsonData, $"171386_{i}"),
+                    GameType = GetSafeValueForAchievement(jsonData, $"171387_{i}"),
+                    AgeGroup = GetSafeValueForAchievement(jsonData, $"171388_{i}"),
+                    GameEvent = GetSafeValueForAchievement(jsonData, $"171389_{i}"),
+                    TournamentName = jsonData.ContainsKey($"171390_{i}") ? jsonData[$"171390_{i}"]?.ToString() : null,
+                    TournamentFrom = jsonData.ContainsKey($"171391_{i}") ? jsonData[$"171391_{i}"]?.ToString() : null,
+                    TournamentTo = jsonData.ContainsKey($"171644_{i}") ? jsonData[$"171644_{i}"]?.ToString() : null,
+                    Position = GetSafeValueForAchievement(jsonData, $"171392_{i}")
+                });
+            }
+
+            return result;
+        }
+
+        private List<DistrictAchievements> DistrictAchievementsDeserializeJsonStreamAsync(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json) || json == "FieldSetValue")
+                return new List<DistrictAchievements>();
+
+            var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
+            var jsonData = data["data"];
+            var result = new List<DistrictAchievements>();
+
+            var detectedKeys = jsonData.Keys
+                .Where(k => k.StartsWith("171374_") && int.TryParse(k.Split('_')[1], out _))
+                .Select(k => int.Parse(k.Split('_')[1]))
+                .ToList();
+
+            int maxIndex = detectedKeys.DefaultIfEmpty(0).Max();
+
+            for (int i = 1; i <= maxIndex; i++)
+            {
+                result.Add(new DistrictAchievements
+                {
+                    District = GetSafeValueForAchievement(jsonData, $"171374_{i}"),
+                    Game = GetSafeValueForAchievement(jsonData, $"171375_{i}"),
+                    GameCategory = GetSafeValueForAchievement(jsonData, $"171376_{i}"),
+                    GameType = GetSafeValueForAchievement(jsonData, $"171377_{i}"),
+                    AgeGroup = GetSafeValueForAchievement(jsonData, $"171378_{i}"),
+                    GameEvent = GetSafeValueForAchievement(jsonData, $"171379_{i}"),
+                    TournamentName = jsonData.ContainsKey($"171380_{i}") ? jsonData[$"171380_{i}"]?.ToString() : null,
+                    TournamentFrom = jsonData.ContainsKey($"171381_{i}") ? jsonData[$"171381_{i}"]?.ToString() : null,
+                    TournamentTo = jsonData.ContainsKey($"171643_{i}") ? jsonData[$"171643_{i}"]?.ToString() : null,
+                    Position = GetSafeValueForAchievement(jsonData, $"171382_{i}")
+                });
+            }
+
+            return result;
+        }
+
+        private List<BlockAchievements> BlockAchievementsDeserializeJsonStreamAsync(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json) || json == "FieldSetValue")
+                return new List<BlockAchievements>();
+
+            var data = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(json);
+            var jsonData = data["data"];
+            var result = new List<BlockAchievements>();
+
+            var detectedKeys = jsonData.Keys
+                .Where(k => k.StartsWith("171363_") && int.TryParse(k.Split('_')[1], out _))
+                .Select(k => int.Parse(k.Split('_')[1]))
+                .ToList();
+
+            int maxIndex = detectedKeys.DefaultIfEmpty(0).Max();
+
+            for (int i = 1; i <= maxIndex; i++)
+            {
+                result.Add(new BlockAchievements
+                {
+                    District = GetSafeValueForAchievement(jsonData, $"171363_{i}"),
+                    Block = GetSafeValueForAchievement(jsonData, $"171364_{i}"),
+                    Game = GetSafeValueForAchievement(jsonData, $"171365_{i}"),
+                    GameCategory = GetSafeValueForAchievement(jsonData, $"171366_{i}"),
+                    GameType = GetSafeValueForAchievement(jsonData, $"171367_{i}"),
+                    AgeGroup = GetSafeValueForAchievement(jsonData, $"171368_{i}"),
+                    GameEvent = GetSafeValueForAchievement(jsonData, $"171369_{i}"),
+                    TournamentName = jsonData.ContainsKey($"171370_{i}") ? jsonData[$"171370_{i}"]?.ToString() : null,
+                    TournamentFrom = jsonData.ContainsKey($"171371_{i}") ? jsonData[$"171371_{i}"]?.ToString() : null,
+                    TournamentTo = jsonData.ContainsKey($"171641_{i}") ? jsonData[$"171641_{i}"]?.ToString() : null,
+                    Position = GetSafeValueForAchievement(jsonData, $"171372_{i}")
+                });
+            }
+
+            return result;
+        }
+
+        private string GetSafeValueForAchievement(Dictionary<string, string> data, string key)
+        {
+            if (data.TryGetValue(key, out var value) && !string.IsNullOrEmpty(value))
+            {
+                var parts = value.Split('~');
+                return parts.Length > 1 ? parts[1] : null; // Ensure index [1] exists before accessing it
+            }
+            return null;
+        }
+
+        #endregion
+
+        [Route("GetPlayerAchievementByAppRefNo")]
+        [HttpGet]
+        public async Task<IActionResult> GetPlayerAchievementByAppRefNo(string applRefNo)
+        {
+            // Build the base query
+            var query = from initiatedData in _servicePlusContext.InitiatedDatas
+                        where initiatedData.ServiceName.Contains("Punjab Sports Events Portal")
+                              && initiatedData.ApplRefNo == applRefNo
+                        //&& initiatedData.InitiatedRecordInsertionFlag == 1
+
+                        select new
+                        {
+                            InitiatedDataId = initiatedData.InitiatedDataId,
+                            AttributeDetails = initiatedData.AttributeDetail
+                                .Where(attr => new[]
+                                {
+                            "170041", "171353", "171373", "171383", "171393", "171403"
+                                }.Contains(attr.ApplicationFormFieldID))
+                                .ToList(),
+                            initiatedData.ServiceId,
+                            initiatedData.ServiceName,
+                            initiatedData.ApplId,
+                            initiatedData.ApplRefNo,
+                            initiatedData.SubmissionDate
+                        };
+
+            // Execute the query and get a single record
+            var data = await query.FirstOrDefaultAsync();
+
+            if (data == null)
+            {
+                return NotFound("No achievement records found.");
+            }
+
+            // Transform the single record into ViewModel
+            var result = new PlayerAchievements
+            {
+                CompetitionType = CleanValue(data.AttributeDetails
+                    .FirstOrDefault(attr => attr.ApplicationFormFieldID == "170041")?.ApplicationFormFieldValue),
+
+                BlockAchievements = BlockAchievementsDeserializeJsonStreamAsync(CleanValue(data.AttributeDetails
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "171353")?.ApplicationFormFieldValue)),
+
+                DistrictAchievements = DistrictAchievementsDeserializeJsonStreamAsync(CleanValue(data.AttributeDetails
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "171373")?.ApplicationFormFieldValue)),
+
+                StateAchievements = StateAchievementsDeserializeJsonStreamAsync(CleanValue(data.AttributeDetails
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "171383")?.ApplicationFormFieldValue)),
+
+                NationalAchievements = NationalAchievementsDeserializeJsonStreamAsync(CleanValue(data.AttributeDetails
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "171393")?.ApplicationFormFieldValue)),
+
+                InterNationalAchievements = InterNationalAchievementsDeserializeJsonStreamAsync(CleanValue(data.AttributeDetails
+                        .FirstOrDefault(attr => attr.ApplicationFormFieldID == "171403")?.ApplicationFormFieldValue))
+            };
+            return Ok(result); // Returns a single object instead of an array
+        }
+
+
+        [Route("AddSponsorPlayer")]
+        [HttpPost]
+        public async Task<IActionResult> AddSponsorPlayer(SportSponsorDetailViewModel sportSponsorDetailViewModel)
+        {
+            if (sportSponsorDetailViewModel is null)
+            {
+                throw new ArgumentNullException(nameof(sportSponsorDetailViewModel));
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { IsSucced = false, Message = "Kindly Download your Slip" });
+            }
+
+            SportSponsorDetail sportSponsorDetail = _mapper.Map<SportSponsorDetail>(sportSponsorDetailViewModel);
+
+            if (sportSponsorDetail.Id == 0)
+            {
+                // Check if Email or PhoneNumber already exist
+                bool emailExists = await _servicePlusContext.SportSponsorDetails
+                                         .AnyAsync(s => s.Email == sportSponsorDetailViewModel.Email);
+                bool phoneExists = await _servicePlusContext.SportSponsorDetails
+                                          .AnyAsync(s => s.PhoneNumber == sportSponsorDetailViewModel.PhoneNumber);
+
+                if (emailExists)
+                {
+                    return BadRequest(new { IsSucced = false, Message = "Email already exists." });
+                }
+
+                if (phoneExists)
+                {
+                    return BadRequest(new { IsSucced = false, Message = "Phone number already exists." });
+                }
+                // Save SportSponsorDetail first to generate an Id
+                await _servicePlusContext.SportSponsorDetails.AddAsync(sportSponsorDetail);
+
+                await _servicePlusContext.SponsorPlayers.AddRangeAsync(sportSponsorDetail.SponsorPlayers);
+                await _servicePlusContext.SaveChangesAsync();
+
+            }
+            else
+            {
+                // Assign the correct SportSponsorDetailId to the players
+                sportSponsorDetail.SponsorPlayers.ToList().ForEach(player => player.SportSponsorDetailId = sportSponsorDetail.Id);
+
+                await _servicePlusContext.SponsorPlayers.AddRangeAsync(sportSponsorDetail.SponsorPlayers);
+                await _servicePlusContext.SaveChangesAsync();
+
+            }
+
+
+            return Ok(new { IsSucced = true, Message = "Kindly Download your Slip" });
+        }
+
+
+        [Route("GetSponsorByPhoneNumber")]
+        [HttpGet]
+        public async Task<IActionResult> GetSponsorByPhoneNumber(string phoneNumber)
+        {
+            var sponsorDetails = await _servicePlusContext.SportSponsorDetails
+                .SingleOrDefaultAsync(x => x.PhoneNumber == phoneNumber);
+
+            if (sponsorDetails == null)
+            {
+                return NotFound("Phone Number Doesn't Exist");
+            }
+
+            return Ok(sponsorDetails);
+        }
+
+        [Route("GetSponsorPlayersByRefNo")]
+        [HttpPost]
+        public async Task<IActionResult> GetSponsorPlayersByRefNo([FromBody] List<string> applRefNos)
+        {
+            if (applRefNos == null || applRefNos.Count == 0)
+            {
+                return BadRequest(new { message = "No application reference numbers provided" });
+            }
+
+            // Convert to HashSet for faster lookup
+            var applRefNoSet = new HashSet<string>(applRefNos);
+
+            var query = await _servicePlusContext.InitiatedDatas
+                .Where(initiatedData =>
+                    initiatedData.ServiceName.Contains("Punjab Sports Events Portal") &&
+                    applRefNoSet.Contains(initiatedData.ApplRefNo) &&
+                    initiatedData.InitiatedRecordInsertionFlag == 1)
+                .Select(initiatedData => new
+                {
+                    initiatedData.InitiatedDataId,
+                    initiatedData.ServiceId,
+                    initiatedData.ServiceName,
+                    initiatedData.ApplId,
+                    initiatedData.ApplRefNo,
+                    initiatedData.SubmissionDate,
+                    AttributeDetails = initiatedData.AttributeDetail
+                        .Where(attr => new HashSet<string>
+                        {
+                    "169958", "169959", "169983", "171761", "169987",
+                    "169984", "169988", "169985"
+                        }.Contains(attr.ApplicationFormFieldID))
+                        .ToList()
+                })
+                .ToListAsync();
+
+            if (!query.Any())
+            {
+                return NotFound(new { message = "No records found" });
+            }
+
+            var result = query.Select(q => new
+            {
+                initiatedDataId = q.InitiatedDataId,
+                applRefNo = q.ApplRefNo,
+                applicantMobileNo = GetValue(q.AttributeDetails, "169958"),
+                applicantEmail = GetValue(q.AttributeDetails, "169959"),
+                accountNumber = GetValue(q.AttributeDetails, "169983"),
+                accountHolder = GetValue(q.AttributeDetails, "171761")?.Split('~').Last(),
+                ifscCode = GetValue(q.AttributeDetails, "169987"),
+                nameOnPassbook = GetValue(q.AttributeDetails, "169984"),
+                bankAddress = GetValue(q.AttributeDetails, "169988"),
+                bankName = GetValue(q.AttributeDetails, "169985"),
+            }).ToList();
+
+            return Ok(result);
+        }
+
+        #endregion
+
+        #region GetPlayerCertificateDetail
+
+
+
+        /// <summary>
+        /// Retrieves player certificate details based on the district, game name, and age group.
+        /// </summary>
+        /// <param name="district">The district where the player belongs.</param>
+        /// <param name="gameName">The game name selected by the player.</param>
+        /// <param name="AgeGroup">The age group of the player.</param>
+        /// <returns>A success message indicating that the record has been updated.</returns>
+        [Route("GetPlayerCertificateDetail")]
+        [HttpPost]
+        public async Task<IActionResult> GetPlayerCertificateDetail(string district, string gameName, string AgeGroup)
+        {
+            return Ok(await GeneratePlayerCertificate(district, gameName, AgeGroup) + " Record Updated Successfully");
+        }
+
+        [Route("GetPlayerCertificateInBulk")]
+        [HttpPost]
+        public async Task<IActionResult> GetPlayerCertificateDetail()
+        {
+
+            // Define allowed districts
+            var allowedDistricts = new List<string> { "RUPNAGAR", "SAS NAGAR", "SBSNAGAR" };
+            foreach (var gameHeldDistrict in allowedDistricts)
+            {
+                // Fetch distinct games for the allowed districts
+                var getGames = await _servicePlusContext.PlayerCertificateDetails
+                    .Where(d => d.GameHeldDistrict == gameHeldDistrict)
+                    .Select(d => d.ApplicantGame)
+                    .Distinct()
+                    .ToListAsync();
+                foreach (var game in getGames)
+                {
+                    var getAgeGroups = await _servicePlusContext.PlayerCertificateDetails
+                        .Where(d => d.GameHeldDistrict == gameHeldDistrict && d.ApplicantGame == game)
+                        .Select(d => d.ApplicantAgeGroup)
+                        .Distinct()
+                        .ToListAsync();
+                    foreach (var ageGroup in getAgeGroups)
+                    {
+                        await GeneratePlayerCertificate(gameHeldDistrict, game, ageGroup);
+                    }
+                }
+            }
+            return Ok(" Record Updated Successfully");
+        }
+
+
+        /// <summary>
+        /// It will only generate existing certifcate without saving any record in DB
+        /// </summary>
+        /// <returns></returns>
+        [Route("UpdateExistingCertificates")]
+        [HttpPost]
+        public async Task<IActionResult> UpdateExistingCertificates()
+        {
+            var getDistrict = await _servicePlusContext.PlayerIssuedCertificate
+              .Select(d => d.GameHeldDistrict)
+              .Distinct()
+              .ToListAsync();
+            foreach (var gameHeldDistrict in getDistrict)
+            {
+                // Fetch distinct games for the allowed districts
+                var getGames = await _servicePlusContext.PlayerIssuedCertificate
+                    .Where(d => d.GameHeldDistrict == gameHeldDistrict)
+                    .Select(d => d.ApplicantGame)
+                    .Distinct()
+                    .ToListAsync();
+                foreach (var game in getGames)
+                {
+                    var getAgeGroups = await _servicePlusContext.PlayerIssuedCertificate
+                        .Where(d => d.GameHeldDistrict == gameHeldDistrict && d.ApplicantGame == game)
+                        .Select(d => d.ApplicantAgeGroup)
+                        .Distinct()
+                        .ToListAsync();
+                    foreach (var ageGroup in getAgeGroups)
+                    {
+                        await GenerateExistingCertificates(gameHeldDistrict, game, ageGroup);
+                    }
+                }
+            }
+            return Ok();
+
+        }
+       
+        private async Task<string> GeneratePlayerCertificate(string districtName, string gameName, string ageGroup)
+        {
+            // District-wise serial number prefixes to create Folder Name
+            var districtPrefixes = new Dictionary<string, string>
+    {
+        { "AMRITSAR", "ASR" },
+        { "BARNALA", "BNL" },
+        { "BATHINDA", "BAT" },
+        { "FARIDKOT", "FDK" },
+        { "FATEHGARH SAHIB", "FGS" },
+        { "FAZILKA", "FAZ" },
+        { "FEROZEPUR", "FZR" },
+        { "GURDASPUR", "GSP" },
+        { "HOSHIARPUR", "HSP" },
+        { "JALANDHAR", "JAL" },
+        { "KAPURTHALA", "KPT" },
+        { "LUDHIANA", "LDH" },
+        { "MALERKOTLA", "MLK" },
+        { "MANSA", "MAN" },
+        { "MOGA", "MOG" },
+        { "PATHANKOT", "PKT" },
+        { "PATIALA", "PAT" },
+        { "RUPNAGAR", "RPR" },
+        { "SAS NAGAR", "SAS" },
+        { "SANGRUR", "SGR" },
+        { "SBSNAGAR", "SBS" },
+        { "SRI MUKTSAR SAHIB", "SMS" },
+        { "TARN TARAN", "TTN" }
+
+        // Add more districts as needed
+    };
+
+            // Get the prefix for the given district, default to "GEN000" if not found
+            string randomDistrictSr = districtPrefixes.ContainsKey(districtName.ToUpper())
+                ? districtPrefixes[districtName.ToUpper()]
+                : "GEN000";
+
+            // Fetch issued certificates first (executed on DB)
+            var existingCertificates = await _servicePlusContext.PlayerIssuedCertificate
+                .Where(c => c.GameHeldDistrict == districtName
+                            && c.ApplicantGame == gameName
+                            && c.ApplicantAgeGroup == ageGroup
+                            && c.CertificateSerialNo != null)
+                .ToListAsync(); // Move data to memory
+
+            // Create a Dictionary to store existing certificates for faster lookup
+            var certificateDict = existingCertificates.ToDictionary(
+                c => new
+                {
+                    c.ApplicantFullName,
+                    c.ApplicantFatherName,
+                    c.ApplicantDOB,
+                    c.ApplicantGame,
+                    c.ApplicantEvent,
+                    c.ApplicantAgeGroup
+                },
+                c => c // Store the certificate itself as the value
+            );
+
+            // Fetch all players (executed on DB)
+            var allPlayers = await _servicePlusContext.PlayerCertificateDetails
+                .Where(d => d.GameHeldDistrict == districtName
+                            && d.ApplicantGame == gameName
+                            && d.ApplicantAgeGroup == ageGroup)
+                .ToListAsync(); // Move data to memory
+
+            // Perform filtering in memory (LINQ to Objects)
+            var playerCertificateDetails = allPlayers
+                .Where(d => !certificateDict.ContainsKey(new
+                {
+                    d.ApplicantFullName,
+                    d.ApplicantFatherName,
+                    d.ApplicantDOB,
+                    d.ApplicantGame,
+                    d.ApplicantEvent,
+                    d.ApplicantAgeGroup
+                }))
+                .ToList(); // Filtering done in memory
+
+
+            if (!playerCertificateDetails.Any())
+            {
+                return "No new certificates to generate.";
+            }
+            //  var getSigns = playerCertificateDetails.FirstOrDefault();
+
+            // Signature For Convenor
+            // Define the base directory where images are stored
+            string baseDirectory = @"http://10.147.24.36:8082/SSD/Sports_Signature";
+
+            // Dictionary to store (district, game) as key and image path as value
+            Dictionary<(string, string), string> gameSignatures = new Dictionary<(string, string), string>
+{
+                    //Amritsar
+                    { ("AMRITSAR", "GATKA"), $@"{baseDirectory}/Amritsar/Gatka Convenor Sign/Gatka Convenor Sign.png" },
+                    { ("AMRITSAR", "RUGBY"), $@"{baseDirectory}/Amritsar/Rugby Convenor Sign/Rugby Convenor Sign.png" },
+
+                    //Barnala
+                    { ("BARNALA", "NETBALL"), $@"{baseDirectory}/Barnala/Netball Convenor Sign/Netball English Convenor Sign.png" },
+                    { ("BARNALA", "TABLE TENNIS"), $@"{baseDirectory}/Barnala/Table Tennis Convenor Sign/Table Tennis Convenor Sign.png" },
+                    { ("BARNALA", "BADMINTON"), $@"{baseDirectory}/Barnala/Badminton Convenor Sign/BADMINTON Convenor Sign.png" },
+
+                    //Bathinda
+                    { ("BATHINDA", "HOCKEY"), $@"{baseDirectory}/Bathinda/Hocky Convenor Sign/HOCKEY Convenor Sign.png" },
+                    { ("BATHINDA", "POWERLIFTING"), $@"{baseDirectory}/Bathinda/Powerlifting Convenor Sign/POWERLIFTING Convenor Sign.png" },
+
+                    //Faridkot
+                    { ("FARIDKOT", "BASKETBALL"), $@"{baseDirectory}/Faridkot/Basketball Convenor Sign/Basketball Convenor Sign.png" },
+                    { ("FARIDKOT", "TAEKWONDO"), $@"{baseDirectory}/Faridkot/Taekwondo Convenor Sign/Taekwondo Convenor Sign.png" },
+
+                    //Fatehgarh Sahib
+                    { ("FATEHGARH SAHIB", "FENCING"), $@"{baseDirectory}/Fatehgarh Sahib/Fencing Convenor Sign/FENCING Convenor Sign.png" },
+                    { ("FATEHGARH SAHIB", "SOFTBALL"), $@"{baseDirectory}/Fatehgarh Sahib/Softball Convenor Sign/SOFT Convenor Sign.png" },
+
+                    //Hoshiarpur
+                    { ("HOSHIARPUR", "FOOTBALL"), $@"{baseDirectory}/Hoshiarpur/Football Convenor Sign/Football Convenor Sign.png" },
+
+                    //Jalandhar
+                    { ("JALANDHAR", "CHESS"), $@"{baseDirectory}/Jalandhar/Chess Convenor Sign/Chess Convenor Sign.png" },
+                    { ("JALANDHAR", "VOLLEYBALL SMASHING"), $@"{baseDirectory}/Jalandhar/Volleyball Smashing Convenor Sign/Volleyball Smashing Convener sign.png" },
+
+                    //Ludhiana
+                    { ("LUDHIANA", "ATHLETICS"), $@"{baseDirectory}/Ludhiana/Athletics Convenor Sign/ATHLETICS Convenor Sign.png" },
+                    { ("LUDHIANA", "BASEBALL"), $@"{baseDirectory}/Ludhiana/Baseball Convenor Sign/BASEBALL Convenor Sign.png" },
+                    { ("LUDHIANA", "CYCLING"), $@"{baseDirectory}/Ludhiana/Cycling Convenor Sign/CYCLING Convenor Sign.png" },
+                    { ("LUDHIANA", "KICK BOXING"), $@"{baseDirectory}/Ludhiana/Kick Boxing Convenor Sign/KICKBOXING-removebg-preview.png" },
+                    { ("LUDHIANA", "LAWN TENNIS"), $@"{baseDirectory}/Ludhiana/Lawn Tennis Convenor Sign/image-removebg-preview.png" },
+
+                    //Malerkotla
+                    { ("MALERKOTLA", "VOLLEYBALL SHOOTING"), $@"{baseDirectory}/Malerkotla/Volleyball Shooting Convenor Sign/Volleyball Shooting Sign.png" },
+
+                    //Mansa
+                    { ("MANSA", "JUDO"), $@"{baseDirectory}/Mansa/Judo Convenor Sign/JUDO Convenor Sign.png" },
+                    { ("MANSA", "WRESTLING"), $@"{baseDirectory}/Mansa/Wrestling Convenor Sign/Wrestling Convenor Sign.png" },
+
+                    //Patiala
+                    { ("PATIALA", "ARCHERY"), $@"{baseDirectory}/Patiala/Archary Convenor Sign/ARCHERY Convenor Sign.png" },
+                    { ("PATIALA", "GYMNASTICS"), $@"{baseDirectory}/Patiala/Gymnastics Convenor Sign/GYMNASTICS Convenor Sign.png" },
+                    { ("PATIALA", "CIRCLE KABADDI"), $@"{baseDirectory}/Patiala/Kabbadi circle style Convenor Sign/KABADDI CS Convenor Sign.png" },
+                    { ("PATIALA", "KHO KHO"), $@"{baseDirectory}/Patiala/Kho-Kho Convenor Sign/KHO KHO Convenor Sign.png" },
+
+                    //Rupnagar
+                    { ("RUPNAGAR", "HANDBALL"), $@"{baseDirectory}/Rupnagar/Handball Convenor Sign/Handball Convenor Sign.png" },
+                    { ("RUPNAGAR", "KAYAKING"), $@"{baseDirectory}/Rupnagar/Kayking and Canoining Convenor Sign/Kayaking__Canoeing.png" },
+                    { ("RUPNAGAR", "CANOEING"), $@"{baseDirectory}/Rupnagar/Kayking and Canoining Convenor Sign/Kayaking__Canoeing.png" },
+                    { ("RUPNAGAR", "DRAGON BOAT"), $@"{baseDirectory}/Rupnagar/Kayking and Canoining Convenor Sign/Kayaking__Canoeing.png" },
+                    { ("RUPNAGAR", "ROWING"), $@"{baseDirectory}/Rupnagar/Rowing Convenor Sign/Rowing_Convenor Sign.png" },
+                    
+                    //Sangrur
+                    { ("SANGRUR", "KABADDI NATIONAL STYLE"), $@"{baseDirectory}/Sangrur/Kabaddi National Style Convenor Sign/Kabaddi National Convenor Sign.png" },
+                    { ("SANGRUR", "ROLLER SKATING"), $@"{baseDirectory}/Sangrur/Roller Skating Convenor Sign/Rollar Skating Convenor Sign.png" },
+                    { ("SANGRUR", "Roller Skating Speed Skating"), $@"{baseDirectory}/Sangrur/Roller Skating Convenor Sign/Rollar Skating Convenor Sign.png" },
+                    { ("SANGRUR", "WEIGHT LIFTING"), $@"{baseDirectory}/Sangrur/Weightlifting Convenor SIgn/WL Convenor Sign.png" },
+                    { ("SANGRUR", "WUSHU"), $@"{baseDirectory}/Sangrur/Wushu Convenor Sign/WUSHU Convenor Sign.png" },
+
+                    //SAS Nagar
+                    { ("SAS NAGAR", "EQUESTRAIN"), $@"{baseDirectory}/SAS Nagar/Equestrian Convenor Sign/Equestrian Convenor Sign.png" },
+                    { ("SAS NAGAR", "SHOOTING"), $@"{baseDirectory}/SAS Nagar/Shooting Convenor Sign/Shooting Convenor Sign.png" },
+                    { ("SAS NAGAR", "SWIMMING"), $@"{baseDirectory}/SAS Nagar/Swimming Convenor Sign/Swimming Convenor Sign.png" },
+
+                    //SAS Nagar
+                    { ("SBSNAGAR", "BOXING"), $@"{baseDirectory}/SBS Nagar/Boxing Convenor Sign/Boxing Convenor Sign.png" },
+
+                };
+
+            // Normalize input (Trim spaces and capitalize first letter)
+            districtName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(districtName);
+            gameName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(gameName);
+
+            // Try to get the image path from the dictionary
+            if (!gameSignatures.TryGetValue((districtName, gameName), out string ConveyorImagePath))
+            {
+                ConveyorImagePath = "./images/default-sign.png"; // Fallback image if not found
+            }
+
+
+
+
+            Dictionary<string, string> dsoSignatures = new Dictionary<string, string>
+{
+                        { "AMRITSAR", $@"{baseDirectory}/Amritsar/DSO Sign/Amritsar DSO.png" },
+                        { "BARNALA", $@"{baseDirectory}/Barnala/DSO Sign/DSO Sign.png" },
+                        { "BATHINDA", $@"{baseDirectory}/Bathinda/DSO Sign/DSo Sign.png" },
+                        { "FARIDKOT", $@"{baseDirectory}/Faridkot/DSO Sign/DSO Sign.png" },
+                        { "FATEHGARH SAHIB", $@"{baseDirectory}/Fatehgarh Sahib/DSO Sign/DSO Sign.png" },
+                        { "HOSHIARPUR", $@"{baseDirectory}/Hoshiarpur/DSO Sign/DSO Sign.png" },
+                        { "JALANDHAR", $@"{baseDirectory}/Jalandhar/DSO Sign/DSO Sign.png" },
+                        { "LUDHIANA", $@"{baseDirectory}/Ludhiana/DSO Sign/DSO Sign.png" },
+                        { "MALERKOTLA", $@"{baseDirectory}/Malerkotla/DSO Sign/DSO Sign.png" },
+                        { "MANSA", $@"{baseDirectory}/Mansa/DSO Sign/DSO Sign.png" },
+                        { "PATIALA", $@"{baseDirectory}/Patiala/DSO Sign/DSO Sign.png" },
+                        { "RUPNAGAR", $@"{baseDirectory}/Rupnagar/DSO Sign/DSO Sign.png" },
+                        { "SANGRUR", $@"{baseDirectory}/Sangrur/DSO Sign/DSO Sign.png" },
+                        { "SAS NAGAR", $@"{baseDirectory}/SAS Nagar/DSO Sign/DSO Sign.png" },
+                        { "SBSNAGAR", $@"{baseDirectory}/SBS Nagar/DSO Sign/DSO Sign.png" }
+                    };
+
+            districtName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(districtName);
+
+            // Try to get the image path from the dictionary
+            if (!dsoSignatures.TryGetValue((districtName), out string dsoImagePath))
+            {
+                dsoImagePath = "./images/default-sign.png"; // Fallback image if not found
+            }
+
+            // Get last serial number and generate a new one
+            var lastIssuedCertificate = await _servicePlusContext.PlayerIssuedCertificate
+                                         .Where(c => c.GameHeldDistrict == districtName) // Filter by district
+                                         .OrderByDescending(c => c.CertificateSerialNo)
+                                         .Select(d => d.CertificateSerialNo)
+                                         .FirstOrDefaultAsync();
+
+
+            int newSerialNumber = 1; // Default to 1 if no certificate is found
+            if (!string.IsNullOrEmpty(lastIssuedCertificate))
+            {
+                // Split the certificate serial by "2024-" and take the part after it
+                var parts = lastIssuedCertificate.Split(new[] { "2024-" }, StringSplitOptions.None);
+
+                if (parts.Length > 1 && int.TryParse(parts[1], out int lastSerial))
+                {
+                    // Increment the last serial number
+                    newSerialNumber = lastSerial + 1;
+                }
+            }
+            string fromDate = "";
+            string toDate = "";
+            //to get Game From and To Date
+            var gameFromToDate = new Dictionary<(string, string), (string fromDate, string toDate)>
+        {
+
+
+                                { ("AMRITSAR", "GATKA"), ("07-11-2024", "10-11-2024") },
+                                { ("AMRITSAR", "RUGBY"), ("07-11-2024", "10-11-2024") },
+
+                                // Barnala
+                                { ("BARNALA", "NETBALL"), ("25-11-2024", "30-11-2024") },
+                                { ("BARNALA", "TABLE TENNIS"), ("25-11-2024", "30-11-2024") },
+                                { ("BARNALA", "BADMINTON"), ("25-11-2024", "30-11-2024") },
+
+                                // Bathinda
+                                { ("BATHINDA", "HOCKEY"), ("17-10-2024", "24-10-2024") },
+                                { ("BATHINDA", "POWERLIFTING"), ("19-10-2024", "24-10-2024") },
+
+                                // Faridkot
+                                {  ("FARIDKOT", "BASKETBALL"), ("09-12-2024", "14-12-2024") },
+                                { ("FARIDKOT", "TAEKWONDO"), ("09-12-2024", "14-12-2024") },
+
+                                // Fatehgarh Sahib
+                                { ("FATEHGARH SAHIB", "FENCING"), ("19-10-2024", "24-10-2024") },
+                                { ("FATEHGARH SAHIB", "SOFTBALL"), ("19-10-2024", "24-10-2024") },
+
+                                // Hoshiarpur
+                                { ("HOSHIARPUR", "FOOTBALL"), ("04-11-2024", "10-11-2024") },
+
+                                // Jalandhar
+                                { ("JALANDHAR", "CHESS"), ("15-11-2024", "22-11-2024") },
+                                { ("JALANDHAR", "VOLLEYBALL SMASHING"), ("15-11-2024", "22-11-2024") },
+
+                                // Ludhiana
+                                { ("LUDHIANA", "ATHLETICS"), ("04-11-2024", "09-11-2024") },
+                                { ("LUDHIANA", "BASEBALL"), ("04-11-2024", "09-11-2024") },
+                                { ("LUDHIANA", "CYCLING"),    ("27-11-2024", "29-11-2024") },
+                                { ("LUDHIANA", "KICK BOXING"), ("04-11-2024", "09-11-2024") },
+                                { ("LUDHIANA", "LAWN TENNIS"), ("04-11-2024", "09-11-2024") },
+
+                                // Malerkotla
+                                { ("MALERKOTLA", "VOLLEYBALL SHOOTING"), ("06-11-2024", "09-11-2024") },
+
+                                // Mansa
+                                { ("MANSA", "JUDO"),      ("19-10-2024", "24-10-2024") },
+                                { ("MANSA", "WRESTLING"), ("19-10-2024", "24-10-2024") },
+
+                                // Patiala
+                                { ("PATIALA", "ARCHERY"),        ("04-11-2024", "09-11-2024") },
+                                { ("PATIALA", "GYMNASTICS"),     ("08-11-2024", "11-11-2024") },
+                                { ("PATIALA", "CIRCLE KABADDI"), ("04-11-2024", "09-11-2024") },
+                                { ("PATIALA", "KHO KHO"),          ("04-11-2024", "09-11-2024") },
+
+                                // Rupnagar
+                                { ("RUPNAGAR", "HANDBALL"), ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "KAYAKING"), ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "CANOEING"),   ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "ROWING"),   ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "DRAGON BOAT"),   ("16-11-2024", "21-11-2024") },
+                                  
+                                // Sangrur
+                                {  ("SANGRUR", "KABADDI NATIONAL STYLE"),        ("16-11-2024", "21-11-2024") },
+                                {  ("SANGRUR", "ROLLER SKATING"), ("16-11-2024", "21-11-2024") },
+                                { ("SANGRUR", "WEIGHT LIFTING"), ("16-11-2024", "21-11-2024") },
+                                { ("SANGRUR", "WUSHU"),           ("16-11-2024", "21-11-2024") },
+
+                                 
+                                // SAS Nagar
+                                { ("SAS NAGAR", "EQUESTRAIN"), ("20-11-2024", "24-11-2024") },
+                                { ("SAS NAGAR", "SHOOTING"),   ("13-11-2024", "17-11-2024") },
+                                { ("SAS NAGAR", "SWIMMING"),   ("21-10-2024", "24-10-2024") },
+
+                                // SBS Nagar
+                                { ("SBSNAGAR", "BOXING"), ("16-11-2024", "24-11-2024") },
+            };
+
+
+            (fromDate, toDate) = GetGameDates(districtName, gameName, gameFromToDate);
+            static (string fromDate, string toDate) GetGameDates(string district, string game, Dictionary<(string, string), (string fromDate, string toDate)> gameFromToDate)
+            {
+                // Check if the dictionary contains the key (district, game)
+                if (gameFromToDate.TryGetValue((district, game), out var dates))
+                {
+                    return dates; // If found, return the dates
+                }
+
+                return ("", ""); // If not found, return default message
+            }
+            var newCertificates = new List<PlayerIssuedCertificate>();
+
+            var hashCertificates = new List<VerifyCertificate>();
+            // Puppeteer PDF Generation Logic
+            await new BrowserFetcher().DownloadAsync();
+            await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+            {
+                Headless = true,
+                Args = new[] {
+                "--font-render-hinting=none",
+                "--force-color-profile=srgb"
+            }
+            });
+
+            await using var page = await browser.NewPageAsync();
+            await page.SetUserAgentAsync("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36");
+            await page.EmulateMediaTypeAsync(MediaType.Screen);
+
+            foreach (var player in playerCertificateDetails)
+            {
+
+
+                //string certificateNo = newSerialNumber.ToString("D6");
+
+                string formattedGameName = gameName.Replace(" ", ""); // Remove spaces
+                string certificateNo = $"{randomDistrictSr}-2024-{newSerialNumber:D6}";
+                // Define folder hierarchy
+                string baseFolder = "GeneratedCertificates"; // First folder
+                string districtFolder = $"{districtName}"; // Second folder
+                string gameFolder = gameName; // Third folder
+                string ageGroupFolder = ageGroup; // Fourth folder
+
+                // Combine paths to create full directory structure
+                string folderPath = Path.Combine(Directory.GetCurrentDirectory(), baseFolder, districtFolder, gameFolder, ageGroupFolder);
+
+                // Check if directory exists, if not, create it
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
+
+                // Define certificate filename
+                string fileName = $"{certificateNo}.pdf";
+                string filePath = Path.Combine(folderPath, fileName);
+                var googleSheetsService = new GoogleSheetsService(_servicePlusContext); // Pass the context here
+                await googleSheetsService.UpdateCertificateDetails(
+                    player.SrNo,
+                    $"{baseFolder}\\{districtFolder}\\{gameFolder}\\{ageGroupFolder}\\{certificateNo}",
+                    certificateNo
+                );
+
+
+
+                // Further processing...
+
+                var hasCertificateId = await GenerateSecureCertificateId(certificateNo);
+
+                string htmlContent = $@"<html>
+        <head>
+            <style>
+                body {{ margin: 0; padding: 0; font-family: Arial, sans-serif; }}
+                #certificate-container {{
+                    position: fixed;
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
+                }}
+                #background-img {{
+                    position: fixed;
+                    padding-left:6px;
+                    padding-right:4px;
+                    padding-top:6px;
+                    padding-bottom:6px;
+
+                    width: 99%;
+                    height: 98%;
+                }}
+                .text-bold {{ font-weight: bold; }}
+            </style>
+        </head>
+        <body>
+            <img id='background-img' src='http://10.147.24.36:8082/SSD/SportsCertificateBgNew.png' />
+            <div id='certificate-container'>
+                <div style='position: absolute; top: 16%; left: 10%; width: 80%; height:100%; padding: 30px; border-radius: 10px; box-sizing: border-box; text-align: center;'>
+                    <div style='margin: 8px 0; font-size: 16px; font-weight: bold; position: absolute; top: -12%; right: 3%;'>
+                        ਸਰਟੀਫਿਕੇਟ ਨੰ. : {certificateNo}
+                    <div style='text-align: center; margin-top: 15px;margin-left:30px;'>
+                        <img src='data:image/png;base64,{await GetBase64QRCode(hasCertificateId)}' width='100' height='100'/>
+                        <p style='margin-top: 3px;'>Scan to verify</p>
+                    </div>
+
+                    </div>
+                    <div class='text-bold' style=' font-size: 25px; font-weight: bold; padding-top: 2px;'>ਖੇਡਾਂ ਅਤੇ ਯੁਵਾ ਮਾਮਲੇ ਵਿਭਾਗ</div>
+<img style='width: 42%;height: 3%;' src='http://10.147.24.36:8082/SSD/arrow.png'>
+                    <div style='margin: 3px 0;  '>
+                        <span style='font-size:35px; color: #3d387c;'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024 (ਸੀਜ਼ਨ-3)</strong></span>
+                    </div>
+    <div style='margin: 5px 0; font-size: 22px; margin-top: 3px; font-weight: bold;'>ਮੈਰਿਟ ਸਰਟੀਫਿਕੇਟ</div>
+              <div style='
+            display: inline-block; 
+            background-color: #d32f2f; 
+            color: white; 
+            padding: 6px 18px; 
+            border-radius: 20px 0 20px 0; 
+            font-size: 16px; 
+            font-weight: bold; 
+            font-family: 'Gurmukhi', Arial, sans-serif;'>ਰਾਜ ਪੱਧਰੀ ਟੂਰਨਾਮੈਂਟ</div>
+              
+             <div style=' font-size: 20px; margin-top: 3px; font-weight: bold;'>{player.GameHeldDistrictPB}</div>
+                    <div style='margin: 10px 0; font-size: 18px; font-weight: bold;'>
+                        ਮਿਤੀ <strong>{fromDate}</strong> ਤੋਂ ਮਿਤੀ  <strong>{toDate} ਤੱਕ </strong>
+                    </div> 
+                   <div style='text-align: justify; margin-top: 5px; font-size: 16px;line-height:2.5;'>
+                            ਤਸਦੀਕ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ 
+                            <strong>
+                                <span style='display: inline-block; width: 83%; text-align: center;  border-bottom: 0.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>
+                                    {player.ApplicantFullNamePB}
+                                </span>
+                            </strong><br>
+                            ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ 
+                            <strong><span style='display: inline-block; width: 39%; text-align: center; border-bottom:0.2px dashed #000; min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.ApplicantFatherNamePB}</span></strong>
+                             ਜਨਮ ਮਿਤੀ 
+                            <strong><span style='display: inline-block; width: 43%; text-align: center; border-bottom: 0.3px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.ApplicantDOB}</span></strong><br>
+                            ਨੇ ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024 ਵਿੱਚ ਜ਼ਿਲ੍ਹਾ 
+                            <strong><span style='display: inline-block; width: 72%; text-align: center; border-bottom: 0.4px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.GameRepresentingDistrictPB}</span></strong> <br>
+                            ਵਲੋਂ ਖੇਡ 
+                            <strong><span style='display: inline-block; width: 44%; text-align: center; border-bottom: 0.6px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(player.ApplicantGamePB)}</span></strong>  
+                            ਈਵੈਂਟ/ਵਰਗ 
+                            <strong><span style='display: inline-block; width: 41%; text-align: center; border-bottom: 0.7px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.ApplicantEventPB}</span></strong> <br>
+                            ਈਵੈਂਟ ਸਮਾਂ/ਦੂਰੀ/ਉਚਾਈ/ਭਾਰ 
+                            <strong><span style='display: inline-block; width: 35%; text-align: center; border-bottom: 0.8px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(player.ScorePB)}</span></strong>  
+                            ਵਿਚ ਭਾਗ ਲਿਆ ਅਤੇ 
+                            <strong><span style='display: inline-block; width: 22%; text-align: center; border-bottom: 0.9px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.Position}</span></strong>  
+                            ਸਥਾਨ ਪ੍ਰਾਪਤ ਕੀਤਾ <br>
+                            ਉਮਰ ਵਰਗ (ਸਾਲ)
+                            <strong><span style='display: inline-block; width: 42%; text-align: center; border-bottom: 1.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.ApplicantAgeGroupPB}</span></strong>
+                        <strong><span style='display:  inline-block; width: 45%; text-align: center; border-bottom: 0px dashed #000;'> </span></strong>
+                     </div>                
+
+                    <div style='display: flex; justify-content: space-between; align-items: center; margin: 60px 0 0; text-align: center; flex-direction: column; position: relative;'>
+
+            <!-- Image Section -->
+            <div style='display: flex; justify-content: space-between; width: 100%; position: relative;'>
+                <div style='width: 33.33%; position: relative;'>
+                    <img src='{ConveyorImagePath}' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -38px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                </div>
+                <div style='width: 33.33%; position: relative;'>
+                    <img src='{dsoImagePath}' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -43px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                </div>
+                <div style='width: 35%; position: relative;'>
+                    <img src='' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -43px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                </div>
+            </div>
+        
+            <!-- Text Section -->
+            <div style='display: flex; justify-content: space-between; width: 100%; position: relative;'>
+                <div style='width: 33.33%; position: relative;'>
+                    <span style='font-size: 18px; display: block;'>ਕਨਵੀਨਰ</span>
+                </div>
+                <div style='width: 33.33%; position: relative;'>
+                    <span style='font-size: 18px; display: block;'>ਜ਼ਿਲ੍ਹਾ ਖੇਡ ਅਫ਼ਸਰ</span>
+                </div>
+                <div style='width: 35%; text-align:center; position: relative;'>
+                    <span style='font-size: 18px; display: block;'>ਡਾਇਰੈਕਟਰ ਸਪੋਰਟਸ <br />ਪੰਜਾਬ</span>
+                </div>
+            </div>
+        
+        </div>
+                </div>
+            </div>
+        </body>
+        </html>";
+
+                await page.SetContentAsync(htmlContent);
+
+                await page.PdfAsync(filePath, new PdfOptions
+                {
+                    PrintBackground = true,
+                    Format = PaperFormat.Legal,
+                    Landscape = true,
+                    Width = "90%",
+                });
+
+
+                // Add the new record to the list
+                newCertificates.Add(new PlayerIssuedCertificate
+                {
+                    GameHeldDistrict = districtName,
+                    GameHeldDistrictPB = player.GameHeldDistrictPB,
+                    ApplicantGame = gameName,
+                    ApplicantGamePB = player.ApplicantGamePB,
+                    ApplicantAgeGroup = ageGroup,
+                    ApplicantAgeGroupPB = player.ApplicantAgeGroupPB,
+                    ApplicantFullName = player.ApplicantFullName,
+                    ApplicantFullNamePB = player.ApplicantFullNamePB,
+                    ApplicantFatherName = player.ApplicantFatherName,
+                    ApplicantFatherNamePB = player.ApplicantFatherNamePB,
+                    ApplicantDOB = player.ApplicantDOB,
+                    ApplicantEvent = player.ApplicantEvent,
+                    ApplicantEventPB = player.ApplicantEventPB,
+                    CertificateSerialNo = certificateNo,
+                    CertificatePath = filePath,
+                    TournamentFrom = fromDate,
+                    TournamentTo = toDate,
+                    GameRepresentingDistrict = player.GameRepresentingDistrict,
+                    GameRepresentingDistrictPB = player.GameRepresentingDistrictPB,
+                    Score = player.Score,
+                    ScorePB = player.ScorePB,
+                    ApplicantMobileNo = player.ApplicantMobileNo,
+                    Position = player.Position,
+                    ConveyorName = player.ConveyorName,
+                    CertificateGeneratedTime = DateTime.UtcNow,
+
+                });
+                hashCertificates.Add(new VerifyCertificate
+                {
+                    CertificateSerialNo = certificateNo,
+                    CertificateHashKey = hasCertificateId
+                });
+                newSerialNumber++; // Increment serial number for the next certificate
+            }
+            // **Save all records at once**
+            if (newCertificates.Any() && hashCertificates.Any())
+            {
+                await _servicePlusContext.PlayerIssuedCertificate.AddRangeAsync(newCertificates);
+                await _servicePlusContext.VerifyCertificates.AddRangeAsync(hashCertificates);
+                await _servicePlusContext.SaveChangesAsync();
+            }
+            return newCertificates.Count.ToString();
+        }
+     
+        [HttpPost("BulkUpdateNameFieldsFromSheet")]
+        public async Task<IActionResult> BulkUpdateNameFieldsFromSheet()
+        {
+            // Create the service (if not injected via constructor)
+            var googleSheetsService = new GoogleSheetsService(_servicePlusContext);
+
+            // Call the method and store result
+            var result = await googleSheetsService.BulkUpdateNameFieldsFromSheet();
+
+            // Return response based on result
+            if (result.Success)
+            {
+                return Ok(new
+                {
+                    Message = $"{result.UpdatedCount} record(s) updated successfully from the sheet.",
+                    UpdatedCount = result.UpdatedCount
+                });
+            }
+
+            return BadRequest(new
+            {
+                Message = "Update failed or no matching CertificateSerialNo found.",
+                UpdatedCount = 0
+            });
+        }
+
+
+
+
+
+        public class UpdateNameRequest
+        {
+            public string CertificateSerialNo { get; set; }
+            public string ApplicantFullNamePB { get; set; }
+            public string ApplicantFatherNamePB { get; set; }
+        }
+
+
+        [Route("UpdateCertificatePlayersFromSpreadSheet")]
+        [HttpPost]
+        public async Task<IActionResult> UpdateCertificatePlayersFromSpreadSheet()
+        {
+
+            var googleSheetsService = new GoogleSheetsService(_servicePlusContext); // Pass the context here
+            var playerDetails = await googleSheetsService.GetFilteredPlayerCertificateDetails();
+
+            if (playerDetails)
+            {
+
+                return Ok("Record Updated Successfully");
+            }
+            else
+            {
+                return BadRequest(new { message = "No record found" });
+            }
+        }
+
+        private async Task<string> GenerateExistingCertificates(string districtName, string gameName, string ageGroup)
+        {
+            // District-wise serial number prefixes to create Folder Name
+            var districtPrefixes = new Dictionary<string, string>
+    {
+        { "AMRITSAR", "ASR" },
+        { "BARNALA", "BNL" },
+        { "BATHINDA", "BAT" },
+        { "FARIDKOT", "FDK" },
+        { "FATEHGARH SAHIB", "FGS" },
+        { "FAZILKA", "FAZ" },
+        { "FEROZEPUR", "FZR" },
+        { "GURDASPUR", "GSP" },
+        { "HOSHIARPUR", "HSP" },
+        { "JALANDHAR", "JAL" },
+        { "KAPURTHALA", "KPT" },
+        { "LUDHIANA", "LDH" },
+        { "MALERKOTLA", "MLK" },
+        { "MANSA", "MAN" },
+        { "MOGA", "MOG" },
+        { "PATHANKOT", "PKT" },
+        { "PATIALA", "PAT" },
+        { "RUPNAGAR", "RPR" },
+        { "SAS NAGAR", "SAS" },
+        { "SANGRUR", "SGR" },
+        { "SBSNAGAR", "SBS" },
+        { "SRI MUKTSAR SAHIB", "SMS" },
+        { "TARN TARAN", "TTN" }
+
+        // Add more districts as needed
+    };
+
+            // Get the prefix for the given district, default to "GEN000" if not found
+            string randomDistrictSr = districtPrefixes.ContainsKey(districtName.ToUpper())
+                ? districtPrefixes[districtName.ToUpper()]
+                : "GEN000";
+
+            // Fetch issued certificates first (executed on DB)
+            var existingCertificates = await _servicePlusContext.PlayerIssuedCertificate
+                .Where(c => c.GameHeldDistrict == districtName
+                            && c.ApplicantGame == gameName
+                            && c.ApplicantAgeGroup == ageGroup
+                            && c.CertificateSerialNo != null)
+                .ToListAsync(); // Move data to memory
+
+            
+            //  var getSigns = playerCertificateDetails.FirstOrDefault();
+
+            // Signature For Convenor
+            // Define the base directory where images are stored
+            string baseDirectory = @"http://10.147.24.36:8082/SSD/Sports_Signature";
+
+            // Dictionary to store (district, game) as key and image path as value
+            Dictionary<(string, string), string> gameSignatures = new Dictionary<(string, string), string>
+{
+                    //Amritsar
+                    { ("AMRITSAR", "GATKA"), $@"{baseDirectory}/Amritsar/Gatka Convenor Sign/Gatka Convenor Sign.png" },
+                    { ("AMRITSAR", "RUGBY"), $@"{baseDirectory}/Amritsar/Rugby Convenor Sign/Rugby Convenor Sign.png" },
+
+                    //Barnala
+                    { ("BARNALA", "NETBALL"), $@"{baseDirectory}/Barnala/Netball Convenor Sign/Netball English Convenor Sign.png" },
+                    { ("BARNALA", "TABLE TENNIS"), $@"{baseDirectory}/Barnala/Table Tennis Convenor Sign/Table Tennis Convenor Sign.png" },
+                    { ("BARNALA", "BADMINTON"), $@"{baseDirectory}/Barnala/Badminton Convenor Sign/BADMINTON Convenor Sign.png" },
+
+                    //Bathinda
+                    { ("BATHINDA", "HOCKEY"), $@"{baseDirectory}/Bathinda/Hocky Convenor Sign/HOCKEY Convenor Sign.png" },
+                    { ("BATHINDA", "POWERLIFTING"), $@"{baseDirectory}/Bathinda/Powerlifting Convenor Sign/POWERLIFTING Convenor Sign.png" },
+
+                    //Faridkot
+                    { ("FARIDKOT", "BASKETBALL"), $@"{baseDirectory}/Faridkot/Basketball Convenor Sign/Basketball Convenor Sign.png" },
+                    { ("FARIDKOT", "TAEKWONDO"), $@"{baseDirectory}/Faridkot/Taekwondo Convenor Sign/Taekwondo Convenor Sign.png" },
+
+                    //Fatehgarh Sahib
+                    { ("FATEHGARH SAHIB", "FENCING"), $@"{baseDirectory}/Fatehgarh Sahib/Fencing Convenor Sign/FENCING Convenor Sign.png" },
+                    { ("FATEHGARH SAHIB", "SOFTBALL"), $@"{baseDirectory}/Fatehgarh Sahib/Softball Convenor Sign/SOFT Convenor Sign.png" },
+
+                    //Hoshiarpur
+                    { ("HOSHIARPUR", "FOOTBALL"), $@"{baseDirectory}/Hoshiarpur/Football Convenor Sign/Football Convenor Sign.png" },
+
+                    //Jalandhar
+                    { ("JALANDHAR", "CHESS"), $@"{baseDirectory}/Jalandhar/Chess Convenor Sign/Chess Convenor Sign.png" },
+                    { ("JALANDHAR", "VOLLEYBALL SMASHING"), $@"{baseDirectory}/Jalandhar/Volleyball Smashing Convenor Sign/Volleyball Smashing Convener sign.png" },
+
+                    //Ludhiana
+                    { ("LUDHIANA", "ATHLETICS"), $@"{baseDirectory}/Ludhiana/Athletics Convenor Sign/ATHLETICS Convenor Sign.png" },
+                    { ("LUDHIANA", "BASEBALL"), $@"{baseDirectory}/Ludhiana/Baseball Convenor Sign/BASEBALL Convenor Sign.png" },
+                    { ("LUDHIANA", "CYCLING"), $@"{baseDirectory}/Ludhiana/Cycling Convenor Sign/CYCLING Convenor Sign.png" },
+                    { ("LUDHIANA", "KICK BOXING"), $@"{baseDirectory}/Ludhiana/Kick Boxing Convenor Sign/KICKBOXING-removebg-preview.png" },
+                    { ("LUDHIANA", "LAWN TENNIS"), $@"{baseDirectory}/Ludhiana/Lawn Tennis Convenor Sign/image-removebg-preview.png" },
+
+                    //Malerkotla
+                    { ("MALERKOTLA", "VOLLEYBALL SHOOTING"), $@"{baseDirectory}/Malerkotla/Volleyball Shooting Convenor Sign/Volleyball Shooting Sign.png" },
+
+                    //Mansa
+                    { ("MANSA", "JUDO"), $@"{baseDirectory}/Mansa/Judo Convenor Sign/JUDO Convenor Sign.png" },
+                    { ("MANSA", "WRESTLING"), $@"{baseDirectory}/Mansa/Wrestling Convenor Sign/Wrestling Convenor Sign.png" },
+
+                    //Patiala
+                    { ("PATIALA", "ARCHERY"), $@"{baseDirectory}/Patiala/Archary Convenor Sign/ARCHERY Convenor Sign.png" },
+                    { ("PATIALA", "GYMNASTICS"), $@"{baseDirectory}/Patiala/Gymnastics Convenor Sign/GYMNASTICS Convenor Sign.png" },
+                    { ("PATIALA", "CIRCLE KABADDI"), $@"{baseDirectory}/Patiala/Kabbadi circle style Convenor Sign/KABADDI CS Convenor Sign.png" },
+                    { ("PATIALA", "KHO KHO"), $@"{baseDirectory}/Patiala/Kho-Kho Convenor Sign/KHO KHO Convenor Sign.png" },
+
+                    //Rupnagar
+                    { ("RUPNAGAR", "HANDBALL"), $@"{baseDirectory}/Rupnagar/Handball Convenor Sign/Handball Convenor Sign.png" },
+                    { ("RUPNAGAR", "KAYAKING"), $@"{baseDirectory}/Rupnagar/Kayking and Canoining Convenor Sign/Kayaking__Canoeing.png" },
+                    { ("RUPNAGAR", "CANOEING"), $@"{baseDirectory}/Rupnagar/Kayking and Canoining Convenor Sign/Kayaking__Canoeing.png" },
+                    { ("RUPNAGAR", "DRAGON BOAT"), $@"{baseDirectory}/Rupnagar/Kayking and Canoining Convenor Sign/Kayaking__Canoeing.png" },
+                    { ("RUPNAGAR", "ROWING"), $@"{baseDirectory}/Rupnagar/Rowing Convenor Sign/Rowing_Convenor Sign.png" },
+                    
+                    //Sangrur
+                    { ("SANGRUR", "KABADDI NATIONAL STYLE"), $@"{baseDirectory}/Sangrur/Kabaddi National Style Convenor Sign/Kabaddi National Convenor Sign.png" },
+                    { ("SANGRUR", "ROLLER SKATING"), $@"{baseDirectory}/Sangrur/Roller Skating Convenor Sign/Rollar Skating Convenor Sign.png" },
+                    { ("SANGRUR", "Roller Skating Speed Skating"), $@"{baseDirectory}/Sangrur/Roller Skating Convenor Sign/Rollar Skating Convenor Sign.png" },
+                    { ("SANGRUR", "WEIGHT LIFTING"), $@"{baseDirectory}/Sangrur/Weightlifting Convenor SIgn/WL Convenor Sign.png" },
+                    { ("SANGRUR", "WUSHU"), $@"{baseDirectory}/Sangrur/Wushu Convenor Sign/WUSHU Convenor Sign.png" },
+
+                    //SAS Nagar
+                    { ("SAS NAGAR", "EQUESTRAIN"), $@"{baseDirectory}/SAS Nagar/Equestrian Convenor Sign/Equestrian Convenor Sign.png" },
+                    { ("SAS NAGAR", "SHOOTING"), $@"{baseDirectory}/SAS Nagar/Shooting Convenor Sign/Shooting Convenor Sign.png" },
+                    { ("SAS NAGAR", "SWIMMING"), $@"{baseDirectory}/SAS Nagar/Swimming Convenor Sign/Swimming Convenor Sign.png" },
+
+                    //SAS Nagar
+                    { ("SBSNAGAR", "BOXING"), $@"{baseDirectory}/SBS Nagar/Boxing Convenor Sign/Boxing Convenor Sign.png" },
+
+                };
+
+            // Normalize input (Trim spaces and capitalize first letter)
+            districtName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(districtName);
+            gameName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(gameName);
+
+            // Try to get the image path from the dictionary
+            if (!gameSignatures.TryGetValue((districtName, gameName), out string ConveyorImagePath))
+            {
+                ConveyorImagePath = "./images/default-sign.png"; // Fallback image if not found
+            }
+
+
+
+
+            Dictionary<string, string> dsoSignatures = new Dictionary<string, string>
+{
+                        { "AMRITSAR", $@"{baseDirectory}/Amritsar/DSO Sign/Amritsar DSO.png" },
+                        { "BARNALA", $@"{baseDirectory}/Barnala/DSO Sign/DSO Sign.png" },
+                        { "BATHINDA", $@"{baseDirectory}/Bathinda/DSO Sign/DSo Sign.png" },
+                        { "FARIDKOT", $@"{baseDirectory}/Faridkot/DSO Sign/DSO Sign.png" },
+                        { "FATEHGARH SAHIB", $@"{baseDirectory}/Fatehgarh Sahib/DSO Sign/DSO Sign.png" },
+                        { "HOSHIARPUR", $@"{baseDirectory}/Hoshiarpur/DSO Sign/DSO Sign.png" },
+                        { "JALANDHAR", $@"{baseDirectory}/Jalandhar/DSO Sign/DSO Sign.png" },
+                        { "LUDHIANA", $@"{baseDirectory}/Ludhiana/DSO Sign/DSO Sign.png" },
+                        { "MALERKOTLA", $@"{baseDirectory}/Malerkotla/DSO Sign/DSO Sign.png" },
+                        { "MANSA", $@"{baseDirectory}/Mansa/DSO Sign/DSO Sign.png" },
+                        { "PATIALA", $@"{baseDirectory}/Patiala/DSO Sign/DSO Sign.png" },
+                        { "RUPNAGAR", $@"{baseDirectory}/Rupnagar/DSO Sign/DSO Sign.png" },
+                        { "SANGRUR", $@"{baseDirectory}/Sangrur/DSO Sign/DSO Sign.png" },
+                        { "SAS NAGAR", $@"{baseDirectory}/SAS Nagar/DSO Sign/DSO Sign.png" },
+                        { "SBSNAGAR", $@"{baseDirectory}/SBS Nagar/DSO Sign/DSO Sign.png" }
+                    };
+
+            districtName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(districtName);
+
+            // Try to get the image path from the dictionary
+            if (!dsoSignatures.TryGetValue((districtName), out string dsoImagePath))
+            {
+                dsoImagePath = "./images/default-sign.png"; // Fallback image if not found
+            }
+
+            
+             
+            
+            string fromDate = "";
+            string toDate = "";
+            //to get Game From and To Date
+            var gameFromToDate = new Dictionary<(string, string), (string fromDate, string toDate)>
+        {
+
+
+                                { ("AMRITSAR", "GATKA"), ("07-11-2024", "10-11-2024") },
+                                { ("AMRITSAR", "RUGBY"), ("07-11-2024", "10-11-2024") },
+
+                                // Barnala
+                                { ("BARNALA", "NETBALL"), ("25-11-2024", "30-11-2024") },
+                                { ("BARNALA", "TABLE TENNIS"), ("25-11-2024", "30-11-2024") },
+                                { ("BARNALA", "BADMINTON"), ("25-11-2024", "30-11-2024") },
+
+                                // Bathinda
+                                { ("BATHINDA", "HOCKEY"), ("17-10-2024", "24-10-2024") },
+                                { ("BATHINDA", "POWERLIFTING"), ("19-10-2024", "24-10-2024") },
+
+                                // Faridkot
+                                {  ("FARIDKOT", "BASKETBALL"), ("09-12-2024", "14-12-2024") },
+                                { ("FARIDKOT", "TAEKWONDO"), ("09-12-2024", "14-12-2024") },
+
+                                // Fatehgarh Sahib
+                                { ("FATEHGARH SAHIB", "FENCING"), ("19-10-2024", "24-10-2024") },
+                                { ("FATEHGARH SAHIB", "SOFTBALL"), ("19-10-2024", "24-10-2024") },
+
+                                // Hoshiarpur
+                                { ("HOSHIARPUR", "FOOTBALL"), ("04-11-2024", "10-11-2024") },
+
+                                // Jalandhar
+                                { ("JALANDHAR", "CHESS"), ("15-11-2024", "22-11-2024") },
+                                { ("JALANDHAR", "VOLLEYBALL SMASHING"), ("15-11-2024", "22-11-2024") },
+
+                                // Ludhiana
+                                { ("LUDHIANA", "ATHLETICS"), ("04-11-2024", "09-11-2024") },
+                                { ("LUDHIANA", "BASEBALL"), ("04-11-2024", "09-11-2024") },
+                                { ("LUDHIANA", "CYCLING"),    ("27-11-2024", "29-11-2024") },
+                                { ("LUDHIANA", "KICK BOXING"), ("04-11-2024", "09-11-2024") },
+                                { ("LUDHIANA", "LAWN TENNIS"), ("04-11-2024", "09-11-2024") },
+
+                                // Malerkotla
+                                { ("MALERKOTLA", "VOLLEYBALL SHOOTING"), ("06-11-2024", "09-11-2024") },
+
+                                // Mansa
+                                { ("MANSA", "JUDO"),      ("19-10-2024", "24-10-2024") },
+                                { ("MANSA", "WRESTLING"), ("19-10-2024", "24-10-2024") },
+
+                                // Patiala
+                                { ("PATIALA", "ARCHERY"),        ("04-11-2024", "09-11-2024") },
+                                { ("PATIALA", "GYMNASTICS"),     ("08-11-2024", "11-11-2024") },
+                                { ("PATIALA", "CIRCLE KABADDI"), ("04-11-2024", "09-11-2024") },
+                                { ("PATIALA", "KHO KHO"),          ("04-11-2024", "09-11-2024") },
+
+                                // Rupnagar
+                                { ("RUPNAGAR", "HANDBALL"), ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "KAYAKING"), ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "CANOEING"),   ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "ROWING"),   ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "DRAGON BOAT"),   ("16-11-2024", "21-11-2024") },
+                                  
+                                // Sangrur
+                                {  ("SANGRUR", "KABADDI NATIONAL STYLE"),        ("16-11-2024", "21-11-2024") },
+                                {  ("SANGRUR", "ROLLER SKATING"), ("16-11-2024", "21-11-2024") },
+                                { ("SANGRUR", "WEIGHT LIFTING"), ("16-11-2024", "21-11-2024") },
+                                { ("SANGRUR", "WUSHU"),           ("16-11-2024", "21-11-2024") },
+
+                                 
+                                // SAS Nagar
+                                { ("SAS NAGAR", "EQUESTRAIN"), ("20-11-2024", "24-11-2024") },
+                                { ("SAS NAGAR", "SHOOTING"),   ("13-11-2024", "17-11-2024") },
+                                { ("SAS NAGAR", "SWIMMING"),   ("21-10-2024", "24-10-2024") },
+
+                                // SBS Nagar
+                                { ("SBSNAGAR", "BOXING"), ("16-11-2024", "24-11-2024") },
+            };
+
+
+            (fromDate, toDate) = GetGameDates(districtName, gameName, gameFromToDate);
+            static (string fromDate, string toDate) GetGameDates(string district, string game, Dictionary<(string, string), (string fromDate, string toDate)> gameFromToDate)
+            {
+                // Check if the dictionary contains the key (district, game)
+                if (gameFromToDate.TryGetValue((district, game), out var dates))
+                {
+                    return dates; // If found, return the dates
+                }
+
+                return ("", ""); // If not found, return default message
+            }
+            
+            await new BrowserFetcher().DownloadAsync();
+            await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+            {
+                Headless = true,
+                Args = new[] {
+                "--font-render-hinting=none",
+                "--force-color-profile=srgb"
+            }
+            });
+            var getAllVerifiedCertificate = await _servicePlusContext.VerifyCertificates.AsNoTracking().ToListAsync();
+            await using var page = await browser.NewPageAsync();
+            await page.SetUserAgentAsync("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36");
+            await page.EmulateMediaTypeAsync(MediaType.Screen);
+
+            foreach (var player in existingCertificates)
+            {
+                
+
+                //string certificateNo = newSerialNumber.ToString("D6");
+
+                string formattedGameName = gameName.Replace(" ", ""); // Remove spaces
+                string certificateNo = player.CertificateSerialNo;
+                // Define folder hierarchy
+                string baseFolder = "GeneratedCertificates"; // First folder
+                string districtFolder = $"{districtName}"; // Second folder
+                string gameFolder = gameName; // Third folder
+                string ageGroupFolder = ageGroup; // Fourth folder
+               
+                // Combine paths to create full directory structure
+                string folderPath = Path.Combine(Directory.GetCurrentDirectory(), baseFolder, districtFolder, gameFolder, ageGroupFolder);
+
+                // Check if directory exists, if not, create it
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
+
+
+                // Define certificate filename
+                string fileName = $"{certificateNo}.pdf";
+                string filePath = Path.Combine(folderPath, fileName);
+                // Further processing...
+
+                var hasCertificateId = getAllVerifiedCertificate.Where(d=>d.CertificateSerialNo==player.CertificateSerialNo).Select(d=>d.CertificateHashKey).FirstOrDefault();
+
+                string htmlContent = $@"<html>
+        <head>
+            <style>
+                body {{ margin: 0; padding: 0; font-family: Arial, sans-serif; }}
+                #certificate-container {{
+                    position: fixed;
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
+                }}
+                #background-img {{
+                    position: fixed;
+                    padding-left:6px;
+                    padding-right:4px;
+                    padding-top:6px;
+                    padding-bottom:6px;
+
+                    width: 99%;
+                    height: 98%;
+                }}
+                .text-bold {{ font-weight: bold; }}
+            </style>
+        </head>
+        <body>
+            <img id='background-img' src='http://10.147.24.36:8082/SSD/SportsCertificateBgNew.png' />
+            <div id='certificate-container'>
+                <div style='position: absolute; top: 16%; left: 10%; width: 80%; height:100%; padding: 30px; border-radius: 10px; box-sizing: border-box; text-align: center;'>
+                    <div style='margin: 8px 0; font-size: 16px; font-weight: bold; position: absolute; top: -12%; right: 3%;'>
+                        ਸਰਟੀਫਿਕੇਟ ਨੰ. : {certificateNo}
+                    <div style='text-align: center; margin-top: 15px;margin-left:30px;'>
+                        <img src='data:image/png;base64,{await GetBase64QRCode(hasCertificateId)}' width='100' height='100'/>
+                        <p style='margin-top: 3px;'>Scan to verify</p>
+                    </div>
+
+                    </div>
+                    <div class='text-bold' style=' font-size: 25px; font-weight: bold; padding-top: 2px;'>ਖੇਡਾਂ ਅਤੇ ਯੁਵਾ ਮਾਮਲੇ ਵਿਭਾਗ</div>
+<img style='width: 42%;height: 3%;' src='http://10.147.24.36:8082/SSD/arrow.png'>
+                    <div style='margin: 3px 0;  '>
+                        <span style='font-size:35px; color: #3d387c;'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024 (ਸੀਜ਼ਨ-3)</strong></span>
+                    </div>
+    <div style='margin: 5px 0; font-size: 22px; margin-top: 3px; font-weight: bold;'>ਮੈਰਿਟ ਸਰਟੀਫਿਕੇਟ</div>
+              <div style='
+            display: inline-block; 
+            background-color: #d32f2f; 
+            color: white; 
+            padding: 6px 18px; 
+            border-radius: 20px 0 20px 0; 
+            font-size: 16px; 
+            font-weight: bold; 
+            font-family: 'Gurmukhi', Arial, sans-serif;'>ਰਾਜ ਪੱਧਰੀ ਟੂਰਨਾਮੈਂਟ</div>
+              
+             <div style=' font-size: 20px; margin-top: 3px; font-weight: bold;'>{player.GameHeldDistrictPB}</div>
+                    <div style='margin: 10px 0; font-size: 18px; font-weight: bold;'>
+                        ਮਿਤੀ <strong>{fromDate}</strong> ਤੋਂ ਮਿਤੀ  <strong>{toDate} ਤੱਕ </strong>
+                    </div> 
+                   <div style='text-align: justify; margin-top: 5px; font-size: 16px;line-height:2.5;'>
+                            ਤਸਦੀਕ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ 
+                            <strong>
+                                <span style='display: inline-block; width: 83%; text-align: center;  border-bottom: 0.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>
+                                    {player.ApplicantFullNamePB}
+                                </span>
+                            </strong><br>
+                            ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ 
+                            <strong><span style='display: inline-block; width: 39%; text-align: center; border-bottom:0.2px dashed #000; min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.ApplicantFatherNamePB}</span></strong>
+                             ਜਨਮ ਮਿਤੀ 
+                            <strong><span style='display: inline-block; width: 43%; text-align: center; border-bottom: 0.3px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.ApplicantDOB}</span></strong><br>
+                            ਨੇ ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024 ਵਿੱਚ ਜ਼ਿਲ੍ਹਾ 
+                            <strong><span style='display: inline-block; width: 72%; text-align: center; border-bottom: 0.4px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.GameRepresentingDistrictPB}</span></strong> <br>
+                            ਵਲੋਂ ਖੇਡ 
+                            <strong><span style='display: inline-block; width: 44%; text-align: center; border-bottom: 0.6px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(player.ApplicantGamePB)}</span></strong>  
+                            ਈਵੈਂਟ/ਵਰਗ 
+                            <strong><span style='display: inline-block; width: 41%; text-align: center; border-bottom: 0.7px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.ApplicantEventPB}</span></strong> <br>
+                            ਈਵੈਂਟ ਸਮਾਂ/ਦੂਰੀ/ਉਚਾਈ/ਭਾਰ 
+                            <strong><span style='display: inline-block; width: 35%; text-align: center; border-bottom: 0.8px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(player.ScorePB)}</span></strong>  
+                            ਵਿਚ ਭਾਗ ਲਿਆ ਅਤੇ 
+                            <strong><span style='display: inline-block; width: 22%; text-align: center; border-bottom: 0.9px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.Position}</span></strong>  
+                            ਸਥਾਨ ਪ੍ਰਾਪਤ ਕੀਤਾ <br>
+                            ਉਮਰ ਵਰਗ (ਸਾਲ)
+                            <strong><span style='display: inline-block; width: 42%; text-align: center; border-bottom: 1.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{player.ApplicantAgeGroupPB}</span></strong>
+                        <strong><span style='display:  inline-block; width: 45%; text-align: center; border-bottom: 0px dashed #000;'> </span></strong>
+                     </div>                
+
+                    <div style='display: flex; justify-content: space-between; align-items: center; margin: 60px 0 0; text-align: center; flex-direction: column; position: relative;'>
+
+            <!-- Image Section -->
+            <div style='display: flex; justify-content: space-between; width: 100%; position: relative;'>
+                <div style='width: 33.33%; position: relative;'>
+                    <img src='{ConveyorImagePath}' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -38px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                </div>
+                <div style='width: 33.33%; position: relative;'>
+                    <img src='{dsoImagePath}' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -43px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                </div>
+                <div style='width: 35%; position: relative;'>
+                    <img src='' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -43px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                </div>
+            </div>
+        
+            <!-- Text Section -->
+            <div style='display: flex; justify-content: space-between; width: 100%; position: relative;'>
+                <div style='width: 33.33%; position: relative;'>
+                    <span style='font-size: 18px; display: block;'>ਕਨਵੀਨਰ</span>
+                </div>
+                <div style='width: 33.33%; position: relative;'>
+                    <span style='font-size: 18px; display: block;'>ਜ਼ਿਲ੍ਹਾ ਖੇਡ ਅਫ਼ਸਰ</span>
+                </div>
+                <div style='width: 35%; text-align:center; position: relative;'>
+                    <span style='font-size: 18px; display: block;'>ਡਾਇਰੈਕਟਰ ਸਪੋਰਟਸ <br />ਪੰਜਾਬ</span>
+                </div>
+            </div>
+        
+        </div>
+                </div>
+            </div>
+        </body>
+        </html>";
+
+                await page.SetContentAsync(htmlContent);
+
+                await page.PdfAsync(filePath, new PdfOptions
+                {
+                    PrintBackground = true,
+                    Format = PaperFormat.Legal,
+                    Landscape = true,
+                    Width = "90%",
+                });
+
+
+                // Add the new record to the list
+              
+            }
+            // **Save all records at once**
+            
+            return existingCertificates.Count().ToString();
+        }
+
+        private async Task<string> GetScoreInPunjabi(string score)
+        {
+            // Use if-else to handle multiple possible values
+            if (score == "1st" || score == "First")
+            {
+                return "ਪਹਿਲਾ";
+            }
+            else if (score == "2nd" || score == "Second")
+            {
+                return "ਦੂਜਾ";
+            }
+            else if (score == "3rd" || score == "Third")
+            {
+                return "ਤੀਜਾ";
+            }
+            else
+            {
+                return "";
+            }
+        }
+
+        private async Task<string> GetPunjabiGameName(string game)
+        {
+            var gameSorted = game.ToLower().Trim();
+            switch (gameSorted) // Convert input to lowercase for case insensitivity
+            {
+                case "athletics":
+                    return "ਐਥਲੈਟਿਕਸ";
+                case "VOLLEYBALL":
+                    return "ਵਾਲੀਬਾਲ";
+                case "volleyball (shooting)":
+                    return "ਵਾਲੀਬਾਲ (ਸ਼ੂਟਿੰਗ)";
+                case "football":
+                    return "ਫੁੱਟਬਾਲ";
+                case "KABADDI CIRCLE":
+                    return "ਕਬੱਡੀ ਸਰਕਲ";
+                case "KABADDI NATIONAL":
+                    return "ਕਬੱਡੀ ਨੈਸ਼ਨਲ";
+                case "KHO KHO":
+                    return "ਖੋ-ਖੋ";
+                case "powerlifting":
+                    return "ਪਾਵਰਲਿਫਟਿੰਗ";
+                case "hockey":
+                    return "ਹਾਕੀ";
+                case "Softball":
+                    return "ਸੌਫਟਬਾਲ";
+                case "Fencing":
+                    return "ਫੈਨਸਿੰਗ";
+                case "judo":
+                    return "ਜੂਡੋ";
+                case "Wrestling":
+                    return "ਕੁਸ਼ਤੀ";
+                case "swimming":
+                    return "ਤੈਰਨਾ";
+                case "horse riding":
+                    return "ਘੋੜਸਵਾਰੀ";
+                case "shooting":
+                    return "ਸ਼ੂਟਿੰਗ";
+                case "Basketball":
+                    return "ਬਾਸਕਟਬਾਲ";
+                case "taekwando":
+                    return "ਟੈਕਵਾਂਡੋ";
+                case "Rugby":
+                    return "ਰਗਬੀ";
+                case "gatka":
+                    return "ਗਤਕਾ";
+                case "cycling":
+                    return "ਸਾਈਕਲਿੰਗ";
+                case "lawn tennis":
+                    return "ਲਾਨ ਟੈਨਿਸ";
+                case "BASEBALL":
+                    return "ਬੇਸਬਾਲ";
+                case "Kick Boxing":
+                    return "ਕਿੱਕ ਬਾਕਸਿੰਗ";
+                case "gymnastics":
+                    return "ਜਿਮਨਾਸਟਿਕਸ";
+                case "archery":
+                    return "ਤੀਰੰਧਾਜ਼ੀ";
+                case "chess":
+                    return "ਸ਼ਤਰੰਜ";
+                case "table tennis":
+                    return "ਟੇਬਲ ਟੈਨਿਸ";
+                case "BADMINTON":
+                    return "ਬੈਡਮਿੰਟਨ";
+                case "NETBALL":
+                    return "ਨੈੱਟਬਾਲ";
+                case "WEIGHT LIFTING":
+                    return "ਭਾਰ ਉਠਾਉਣਾ";
+                case "ROLLER SKATING":
+                    return "ਰੋਲਰ ਸਕੇਟਿੰਗ";
+                case "WUSHU":
+                    return "ਵੁਸ਼ੂ";
+                case "rowing":
+                    return "ਰੋਇੰਗ";
+                case "kaeking kanoing":
+                    return "ਕੈਕਿੰਗ ਕੈਨੋਇੰਗ";
+                case "HANDBALL":
+                    return "ਹੈਂਡਬਾਲ";
+                case "boxing":
+                    return "ਬਾਕਸਿੰਗ";
+                default:
+                    return "";
+            }
+        }
+
+
+        [Route("GetIndividualPlayerCertificateDetail")]
+        [HttpPost]
+        public async Task<IActionResult> GetIndividualPlayerCertificateDetail(string certificateSerialNo)
+        {
+            await GenerateIndividualPlayerCertificate(certificateSerialNo);
+            return Ok(" Record Updated Successfully");
+
+        }
+       
+        private async Task<bool> GenerateIndividualPlayerCertificate(string certificateSerialNo)
+        {
+            // District-wise serial number prefixes to create Folder Name
+            var districtPrefixes = new Dictionary<string, string>
+    {
+        { "AMRITSAR", "ASR" },
+        { "BARNALA", "BNL" },
+        { "BATHINDA", "BAT" },
+        { "FARIDKOT", "FDK" },
+        { "FATEHGARH SAHIB", "FGS" },
+        { "FAZILKA", "FAZ" },
+        { "FEROZEPUR", "FZR" },
+        { "GURDASPUR", "GSP" },
+        { "HOSHIARPUR", "HSP" },
+        { "JALANDHAR", "JAL" },
+        { "KAPURTHALA", "KPT" },
+        { "LUDHIANA", "LDH" },
+        { "MALERKOTLA", "MLK" },
+        { "MANSA", "MAN" },
+        { "MOGA", "MOG" },
+        { "PATHANKOT", "PKT" },
+        { "PATIALA", "PAT" },
+        { "RUPNAGAR", "RPR" },
+        { "S.A.S NAGAR", "SAS" },
+        { "SANGRUR", "SGR" },
+        { "SHAHID BHAGAT SINGH NAGAR", "SBS" },
+        { "SRI MUKTSAR SAHIB", "SMS" },
+        { "TARN TARAN", "TTN" }
+
+        // Add more districts as needed
+    };
+
+            // Fetch issued certificates first (executed on DB)
+            var existingCertificates = await _servicePlusContext.PlayerIssuedCertificate
+                .Where(c => c.CertificateSerialNo == certificateSerialNo
+                            && c.CertificateSerialNo != null)
+                .FirstOrDefaultAsync(); // Move data to memory
+            var certificateVerifyDetails = await _servicePlusContext.VerifyCertificates.Where(d => d.CertificateSerialNo == certificateSerialNo).FirstOrDefaultAsync();
+
+            var guidPart = Guid.NewGuid().ToString("N").Substring(0, 4); // First 4 characters of GUID
+            var hasCertificateId = await GenerateSecureCertificateId(certificateSerialNo) + guidPart;
+
+
+
+
+
+            // Signature For Convenor
+            // Define the base directory where images are stored
+            string baseDirectory = @"http://10.147.24.36:8082/SSD/SportsSignature";
+
+            // Dictionary to store (district, game) as key and image path as value
+            Dictionary<(string, string), string> gameSignatures = new Dictionary<(string, string), string>
+{
+                    //Amritsar
+                    { ("Amritsar", "Gatka"), $@"{baseDirectory}/Amritsar/Gatka Convenor Sign/Gatka Convenor Sign.png" },
+                    { ("Amritsar", "Rugby"), $@"{baseDirectory}/Amritsar/Rugby Convenor Sign/Rugby Convenor Sign.png" },
+
+                    //Barnala
+                    { ("Barnala", "Netball"), $@"{baseDirectory}/Barnala/Netball Convenor Sign/Netball English Convenor Sign.png" },
+                    { ("Barnala", "Table Tennis"), $@"{baseDirectory}/Barnala/Table Tennis Convenor Sign/Table Tennis Convenor Sign.png" },
+                    { ("Barnala", "Badminton"), $@"{baseDirectory}/Barnala/Badminton Convenor Sign/BADMINTON Convenor Sign.png" },
+
+                    //Bathinda
+                    { ("Bathinda", "Hockey"), $@"{baseDirectory}/Bathinda/Hocky Convenor Sign/HOCKEY Convenor Sign.png" },
+                    { ("Bathinda", "Powerlifting"), $@"{baseDirectory}/Bathinda/Powerlifting Convenor Sign/POWERLIFTING Convenor Sign.png" },
+
+                    //Faridkot
+                    { ("Faridkot", "Basketball"), $@"{baseDirectory}/Faridkot/Basketball Convenor Sign/Basketball Convenor Sign.png" },
+                    { ("Faridkot", "Taekwondo"), $@"{baseDirectory}/Faridkot/Taekwondo Convenor Sign/Taekwondo Convenor Sign.png" },
+
+                    //Fatehgarh Sahib
+                    { ("Fatehgarh Sahib", "Fencing"), $@"{baseDirectory}/Fatehgarh Sahib/Fencing Convenor Sign/FENCING Convenor Sign.png" },
+                    { ("Fatehgarh Sahib", "Softball"), $@"{baseDirectory}/Fatehgarh Sahib/Softball Convenor Sign/SOFT Convenor Sign.png" },
+
+                    //Hoshiarpur
+                    { ("Hoshiarpur", "Football"), $@"{baseDirectory}/Hoshiarpur/Football Convenor Sign/Football Convenor Sign.png" },
+
+                    //Jalandhar
+                    { ("Jalandhar", "Chess"), $@"{baseDirectory}/Jalandhar/Chess Convenor Sign/Chess Convenor Sign.png" },
+                    { ("Jalandhar", "Volleyball Smashing"), $@"{baseDirectory}/Jalandhar/Volleyball Smashing Convenor Sign/Volleyball Smashing Convener sign.png" },
+
+                    //Ludhiana
+                    { ("Ludhiana", "Athletics"), $@"{baseDirectory}/Ludhiana/Athletics Convenor Sign/ATHLETICS Convenor Sign.png" },
+                    { ("Ludhiana", "Baseball"), $@"{baseDirectory}/Ludhiana/Baseball Convenor Sign/BASEBALL Convenor Sign.png" },
+                    { ("Ludhiana", "Cycling"), $@"{baseDirectory}/Ludhiana/Cycling Convenor Sign/CYCLING Convenor Sign.png" },
+                    { ("Ludhiana", "Kick Boxing"), $@"{baseDirectory}/Ludhiana/Kick Boxing Convenor Sign/KICKBOXING-removebg-preview.png" },
+                    { ("Ludhiana", "Lawn Tennis"), $@"{baseDirectory}/Ludhiana/Lawn Tennis Convenor Sign/image-removebg-preview.png" },
+
+                    //Malerkotla
+                    { ("Malerkotla", "Volleyball Shooting"), $@"{baseDirectory}/Malerkotla/Volleyball Shooting Convenor Sign/Volleyball Shooting Sign.png" },
+
+                    //Mansa
+                    { ("Mansa", "Judo"), $@"{baseDirectory}/Mansa/Judo Convenor Sign/JUDO Convenor Sign.png" },
+                    { ("Mansa", "Wrestling"), $@"{baseDirectory}/Mansa/Wrestling Convenor Sign/Wrestling Convenor Sign.png" },
+
+                    //Patiala
+                    { ("PATIALA", "Archary"), $@"{baseDirectory}/Patiala/Archary Convenor Sign/ARCHERY Convenor Sign.png" },
+                    { ("PATIALA", "Gymnastics"), $@"{baseDirectory}/Patiala/Gymnastics Convenor Sign/GYMNASTICS Convenor Sign.png" },
+                    { ("PATIALA", "KABADDI CIRCLE"), $@"{baseDirectory}/Patiala/Kabbadi circle style Convenor Sign/KABADDI CS Convenor Sign.png" },
+                    { ("PATIALA", "Kho-Kho"), $@"{baseDirectory}/Patiala/Kho-Kho Convenor Sign/KHO KHO Convenor Sign.png" },
+
+                    //Rupnagar
+                    { ("Rupnagar", "Handball"), $@"{baseDirectory}/Rupnagar/Handball Convenor Sign/Handball Convenor Sign.png" },
+                    { ("Rupnagar", "Kayking"), $@"{baseDirectory}/Rupnagar/Kayking and Canoining Convenor Sign/Kayaking__Canoeing.png" },
+                    { ("Rupnagar", "Rowing"), $@"{baseDirectory}/Rupnagar/Rowing Convenor Sign/Rowing_Convenor Sign.png" },
+                    
+                    //Sangrur
+                    { ("Sangrur", "Kabaddi"), $@"{baseDirectory}/Sangrur/Kabaddi National Style Convenor Sign/Kabaddi National Convenor Sign.png" },
+                    { ("Sangrur", "Roller Skating"), $@"{baseDirectory}/Sangrur/Roller Skating Convenor Sign/Rollar Skating Convenor Sign.png" },
+                    { ("Sangrur", "Roller Skating Speed Skating"), $@"{baseDirectory}/Sangrur/Roller Skating Convenor Sign/Rollar Skating Convenor Sign.png" },
+                    { ("Sangrur", "Weightlifting"), $@"{baseDirectory}/Sangrur/Weightlifting Convenor SIgn/WL Convenor Sign.png" },
+                    { ("Sangrur", "Wushu"), $@"{baseDirectory}/Sangrur/Wushu Convenor Sign/WUSHU Convenor Sign.png" },
+
+                    //SAS Nagar
+                    { ("SAS Nagar", "Equestrian"), $@"{baseDirectory}/SAS Nagar/Equestrian Convenor Sign/Equestrian Convenor Sign.png" },
+                    { ("SAS Nagar", "Shooting"), $@"{baseDirectory}/SAS Nagar/Shooting Convenor Sign/Shooting Convenor Sign.png" },
+                    { ("SAS Nagar", "Swimming"), $@"{baseDirectory}/SAS Nagar/Swimming Convenor Sign/Swimming Convenor Sign.png" },
+
+                    //SAS Nagar
+                    { ("SBS Nagar", "Boxing"), $@"{baseDirectory}/SBS Nagar/Boxing Convenor Sign/Boxing Convenor Sign.png" },
+
+                };
+
+            //// Normalize input (Trim spaces and capitalize first letter)
+            //districtName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(districtName);
+            //gameName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(gameName);
+
+            // Try to get the image path from the dictionary
+            if (!gameSignatures.TryGetValue((existingCertificates.GameHeldDistrict, existingCertificates.ApplicantGame), out string ConveyorImagePath))
+            {
+                ConveyorImagePath = "./images/default-sign.png"; // Fallback image if not found
+            }
+
+
+
+
+            Dictionary<string, string> dsoSignatures = new Dictionary<string, string>
+{
+                        { "Amritsar", $@"{baseDirectory}/Amritsar/DSO Sign/Amritsar DSO.png" },
+                        { "Barnala", $@"{baseDirectory}/Barnala/DSO Sign/DSO Sign.png" },
+                        { "Bathinda", $@"{baseDirectory}/Bathinda/DSO Sign/DSo Sign.png" },
+                        { "Faridkot", $@"{baseDirectory}/Faridkot/DSO Sign/DSO Sign.png" },
+                        { "Fatehgarh Sahib", $@"{baseDirectory}/Fatehgarh Sahib/DSO Sign/DSO Sign.png" },
+                        { "Hoshiarpur", $@"{baseDirectory}/Hoshiarpur/DSO Sign/DSO Sign.png" },
+                        { "Jalandhar", $@"{baseDirectory}/Jalandhar/DSO Sign/DSO Sign.png" },
+                        { "Ludhiana", $@"{baseDirectory}/Ludhiana/DSO Sign/DSO Sign.png" },
+                        { "Malerkotla", $@"{baseDirectory}/Malerkotla/DSO Sign/DSO Sign.png" },
+                        { "Mansa", $@"{baseDirectory}/Mansa/DSO Sign/DSO Sign.png" },
+                        { "PATIALA", $@"{baseDirectory}/Patiala/DSO Sign/DSO Sign.png" },
+                        { "Rupnagar", $@"{baseDirectory}/Rupnagar/DSO Sign/DSO Sign.png" },
+                        { "Sangrur", $@"{baseDirectory}/Sangrur/DSO Sign/DSO Sign.png" },
+                        { "SAS Nagar", $@"{baseDirectory}/SAS Nagar/DSO Sign/DSO Sign.png" },
+                        { "SBS Nagar", $@"{baseDirectory}/SBS Nagar/DSO Sign/DSO Sign.png" }
+                    };
+
+            //districtName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(districtName);
+
+            // Try to get the image path from the dictionary
+            if (!dsoSignatures.TryGetValue((existingCertificates.GameHeldDistrict), out string dsoImagePath))
+            {
+                dsoImagePath = "./images/default-sign.png"; // Fallback image if not found
+            }
+
+
+            //to get Game From and To Date
+
+            string fromDate = "";
+            string toDate = "";
+            if (existingCertificates != null)
+            {
+                fromDate = existingCertificates.TournamentFrom ?? "Not Found";
+                toDate = existingCertificates.TournamentTo ?? "Not Found";
+            }
+            else
+            {
+                Console.WriteLine("No record found for the given certificateSerialNo.");
+            }
+
+            var newCertificates = new List<PlayerIssuedCertificate>();
+
+            var hashCertificates = new List<VerifyCertificate>();
+            // Puppeteer PDF Generation Logic
+            await new BrowserFetcher().DownloadAsync();
+            await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+            {
+                Headless = true,
+                Args = new[] {
+                "--font-render-hinting=none",
+                "--force-color-profile=srgb"
+            }
+            });
+
+            await using var page = await browser.NewPageAsync();
+            await page.SetUserAgentAsync("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36");
+            await page.EmulateMediaTypeAsync(MediaType.Screen);
+
+
+
+
+            //string certificateNo = newSerialNumber.ToString("D6");
+
+            string formattedGameName = existingCertificates.ApplicantGame; // Remove spaces
+            string certificateNo = $"{certificateSerialNo}";
+            // Define folder hierarchy
+            string baseFolder = "GeneratedCertificates"; // First folder
+            string districtFolder = existingCertificates.GameHeldDistrict; // Second folder
+            string gameFolder = existingCertificates.ApplicantGame; // Third folder
+            string ageGroupFolder = existingCertificates.ApplicantAgeGroup; // Fourth folder
+
+            // Combine paths to create full directory structure
+            string folderPath = Path.Combine(Directory.GetCurrentDirectory(), baseFolder, districtFolder, gameFolder, ageGroupFolder);
+
+            // Check if directory exists, if not, create it
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+            }
+
+            // Define certificate filename
+            string fileName = $"{certificateNo}.pdf";
+            string filePath = Path.Combine(folderPath, fileName);
+            // Step 1: Check if the certificate file exists
+            if (System.IO.File.Exists(filePath))
+            {
+                // Step 2: Delete the existing certificate
+                System.IO.File.Delete(filePath);
+            }
+
+            string htmlContent = $@"<html>
+        <head>
+            <style>
+                body {{ margin: 0; padding: 0; font-family: Arial, sans-serif; }}
+                #certificate-container {{
+                    position: fixed;
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
+                }}
+                #background-img {{
+                    position: fixed;
+                    padding-left:6px;
+                    padding-right:4px;
+                    padding-top:6px;
+                    padding-bottom:6px;
+
+                    width: 99%;
+                    height: 98%;
+                }}
+                .text-bold {{ font-weight: bold; }}
+            </style>
+        </head>
+        <body>
+            <img id='background-img' src='http://10.147.24.36:8082/SSD/SportsCertificateBgNew.png' />
+            <div id='certificate-container'>
+                <div style='position: absolute; top: 16%; left: 10%; width: 80%; height:100%; padding: 30px; border-radius: 10px; box-sizing: border-box; text-align: center;'>
+                    <div style='margin: 8px 0; font-size: 16px; font-weight: bold; position: absolute; top: -12%; right: 3%;'>
+                        ਸਰਟੀਫਿਕੇਟ ਨੰ. : {certificateNo}
+                    <div style='text-align: center; margin-top: 15px;margin-left:30px;'>
+                        <img src='data:image/png;base64,{await GetBase64QRCode(hasCertificateId)}' width='100' height='100'/>
+                        <p style='margin-top: 3px;'>Scan to verify</p>
+                    </div>
+
+                    </div>
+                    <div class='text-bold' style=' font-size: 25px; font-weight: bold; padding-top: 2px;'>ਖੇਡਾਂ ਅਤੇ ਯੁਵਾ ਮਾਮਲੇ ਵਿਭਾਗ</div>
+<img style='width: 42%;height: 3%;' src='http://10.147.24.36:8082/SSD/arrow.png'>
+                    <div style='margin: 3px 0;  '>
+                        <span style='font-size:35px; color: #3d387c;'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024 (ਸੀਜ਼ਨ-3)</strong></span>
+                    </div>
+    <div style='margin: 5px 0; font-size: 22px; margin-top: 3px; font-weight: bold;'>ਮੈਰਿਟ ਸਰਟੀਫਿਕੇਟ</div>
+              <div style='
+            display: inline-block; 
+            background-color: #d32f2f; 
+            color: white; 
+            padding: 6px 18px; 
+            border-radius: 20px 0 20px 0; 
+            font-size: 16px; 
+            font-weight: bold; 
+            font-family: 'Gurmukhi', Arial, sans-serif;'>ਰਾਜ ਪੱਧਰੀ ਟੂਰਨਾਮੈਂਟ</div>
+              
+             <div style=' font-size: 20px; margin-top: 3px; font-weight: bold;'>{existingCertificates.GameHeldDistrictPB}</div>
+                    <div style='margin: 10px 0; font-size: 18px; font-weight: bold;'>
+                        ਮਿਤੀ <strong>{fromDate}</strong> ਤੋਂ ਮਿਤੀ  <strong>{toDate} ਤੱਕ </strong>
+                    </div> 
+                   <div style='text-align: justify; margin-top: 5px; font-size: 16px;line-height:2.5;'>
+                            ਤਸਦੀਕ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ 
+                            <strong>
+                                <span style='display: inline-block; width: 83%; text-align: center;  border-bottom: 0.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>
+                                    {existingCertificates.ApplicantFullNamePB}
+                                </span>
+                            </strong><br>
+                            ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ 
+                            <strong><span style='display: inline-block; width: 39%; text-align: center; border-bottom:0.2px dashed #000; min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.ApplicantFatherNamePB}</span></strong>
+                             ਜਨਮ ਮਿਤੀ 
+                            <strong><span style='display: inline-block; width: 43%; text-align: center; border-bottom: 0.3px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.ApplicantDOB}</span></strong><br>
+                            ਨੇ ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024 ਵਿੱਚ ਜ਼ਿਲ੍ਹਾ 
+                            <strong><span style='display: inline-block; width: 72%; text-align: center; border-bottom: 0.4px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.GameRepresentingDistrictPB}</span></strong> <br>
+                            ਵਲੋਂ ਖੇਡ 
+                            <strong><span style='display: inline-block; width: 44%; text-align: center; border-bottom: 0.6px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(existingCertificates.ApplicantGamePB)}</span></strong>  
+                            ਈਵੈਂਟ/ਵਰਗ 
+                            <strong><span style='display: inline-block; width: 41%; text-align: center; border-bottom: 0.7px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.ApplicantEventPB}</span></strong> <br>
+                            ਈਵੈਂਟ ਸਮਾਂ/ਦੂਰੀ/ਉਚਾਈ/ਭਾਰ 
+                            <strong><span style='display: inline-block; width: 35%; text-align: center; border-bottom: 0.8px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(existingCertificates.ScorePB)}</span></strong>  
+                            ਵਿਚ ਭਾਗ ਲਿਆ ਅਤੇ 
+                            <strong><span style='display: inline-block; width: 22%; text-align: center; border-bottom: 0.9px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.Position}</span></strong>  
+                            ਸਥਾਨ ਪ੍ਰਾਪਤ ਕੀਤਾ <br>
+                            ਉਮਰ ਵਰਗ (ਸਾਲ)
+                            <strong><span style='display: inline-block; width: 42%; text-align: center; border-bottom: 1.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.ApplicantAgeGroupPB}</span></strong>
+                        <strong><span style='display:  inline-block; width: 45%; text-align: center; border-bottom: 0px dashed #000;'> </span></strong>
+                     </div>                
+
+                    <div style='display: flex; justify-content: space-between; align-items: center; margin: 60px 0 0; text-align: center; flex-direction: column; position: relative;'>
+
+            <!-- Image Section -->
+            <div style='display: flex; justify-content: space-between; width: 100%; position: relative;'>
+                <div style='width: 33.33%; position: relative;'>
+                    <img src='{ConveyorImagePath}' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -38px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                </div>
+                <div style='width: 33.33%; position: relative;'>
+                    <img src='{dsoImagePath}' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -43px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                </div>
+                <div style='width: 35%; position: relative;'>
+                    <img src='' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -43px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                </div>
+            </div>
+        
+            <!-- Text Section -->
+            <div style='display: flex; justify-content: space-between; width: 100%; position: relative;'>
+                <div style='width: 33.33%; position: relative;'>
+                    <span style='font-size: 18px; display: block;'>ਕਨਵੀਨਰ</span>
+                </div>
+                <div style='width: 33.33%; position: relative;'>
+                    <span style='font-size: 18px; display: block;'>ਜ਼ਿਲ੍ਹਾ ਖੇਡ ਅਫ਼ਸਰ</span>
+                </div>
+                <div style='width: 35%; text-align:center; position: relative;'>
+                    <span style='font-size: 18px; display: block;'>ਡਾਇਰੈਕਟਰ ਸਪੋਰਟਸ <br />ਪੰਜਾਬ</span>
+                </div>
+            </div>
+        
+        </div>
+                </div>
+            </div>
+        </body>
+        </html>";
+
+
+            if (certificateVerifyDetails != null)
+            {
+                certificateVerifyDetails.CertificateHashKey = hasCertificateId;
+                _servicePlusContext.VerifyCertificates.Update(certificateVerifyDetails);
+                await _servicePlusContext.SaveChangesAsync();
+            }
+
+            await page.SetContentAsync(htmlContent);
+
+            await page.PdfAsync(filePath, new PdfOptions
+            {
+                PrintBackground = true,
+                Format = PaperFormat.Legal,
+                Landscape = true,
+                Width = "90%",
+            });
+
+
+            return true;
+
+        }
+
+        private async Task<string> TranslateToPunjabi(string text)
+        {
+            using HttpClient client = new HttpClient();
+            string url = $"https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pa&dt=t&q={text}";
+
+            var response = await client.GetStringAsync(url);
+            var jsonData = System.Text.Json.JsonSerializer.Deserialize<object[]>(response);
+            var translatedText = ((JsonElement)jsonData[0]).EnumerateArray().First().EnumerateArray().First().GetString();
+
+
+            return translatedText;
+            // return text;
+        }
+
+        private async Task<string> GenerateSecureCertificateId(string certificateNo)
+        {
+            using (var sha256 = SHA256.Create())
+            {
+                var combined = certificateNo + SecretKey;
+                var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(combined));
+                return BitConverter.ToString(bytes).Replace("-", "").ToLower();
+            }
+        }
+
+        private async Task<string> GetBase64QRCode(string certificateHashKey)
+        {
+            GenerateQRCode generateQRCode = new GenerateQRCode();
+
+            string qrFilePath = generateQRCode.GetGenerateQRCode(certificateHashKey);
+            byte[] imageBytes = await System.IO.File.ReadAllBytesAsync(qrFilePath);
+            return Convert.ToBase64String(imageBytes);
+        }
+
+        [HttpGet("VerifySportsCertificate")]
+        public async Task<IActionResult> VerifySportsCertificate(string certificateHashKey)
+        {
+            // Retrieve the first matching certificateSerialNo using the hash key
+            var certificateSerialNo = await _servicePlusContext.VerifyCertificates
+                .Where(c => c.CertificateHashKey == certificateHashKey)
+                .Select(d => d.CertificateSerialNo)
+                .FirstOrDefaultAsync();  // Ensure you get a single value
+
+            if (string.IsNullOrEmpty(certificateSerialNo))
+            {
+                return NotFound(new { message = "Certificate not found." });
+            }
+
+            // Find the certificate details using the found certificateSerialNo
+            var certificate = await _servicePlusContext.PlayerIssuedCertificate
+                .FirstOrDefaultAsync(c => c.CertificateSerialNo == certificateSerialNo);
+
+            if (certificate == null)
+            {
+                return NotFound(new { message = "Certificate not found." });
+            }
+
+            return Ok(new
+            {
+                certificate.CertificateSerialNo,
+                certificate.ApplicantFullName,
+                certificate.ApplicantFatherName,
+                certificate.ApplicantGame,
+                certificate.ApplicantEvent,
+                certificate.ApplicantAgeGroup,
+                certificate.GameHeldDistrict
+            });
+        }
+
+        //[HttpGet("GetCertificatePath")]
+        //public async Task<IActionResult> GetCertificatePath(string applicantFullName, string applicantDOB, string applicantGame, string applicantAgeGroup)
+        //{
+        //    if (string.IsNullOrWhiteSpace(applicantFullName) ||
+        //        string.IsNullOrWhiteSpace(applicantDOB) ||
+        //        string.IsNullOrWhiteSpace(applicantGame) ||
+        //        string.IsNullOrWhiteSpace(applicantAgeGroup))
+        //    {
+        //        return BadRequest("All parameters are required.");
+        //    }
+
+        //    string baseDirectory = @"http://10.147.24.36:8082/SSD/";
+        //    string directoryToRemove = @"C:\Users\Mohit\Documents\GitHub\ServicePlus\ServicePlusAPIs\";
+
+        //    var certificateRecord = await _servicePlusContext.PlayerIssuedCertificate
+        //        .Where(p => EF.Functions.ILike(p.ApplicantFullName, applicantFullName) &&
+        //                    EF.Functions.ILike(p.ApplicantDOB, applicantDOB) &&
+        //                    EF.Functions.ILike(p.ApplicantGame, applicantGame) &&
+        //                    EF.Functions.ILike(p.ApplicantAgeGroup, applicantAgeGroup))
+        //        .FirstOrDefaultAsync();
+
+        //    if (certificateRecord == null)
+        //    {
+        //        return NotFound("Certificate not found.");
+        //    }
+
+        //    // Remove the base directory and format the path
+        //    string formattedPath = certificateRecord.CertificatePath.Replace(directoryToRemove, "").Replace("\\", "/");
+
+        //    // Create final URL
+        //    string finalPath = baseDirectory + formattedPath;
+
+        //    // ✅ Update the path in the database
+        //    certificateRecord.CertificatePath = finalPath;
+        //    _servicePlusContext.PlayerIssuedCertificate.Update(certificateRecord);
+        //    await _servicePlusContext.SaveChangesAsync(); // Save changes
+
+        //    return Ok(new { CertificatePath = finalPath });
+        //}
+       
+        [HttpGet("GetCertificatePath")]
+        public async Task<IActionResult> GetCertificatePath(string applicantFullName, string applicantDOB, string applicantGame, string applicantEvent, string applicantAgeGroup, string applicantPosition)
+        {
+            if (string.IsNullOrWhiteSpace(applicantFullName) ||
+                string.IsNullOrWhiteSpace(applicantDOB) ||
+                string.IsNullOrWhiteSpace(applicantGame) ||
+                string.IsNullOrWhiteSpace(applicantEvent) ||
+                string.IsNullOrWhiteSpace(applicantAgeGroup) ||
+                string.IsNullOrWhiteSpace(applicantPosition)
+                )
+            {
+                return BadRequest("All parameters are required.");
+            }
+
+            string baseDirectory = @"http://10.147.24.36:8082/SSD/";
+            string directoryToRemove = @"C:\Users\Mohit\Documents\GitHub\ServicePlus\ServicePlusAPIs\";
+
+            var certificateRecord = await _servicePlusContext.PlayerIssuedCertificate
+                .Where(p => EF.Functions.ILike(p.ApplicantFullName, applicantFullName.Trim()) &&
+                            EF.Functions.ILike(p.ApplicantDOB, applicantDOB.Trim()) &&
+                            EF.Functions.ILike(p.ApplicantGame, applicantGame.Trim()) &&
+                            EF.Functions.ILike(p.ApplicantEvent, applicantEvent.Trim()) &&                                                    
+                            EF.Functions.ILike(p.ApplicantAgeGroup, applicantAgeGroup.Trim()) &&
+                            EF.Functions.ILike(p.Position, applicantPosition.Trim())
+                            )
+                .FirstOrDefaultAsync();
+
+            if (certificateRecord == null)
+            {
+                return BadRequest(new { IsSucced = false, CertificatePath = "" });
+            }
+
+            // Get original file path from DB
+            string formattedPath = certificateRecord.CertificatePath.Replace(directoryToRemove, "").Replace("\\", "/");
+            string serveFilePath = Path.Combine(baseDirectory, formattedPath);  // Ensure actual file path
+
+
+
+            return Ok(new { IsSucced = true, CertificatePath = serveFilePath });
+
+
+        }
+
+
+        private bool IsPdfPasswordProtected(string filePath)
+        {
+            try
+            {
+                using (PdfDocument document = PdfReader.Open(filePath, PdfDocumentOpenMode.Import))
+                {
+                    // If the document is password protected, PdfSharpCore will throw an exception
+                    return false;
+                }
+            }
+            catch (PdfReaderException)
+            {
+                // If exception is thrown, the PDF is password protected
+                return true;
+            }
+        }
+
+
+        [Route("GenerateExistingCertificateByRefNO")]
+        [HttpPost]
+        public async Task<IActionResult> GenerateExistingCertificateByRefNO(string certificateSerialNo)
+        {
+            await GenerateCertificateByRefNO(certificateSerialNo);
+            return Ok(" Record Updated Successfully");
+
+        }
+
+
+        private async Task<string> GenerateCertificateByRefNO(string certificateSerialNo )
+        {
+            // Fetch issued certificates first (executed on DB)
+            var existingCertificates = await _servicePlusContext.PlayerIssuedCertificate
+                .Where(c =>   c.CertificateSerialNo == certificateSerialNo)
+                .FirstOrDefaultAsync(); // Move data to memory
+            // District-wise serial number prefixes to create Folder Name
+            var districtPrefixes = new Dictionary<string, string>
+    {
+        { "AMRITSAR", "ASR" },
+        { "BARNALA", "BNL" },
+        { "BATHINDA", "BAT" },
+        { "FARIDKOT", "FDK" },
+        { "FATEHGARH SAHIB", "FGS" },
+        { "FAZILKA", "FAZ" },
+        { "FEROZEPUR", "FZR" },
+        { "GURDASPUR", "GSP" },
+        { "HOSHIARPUR", "HSP" },
+        { "JALANDHAR", "JAL" },
+        { "KAPURTHALA", "KPT" },
+        { "LUDHIANA", "LDH" },
+        { "MALERKOTLA", "MLK" },
+        { "MANSA", "MAN" },
+        { "MOGA", "MOG" },
+        { "PATHANKOT", "PKT" },
+        { "PATIALA", "PAT" },
+        { "RUPNAGAR", "RPR" },
+        { "SAS NAGAR", "SAS" },
+        { "SANGRUR", "SGR" },
+        { "SBSNAGAR", "SBS" },
+        { "SRI MUKTSAR SAHIB", "SMS" },
+        { "TARN TARAN", "TTN" }
+
+        // Add more districts as needed
+    };
+
+            // Get the prefix for the given district, default to "GEN000" if not found
+            string randomDistrictSr = districtPrefixes.ContainsKey(existingCertificates.GameHeldDistrict.ToUpper())
+                ? districtPrefixes[existingCertificates.GameHeldDistrict.ToUpper()]
+                : "GEN000";
+
+           
+
+
+            //  var getSigns = playerCertificateDetails.FirstOrDefault();
+
+            // Signature For Convenor
+            // Define the base directory where images are stored
+            string baseDirectory = @"http://10.147.24.36:8082/SSD/Sports_Signature";
+
+            // Dictionary to store (district, game) as key and image path as value
+            Dictionary<(string, string), string> gameSignatures = new Dictionary<(string, string), string>
+{
+                    //Amritsar
+                    { ("AMRITSAR", "GATKA"), $@"{baseDirectory}/Amritsar/Gatka Convenor Sign/Gatka Convenor Sign.png" },
+                    { ("AMRITSAR", "RUGBY"), $@"{baseDirectory}/Amritsar/Rugby Convenor Sign/Rugby Convenor Sign.png" },
+
+                    //Barnala
+                    { ("BARNALA", "NETBALL"), $@"{baseDirectory}/Barnala/Netball Convenor Sign/Netball English Convenor Sign.png" },
+                    { ("BARNALA", "TABLE TENNIS"), $@"{baseDirectory}/Barnala/Table Tennis Convenor Sign/Table Tennis Convenor Sign.png" },
+                    { ("BARNALA", "BADMINTON"), $@"{baseDirectory}/Barnala/Badminton Convenor Sign/BADMINTON Convenor Sign.png" },
+
+                    //Bathinda
+                    { ("BATHINDA", "HOCKEY"), $@"{baseDirectory}/Bathinda/Hocky Convenor Sign/HOCKEY Convenor Sign.png" },
+                    { ("BATHINDA", "POWERLIFTING"), $@"{baseDirectory}/Bathinda/Powerlifting Convenor Sign/POWERLIFTING Convenor Sign.png" },
+
+                    //Faridkot
+                    { ("FARIDKOT", "BASKETBALL"), $@"{baseDirectory}/Faridkot/Basketball Convenor Sign/Basketball Convenor Sign.png" },
+                    { ("FARIDKOT", "TAEKWONDO"), $@"{baseDirectory}/Faridkot/Taekwondo Convenor Sign/Taekwondo Convenor Sign.png" },
+
+                    //Fatehgarh Sahib
+                    { ("FATEHGARH SAHIB", "FENCING"), $@"{baseDirectory}/Fatehgarh Sahib/Fencing Convenor Sign/FENCING Convenor Sign.png" },
+                    { ("FATEHGARH SAHIB", "SOFTBALL"), $@"{baseDirectory}/Fatehgarh Sahib/Softball Convenor Sign/SOFT Convenor Sign.png" },
+
+                    //Hoshiarpur
+                    { ("HOSHIARPUR", "FOOTBALL"), $@"{baseDirectory}/Hoshiarpur/Football Convenor Sign/Football Convenor Sign.png" },
+
+                    //Jalandhar
+                    { ("JALANDHAR", "CHESS"), $@"{baseDirectory}/Jalandhar/Chess Convenor Sign/Chess Convenor Sign.png" },
+                    { ("JALANDHAR", "VOLLEYBALL SMASHING"), $@"{baseDirectory}/Jalandhar/Volleyball Smashing Convenor Sign/Volleyball Smashing Convener sign.png" },
+
+                    //Ludhiana
+                    { ("LUDHIANA", "ATHLETICS"), $@"{baseDirectory}/Ludhiana/Athletics Convenor Sign/ATHLETICS Convenor Sign.png" },
+                    { ("LUDHIANA", "BASEBALL"), $@"{baseDirectory}/Ludhiana/Baseball Convenor Sign/BASEBALL Convenor Sign.png" },
+                    { ("LUDHIANA", "CYCLING"), $@"{baseDirectory}/Ludhiana/Cycling Convenor Sign/CYCLING Convenor Sign.png" },
+                    { ("LUDHIANA", "KICK BOXING"), $@"{baseDirectory}/Ludhiana/Kick Boxing Convenor Sign/KICKBOXING-removebg-preview.png" },
+                    { ("LUDHIANA", "LAWN TENNIS"), $@"{baseDirectory}/Ludhiana/Lawn Tennis Convenor Sign/image-removebg-preview.png" },
+
+                    //Malerkotla
+                    { ("MALERKOTLA", "VOLLEYBALL SHOOTING"), $@"{baseDirectory}/Malerkotla/Volleyball Shooting Convenor Sign/Volleyball Shooting Sign.png" },
+
+                    //Mansa
+                    { ("MANSA", "JUDO"), $@"{baseDirectory}/Mansa/Judo Convenor Sign/JUDO Convenor Sign.png" },
+                    { ("MANSA", "WRESTLING"), $@"{baseDirectory}/Mansa/Wrestling Convenor Sign/Wrestling Convenor Sign.png" },
+
+                    //Patiala
+                    { ("PATIALA", "ARCHERY"), $@"{baseDirectory}/Patiala/Archary Convenor Sign/ARCHERY Convenor Sign.png" },
+                    { ("PATIALA", "GYMNASTICS"), $@"{baseDirectory}/Patiala/Gymnastics Convenor Sign/GYMNASTICS Convenor Sign.png" },
+                    { ("PATIALA", "CIRCLE KABADDI"), $@"{baseDirectory}/Patiala/Kabbadi circle style Convenor Sign/KABADDI CS Convenor Sign.png" },
+                    { ("PATIALA", "KHO KHO"), $@"{baseDirectory}/Patiala/Kho-Kho Convenor Sign/KHO KHO Convenor Sign.png" },
+
+                    //Rupnagar
+                    { ("RUPNAGAR", "HANDBALL"), $@"{baseDirectory}/Rupnagar/Handball Convenor Sign/Handball Convenor Sign.png" },
+                    { ("RUPNAGAR", "KAYAKING"), $@"{baseDirectory}/Rupnagar/Kayking and Canoining Convenor Sign/Kayaking__Canoeing.png" },
+                    { ("RUPNAGAR", "CANOEING"), $@"{baseDirectory}/Rupnagar/Kayking and Canoining Convenor Sign/Kayaking__Canoeing.png" },
+                    { ("RUPNAGAR", "DRAGON BOAT"), $@"{baseDirectory}/Rupnagar/Kayking and Canoining Convenor Sign/Kayaking__Canoeing.png" },
+                    { ("RUPNAGAR", "ROWING"), $@"{baseDirectory}/Rupnagar/Rowing Convenor Sign/Rowing_Convenor Sign.png" },
+                    
+                    //Sangrur
+                    { ("SANGRUR", "KABADDI NATIONAL STYLE"), $@"{baseDirectory}/Sangrur/Kabaddi National Style Convenor Sign/Kabaddi National Convenor Sign.png" },
+                    { ("SANGRUR", "ROLLER SKATING"), $@"{baseDirectory}/Sangrur/Roller Skating Convenor Sign/Rollar Skating Convenor Sign.png" },
+                    { ("SANGRUR", "Roller Skating Speed Skating"), $@"{baseDirectory}/Sangrur/Roller Skating Convenor Sign/Rollar Skating Convenor Sign.png" },
+                    { ("SANGRUR", "WEIGHT LIFTING"), $@"{baseDirectory}/Sangrur/Weightlifting Convenor SIgn/WL Convenor Sign.png" },
+                    { ("SANGRUR", "WUSHU"), $@"{baseDirectory}/Sangrur/Wushu Convenor Sign/WUSHU Convenor Sign.png" },
+
+                    //SAS Nagar
+                    { ("SAS NAGAR", "EQUESTRAIN"), $@"{baseDirectory}/SAS Nagar/Equestrian Convenor Sign/Equestrian Convenor Sign.png" },
+                    { ("SAS NAGAR", "SHOOTING"), $@"{baseDirectory}/SAS Nagar/Shooting Convenor Sign/Shooting Convenor Sign.png" },
+                    { ("SAS NAGAR", "SWIMMING"), $@"{baseDirectory}/SAS Nagar/Swimming Convenor Sign/Swimming Convenor Sign.png" },
+
+                    //SAS Nagar
+                    { ("SBSNAGAR", "BOXING"), $@"{baseDirectory}/SBS Nagar/Boxing Convenor Sign/Boxing Convenor Sign.png" },
+
+                };
+
+            // Normalize input (Trim spaces and capitalize first letter)
+            existingCertificates.GameHeldDistrict = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(existingCertificates.GameHeldDistrict);
+            existingCertificates.GameHeldDistrict = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(existingCertificates.GameHeldDistrict);
+
+            // Try to get the image path from the dictionary
+            if (!gameSignatures.TryGetValue((existingCertificates.GameHeldDistrict, existingCertificates.ApplicantGame), out string ConveyorImagePath))
+            {
+                ConveyorImagePath = "./images/default-sign.png"; // Fallback image if not found
+            }
+
+
+
+
+            Dictionary<string, string> dsoSignatures = new Dictionary<string, string>
+{
+                        { "AMRITSAR", $@"{baseDirectory}/Amritsar/DSO Sign/Amritsar DSO.png" },
+                        { "BARNALA", $@"{baseDirectory}/Barnala/DSO Sign/DSO Sign.png" },
+                        { "BATHINDA", $@"{baseDirectory}/Bathinda/DSO Sign/DSo Sign.png" },
+                        { "FARIDKOT", $@"{baseDirectory}/Faridkot/DSO Sign/DSO Sign.png" },
+                        { "FATEHGARH SAHIB", $@"{baseDirectory}/Fatehgarh Sahib/DSO Sign/DSO Sign.png" },
+                        { "HOSHIARPUR", $@"{baseDirectory}/Hoshiarpur/DSO Sign/DSO Sign.png" },
+                        { "JALANDHAR", $@"{baseDirectory}/Jalandhar/DSO Sign/DSO Sign.png" },
+                        { "LUDHIANA", $@"{baseDirectory}/Ludhiana/DSO Sign/DSO Sign.png" },
+                        { "MALERKOTLA", $@"{baseDirectory}/Malerkotla/DSO Sign/DSO Sign.png" },
+                        { "MANSA", $@"{baseDirectory}/Mansa/DSO Sign/DSO Sign.png" },
+                        { "PATIALA", $@"{baseDirectory}/Patiala/DSO Sign/DSO Sign.png" },
+                        { "RUPNAGAR", $@"{baseDirectory}/Rupnagar/DSO Sign/DSO Sign.png" },
+                        { "SANGRUR", $@"{baseDirectory}/Sangrur/DSO Sign/DSO Sign.png" },
+                        { "SAS NAGAR", $@"{baseDirectory}/SAS Nagar/DSO Sign/DSO Sign.png" },
+                        { "SBSNAGAR", $@"{baseDirectory}/SBS Nagar/DSO Sign/DSO Sign.png" }
+                    };
+
+            existingCertificates.GameHeldDistrict = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(existingCertificates.GameHeldDistrict);
+
+            // Try to get the image path from the dictionary
+            if (!dsoSignatures.TryGetValue((existingCertificates.GameHeldDistrict), out string dsoImagePath))
+            {
+                dsoImagePath = "./images/default-sign.png"; // Fallback image if not found
+            }
+
+
+
+
+            string fromDate = "";
+            string toDate = "";
+            //to get Game From and To Date
+            var gameFromToDate = new Dictionary<(string, string), (string fromDate, string toDate)>
+        {
+
+
+                                { ("AMRITSAR", "GATKA"), ("07-11-2024", "10-11-2024") },
+                                { ("AMRITSAR", "RUGBY"), ("07-11-2024", "10-11-2024") },
+
+                                // Barnala
+                                { ("BARNALA", "NETBALL"), ("25-11-2024", "30-11-2024") },
+                                { ("BARNALA", "TABLE TENNIS"), ("25-11-2024", "30-11-2024") },
+                                { ("BARNALA", "BADMINTON"), ("25-11-2024", "30-11-2024") },
+
+                                // Bathinda
+                                { ("BATHINDA", "HOCKEY"), ("17-10-2024", "24-10-2024") },
+                                { ("BATHINDA", "POWERLIFTING"), ("19-10-2024", "24-10-2024") },
+
+                                // Faridkot
+                                {  ("FARIDKOT", "BASKETBALL"), ("09-12-2024", "14-12-2024") },
+                                { ("FARIDKOT", "TAEKWONDO"), ("09-12-2024", "14-12-2024") },
+
+                                // Fatehgarh Sahib
+                                { ("FATEHGARH SAHIB", "FENCING"), ("19-10-2024", "24-10-2024") },
+                                { ("FATEHGARH SAHIB", "SOFTBALL"), ("19-10-2024", "24-10-2024") },
+
+                                // Hoshiarpur
+                                { ("HOSHIARPUR", "FOOTBALL"), ("04-11-2024", "10-11-2024") },
+
+                                // Jalandhar
+                                { ("JALANDHAR", "CHESS"), ("15-11-2024", "22-11-2024") },
+                                { ("JALANDHAR", "VOLLEYBALL SMASHING"), ("15-11-2024", "22-11-2024") },
+
+                                // Ludhiana
+                                { ("LUDHIANA", "ATHLETICS"), ("04-11-2024", "09-11-2024") },
+                                { ("LUDHIANA", "BASEBALL"), ("04-11-2024", "09-11-2024") },
+                                { ("LUDHIANA", "CYCLING"),    ("27-11-2024", "29-11-2024") },
+                                { ("LUDHIANA", "KICK BOXING"), ("04-11-2024", "09-11-2024") },
+                                { ("LUDHIANA", "LAWN TENNIS"), ("04-11-2024", "09-11-2024") },
+
+                                // Malerkotla
+                                { ("MALERKOTLA", "VOLLEYBALL SHOOTING"), ("06-11-2024", "09-11-2024") },
+
+                                // Mansa
+                                { ("MANSA", "JUDO"),      ("19-10-2024", "24-10-2024") },
+                                { ("MANSA", "WRESTLING"), ("19-10-2024", "24-10-2024") },
+
+                                // Patiala
+                                { ("PATIALA", "ARCHERY"),        ("04-11-2024", "09-11-2024") },
+                                { ("PATIALA", "GYMNASTICS"),     ("08-11-2024", "11-11-2024") },
+                                { ("PATIALA", "CIRCLE KABADDI"), ("04-11-2024", "09-11-2024") },
+                                { ("PATIALA", "KHO KHO"),          ("04-11-2024", "09-11-2024") },
+
+                                // Rupnagar
+                                { ("RUPNAGAR", "HANDBALL"), ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "KAYAKING"), ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "CANOEING"),   ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "ROWING"),   ("16-11-2024", "21-11-2024") },
+                                { ("RUPNAGAR", "DRAGON BOAT"),   ("16-11-2024", "21-11-2024") },
+                                  
+                                // Sangrur
+                                {  ("SANGRUR", "KABADDI NATIONAL STYLE"),        ("16-11-2024", "21-11-2024") },
+                                {  ("SANGRUR", "ROLLER SKATING"), ("16-11-2024", "21-11-2024") },
+                                { ("SANGRUR", "WEIGHT LIFTING"), ("16-11-2024", "21-11-2024") },
+                                { ("SANGRUR", "WUSHU"),           ("16-11-2024", "21-11-2024") },
+
+                                 
+                                // SAS Nagar
+                                { ("SAS NAGAR", "EQUESTRAIN"), ("20-11-2024", "24-11-2024") },
+                                { ("SAS NAGAR", "SHOOTING"),   ("13-11-2024", "17-11-2024") },
+                                { ("SAS NAGAR", "SWIMMING"),   ("21-10-2024", "24-10-2024") },
+
+                                // SBS Nagar
+                                { ("SBSNAGAR", "BOXING"), ("16-11-2024", "24-11-2024") },
+            };
+
+
+            (fromDate, toDate) = GetGameDates(existingCertificates.GameHeldDistrict, existingCertificates.ApplicantGame, gameFromToDate);
+            static (string fromDate, string toDate) GetGameDates(string district, string game, Dictionary<(string, string), (string fromDate, string toDate)> gameFromToDate)
+            {
+                // Check if the dictionary contains the key (district, game)
+                if (gameFromToDate.TryGetValue((district, game), out var dates))
+                {
+                    return dates; // If found, return the dates
+                }
+
+                return ("", ""); // If not found, return default message
+            }
+
+            await new BrowserFetcher().DownloadAsync();
+            await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+            {
+                Headless = true,
+                Args = new[] {
+                "--font-render-hinting=none",
+                "--force-color-profile=srgb"
+            }
+            });
+            var getAllVerifiedCertificate = await _servicePlusContext.VerifyCertificates.AsNoTracking().ToListAsync();
+            await using var page = await browser.NewPageAsync();
+            await page.SetUserAgentAsync("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36");
+            await page.EmulateMediaTypeAsync(MediaType.Screen);
+ 
+
+
+                //string certificateNo = newSerialNumber.ToString("D6");
+
+                string formattedGameName = existingCertificates.ApplicantGame.Replace(" ", ""); // Remove spaces
+                string certificateNo = existingCertificates.CertificateSerialNo;
+                // Define folder hierarchy
+                string baseFolder = "GeneratedCertificates"; // First folder
+                string districtFolder = $"{existingCertificates.GameHeldDistrict}"; // Second folder
+                string gameFolder = existingCertificates.ApplicantGame; // Third folder
+                string ageGroupFolder = existingCertificates.ApplicantAgeGroup; // Fourth folder
+
+                // Combine paths to create full directory structure
+                string folderPath = Path.Combine(Directory.GetCurrentDirectory(), baseFolder, districtFolder, gameFolder, ageGroupFolder);
+
+                // Check if directory exists, if not, create it
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
+
+
+                // Define certificate filename
+                string fileName = $"{certificateNo}.pdf";
+                string filePath = Path.Combine(folderPath, fileName);
+                // Further processing...
+
+                var hasCertificateId = getAllVerifiedCertificate.Where(d => d.CertificateSerialNo == existingCertificates.CertificateSerialNo).Select(d => d.CertificateHashKey).FirstOrDefault();
+
+                string htmlContent = $@"<html>
+        <head>
+            <style>
+                body {{ margin: 0; padding: 0; font-family: Arial, sans-serif; }}
+                #certificate-container {{
+                    position: fixed;
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
+                }}
+                #background-img {{
+                    position: fixed;
+                    padding-left:6px;
+                    padding-right:4px;
+                    padding-top:6px;
+                    padding-bottom:6px;
+
+                    width: 99%;
+                    height: 98%;
+                }}
+                .text-bold {{ font-weight: bold; }}
+            </style>
+        </head>
+        <body>
+            <img id='background-img' src='http://10.147.24.36:8082/SSD/SportsCertificateBgNew.png' />
+            <div id='certificate-container'>
+                <div style='position: absolute; top: 16%; left: 10%; width: 80%; height:100%; padding: 30px; border-radius: 10px; box-sizing: border-box; text-align: center;'>
+                    <div style='margin: 8px 0; font-size: 16px; font-weight: bold; position: absolute; top: -12%; right: 3%;'>
+                        ਸਰਟੀਫਿਕੇਟ ਨੰ. : {certificateNo}
+                    <div style='text-align: center; margin-top: 15px;margin-left:30px;'>
+                        <img src='data:image/png;base64,{await GetBase64QRCode(hasCertificateId)}' width='100' height='100'/>
+                        <p style='margin-top: 3px;'>Scan to verify</p>
+                    </div>
+
+                    </div>
+                    <div class='text-bold' style=' font-size: 25px; font-weight: bold; padding-top: 2px;'>ਖੇਡਾਂ ਅਤੇ ਯੁਵਾ ਮਾਮਲੇ ਵਿਭਾਗ</div>
+<img style='width: 42%;height: 3%;' src='http://10.147.24.36:8082/SSD/arrow.png'>
+                    <div style='margin: 3px 0;  '>
+                        <span style='font-size:35px; color: #3d387c;'><strong>ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024 (ਸੀਜ਼ਨ-3)</strong></span>
+                    </div>
+    <div style='margin: 5px 0; font-size: 22px; margin-top: 3px; font-weight: bold;'>ਮੈਰਿਟ ਸਰਟੀਫਿਕੇਟ</div>
+              <div style='
+            display: inline-block; 
+            background-color: #d32f2f; 
+            color: white; 
+            padding: 6px 18px; 
+            border-radius: 20px 0 20px 0; 
+            font-size: 16px; 
+            font-weight: bold; 
+            font-family: 'Gurmukhi', Arial, sans-serif;'>ਰਾਜ ਪੱਧਰੀ ਟੂਰਨਾਮੈਂਟ</div>
+              
+             <div style=' font-size: 20px; margin-top: 3px; font-weight: bold;'>{existingCertificates.GameHeldDistrictPB}</div>
+                    <div style='margin: 10px 0; font-size: 18px; font-weight: bold;'>
+                        ਮਿਤੀ <strong>{fromDate}</strong> ਤੋਂ ਮਿਤੀ  <strong>{toDate} ਤੱਕ </strong>
+                    </div> 
+                   <div style='text-align: justify; margin-top: 5px; font-size: 16px;line-height:2.5;'>
+                            ਤਸਦੀਕ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਕਿ 
+                            <strong>
+                                <span style='display: inline-block; width: 83%; text-align: center;  border-bottom: 0.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>
+                                    {existingCertificates.ApplicantFullNamePB}
+                                </span>
+                            </strong><br>
+                            ਪੁੱਤਰ/ਪੁਤਰੀ ਸ਼੍ਰੀ 
+                            <strong><span style='display: inline-block; width: 39%; text-align: center; border-bottom:0.2px dashed #000; min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.ApplicantFatherNamePB}</span></strong>
+                             ਜਨਮ ਮਿਤੀ 
+                            <strong><span style='display: inline-block; width: 43%; text-align: center; border-bottom: 0.3px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.ApplicantDOB}</span></strong><br>
+                            ਨੇ ਖੇਡਾਂ ਵਤਨ ਪੰਜਾਬ ਦੀਆਂ 2024 ਵਿੱਚ ਜ਼ਿਲ੍ਹਾ 
+                            <strong><span style='display: inline-block; width: 72%; text-align: center; border-bottom: 0.4px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.GameRepresentingDistrictPB}</span></strong> <br>
+                            ਵਲੋਂ ਖੇਡ 
+                            <strong><span style='display: inline-block; width: 44%; text-align: center; border-bottom: 0.6px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(existingCertificates.ApplicantGamePB)}</span></strong>  
+                            ਈਵੈਂਟ/ਵਰਗ 
+                            <strong><span style='display: inline-block; width: 41%; text-align: center; border-bottom: 0.7px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.ApplicantEventPB}</span></strong> <br>
+                            ਈਵੈਂਟ ਸਮਾਂ/ਦੂਰੀ/ਉਚਾਈ/ਭਾਰ 
+                            <strong><span style='display: inline-block; width: 35%; text-align: center; border-bottom: 0.8px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{(existingCertificates.ScorePB)}</span></strong>  
+                            ਵਿਚ ਭਾਗ ਲਿਆ ਅਤੇ 
+                            <strong><span style='display: inline-block; width: 22%; text-align: center; border-bottom: 0.9px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.Position}</span></strong>  
+                            ਸਥਾਨ ਪ੍ਰਾਪਤ ਕੀਤਾ <br>
+                            ਉਮਰ ਵਰਗ (ਸਾਲ)
+                            <strong><span style='display: inline-block; width: 42%; text-align: center; border-bottom: 1.5px dashed #000;min-height: 16px; line-height: 16px; padding-bottom: 2px;'>{existingCertificates.ApplicantAgeGroupPB}</span></strong>
+                        <strong><span style='display:  inline-block; width: 45%; text-align: center; border-bottom: 0px dashed #000;'> </span></strong>
+                     </div>                
+
+                    <div style='display: flex; justify-content: space-between; align-items: center; margin: 60px 0 0; text-align: center; flex-direction: column; position: relative;'>
+
+            <!-- Image Section -->
+            <div style='display: flex; justify-content: space-between; width: 100%; position: relative;'>
+                <div style='width: 33.33%; position: relative;'>
+                    <img src='{ConveyorImagePath}' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -38px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                </div>
+                <div style='width: 33.33%; position: relative;'>
+                    <img src='{dsoImagePath}' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -43px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                </div>
+                <div style='width: 35%; position: relative;'>
+                    <img src='' style='width: 32%; display: block; margin: 0 auto; position: absolute; top: -43px; left: 50%; transform: translateX(-50%); z-index: 1;' />
+                </div>
+            </div>
+        
+            <!-- Text Section -->
+            <div style='display: flex; justify-content: space-between; width: 100%; position: relative;'>
+                <div style='width: 33.33%; position: relative;'>
+                    <span style='font-size: 18px; display: block;'>ਕਨਵੀਨਰ</span>
+                </div>
+                <div style='width: 33.33%; position: relative;'>
+                    <span style='font-size: 18px; display: block;'>ਜ਼ਿਲ੍ਹਾ ਖੇਡ ਅਫ਼ਸਰ</span>
+                </div>
+                <div style='width: 35%; text-align:center; position: relative;'>
+                    <span style='font-size: 18px; display: block;'>ਡਾਇਰੈਕਟਰ ਸਪੋਰਟਸ <br />ਪੰਜਾਬ</span>
+                </div>
+            </div>
+        
+        </div>
+                </div>
+            </div>
+        </body>
+        </html>";
+
+                await page.SetContentAsync(htmlContent);
+
+                await page.PdfAsync(filePath, new PdfOptions
+                {
+                    PrintBackground = true,
+                    Format = PaperFormat.Legal,
+                    Landscape = true,
+                    Width = "90%",
+                });
+
+
+                // Add the new record to the list
+
+         
+
+            return "Done";
+        }
+
+        #endregion
+
+        #region Under Development
         //    #region Dynamic Report using Service Name
 
         //    [HttpGet]
@@ -2162,62 +5450,78 @@ namespace ServicePlusAPIs.Controllers
         //    #endregion
 
 
-        [HttpGet]
-        [Route("DynamicReportServiceWise")]
-        public async Task<IActionResult> DynamicReportServiceWise(
-    [FromQuery] List<string> selectedColumns,
-    [FromQuery] string serviceName,
-    [FromQuery] string? fromDate,
-    [FromQuery] string? toDate,
-    [FromQuery] int? draw,
-    [FromQuery] int? start,
-    [FromQuery] int? length)
+        //    [HttpGet]
+        //    [Route("DynamicReportServiceWise")]
+        //    public async Task<IActionResult> DynamicReportServiceWise(
+        //[FromQuery] List<string> selectedColumns,
+        //[FromQuery] string serviceName,
+        //[FromQuery] string? fromDate,
+        //[FromQuery] string? toDate,
+        //[FromQuery] int? draw,
+        //[FromQuery] int? start,
+        //[FromQuery] int? length)
+        //    {
+        //        var query = _servicePlusContext.InitiatedDatas.AsQueryable();
+
+        //        if (selectedColumns != null && selectedColumns.Any())
+        //        {
+        //            var parameter = Expression.Parameter(typeof(InitiatedData));
+        //            var propertyInfos = selectedColumns.Select(columnName => typeof(InitiatedData).GetProperty(columnName)).ToList();
+
+        //            var bindings = propertyInfos.Select(propertyInfo =>
+        //            {
+        //                var memberAccess = Expression.MakeMemberAccess(parameter, propertyInfo);
+        //                return Expression.Bind(propertyInfo, memberAccess);
+        //            }).ToList();
+
+        //            var memberInit = Expression.MemberInit(Expression.New(typeof(InitiatedData)), bindings);
+        //            var lambda = Expression.Lambda<Func<InitiatedData, InitiatedData>>(memberInit, parameter);
+
+        //            query = query.Where(data => data.ServiceName == serviceName);
+
+        //            // Filter the results by date range if provided
+        //            if (!string.IsNullOrEmpty(fromDate) && !string.IsNullOrEmpty(toDate))
+        //            {
+        //                if (DateTime.TryParse(fromDate, out var from) && DateTime.TryParse(toDate, out var to))
+        //                {
+        //                    from = DateTime.SpecifyKind(from, DateTimeKind.Utc);
+        //                    to = DateTime.SpecifyKind(to, DateTimeKind.Utc);
+
+        //                    query = query.Where(data => data.SubmissionDate >= from && data.SubmissionDate <= to);
+        //                }
+        //            }
+
+        //            // Apply the dynamic projection to the query
+        //            query = query.Select(lambda);
+        //        }
+
+        //        // Apply pagination
+        //        if (start.HasValue && length.HasValue)
+        //        {
+        //            query = query.Skip(start.Value).Take(length.Value);
+        //        }
+
+        //        var result = await query.ToListAsync();
+
+        //        return Ok(result);
+        //    }
+        #endregion
+
+
+
+        #region Social Security Service
+
+        [HttpGet("GetAnganwadiDetails")]
+        public async Task<IActionResult> GetAnganwadiDetails(int postType , int lgdCode)
         {
-            var query = _servicePlusContext.InitiatedDatas.AsQueryable();
-
-            if (selectedColumns != null && selectedColumns.Any())
+            var list = await _servicePlusContext.AnganWadiDetails.Where(d => d.PostType == postType && d.VillageLGDCode == lgdCode).ToListAsync();
+           if(list is null)
             {
-                var parameter = Expression.Parameter(typeof(InitiatedData));
-                var propertyInfos = selectedColumns.Select(columnName => typeof(InitiatedData).GetProperty(columnName)).ToList();
-
-                var bindings = propertyInfos.Select(propertyInfo =>
-                {
-                    var memberAccess = Expression.MakeMemberAccess(parameter, propertyInfo);
-                    return Expression.Bind(propertyInfo, memberAccess);
-                }).ToList();
-
-                var memberInit = Expression.MemberInit(Expression.New(typeof(InitiatedData)), bindings);
-                var lambda = Expression.Lambda<Func<InitiatedData, InitiatedData>>(memberInit, parameter);
-
-                query = query.Where(data => data.ServiceName == serviceName);
-
-                // Filter the results by date range if provided
-                if (!string.IsNullOrEmpty(fromDate) && !string.IsNullOrEmpty(toDate))
-                {
-                    if (DateTime.TryParse(fromDate, out var from) && DateTime.TryParse(toDate, out var to))
-                    {
-                        from = DateTime.SpecifyKind(from, DateTimeKind.Utc);
-                        to = DateTime.SpecifyKind(to, DateTimeKind.Utc);
-
-                        query = query.Where(data => data.SubmissionDate >= from && data.SubmissionDate <= to);
-                    }
-                }
-
-                // Apply the dynamic projection to the query
-                query = query.Select(lambda);
+                return NotFound();
             }
-
-            // Apply pagination
-            if (start.HasValue && length.HasValue)
-            {
-                query = query.Skip(start.Value).Take(length.Value);
-            }
-
-            var result = await query.ToListAsync();
-
-            return Ok(result);
+            return Ok(list);
         }
-
+        #endregion
     }
 
 

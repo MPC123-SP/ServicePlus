@@ -15,7 +15,7 @@ using System.Text;
 namespace ServicePlusDashBoard.Controllers
 {
 
-    [Authorize]
+
     public class AccountController : Controller
     {
         private readonly HttpClient _httpClient;
@@ -53,86 +53,66 @@ namespace ServicePlusDashBoard.Controllers
 
         [AllowAnonymous]
         [HttpPost]
+
         public async Task<IActionResult> Login(LoginViewModel loginViewModel)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                string Role = "";
-                TokenResponse token = await GetTokenFromOtherAPI(loginViewModel.UserName, loginViewModel.Password);
-                // Decode the JWT token to extract claims
-                if (token != null)
-                {
-                    if (token.token != null)
-                    {
-                        var tokenHandler = new JwtSecurityTokenHandler();
-                        var tokenClaim = tokenHandler.ReadJwtToken(token.token);
-
-                        // Find the role claim
-                        Claim roleClaim = tokenClaim.Claims.FirstOrDefault(claim => claim.Type == "Roles");
-
-                        if (roleClaim != null)
-                        {
-                            Role = roleClaim.Value;
-
-                        }
-
-
-                        if (Role == "SuperAdmin")
-                        { // Store the token in cookies
-                            Response.Cookies.Append("jwtToken", token.token, new CookieOptions
-                            {
-                                HttpOnly = true,
-                                Secure = false, // Set to true if using HTTPS
-                                SameSite = SameSiteMode.Strict // Adjust based on your needs
-                            });
-
-                            return RedirectToAction("Index", "Admin");
-                        }
-                        else
-                        { // Store the token in cookies
-                            Response.Cookies.Append("jwtToken", token.token, new CookieOptions
-                            {
-                                HttpOnly = true,
-                                Secure = false, // Set to true if using HTTPS
-                                SameSite = SameSiteMode.Strict // Adjust based on your needs
-                            });
-
-                            return RedirectToAction("Index", "Home");
-                        }
-                    }
-                    else
-                    {
-                        TempData["AuthenticationError"] = token.Message;
-
-                    }
-                }
-                else
-                {
-                    TempData["AuthenticationError"] = "Invalid username or password";
-
-                }
-
+                TempData["AuthenticationError"] = "Invalid username or password";
+                return View();
             }
 
-            var response = await _httpClient.GetAsync(ApiEndPoints.GetServicesNameEndPoint);
+            //  Get token from external API
 
-            if (response.IsSuccessStatusCode)
+            TokenResponse token = await GetTokenFromOtherAPI(loginViewModel.UserName, loginViewModel.Password);
+
+            if (token?.token == null)
             {
-                // Read JSON as a string and deserialize it to a C# object
-                var jsonString = await response.Content.ReadAsStringAsync();
-                var serviceNames = JsonConvert.DeserializeObject<List<string>>(jsonString);
-                ViewBag.ServiceNames = serviceNames;
+                TempData["AuthenticationError"] = token?.Message ?? "Invalid username or password";
+                return View();
             }
-            else
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var tokenClaim = tokenHandler.ReadJwtToken(token.token);
+
+            var claims = tokenClaim.Claims.ToList();
+            if (claims == null || !claims.Any())
             {
-                // Handle error case
-                ViewBag.ServiceNames = new List<string>();
+                TempData["AuthenticationError"] = "Invalid token claims";
+                return View();
             }
 
+            List<Claim> Newclaims = new List<Claim>()
+            {
 
-            // Handle authentication failure
-            return View();
+                new Claim(ClaimTypes.Name,claims.FirstOrDefault(c => c.Type == "unique_name")?.Value  ),
+                new Claim(ClaimTypes.Role,claims.FirstOrDefault(c => c.Type == "Roles")?.Value  ),
+                new Claim("Permission",claims.FirstOrDefault(c => c.Type == "Permission")?.Value  ),
+            };
+
+
+            var claimsIdentity = new ClaimsIdentity(Newclaims, CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
+            Response.Cookies.Append("jwtToken", token.token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = false, // Set to true if using HTTPS
+                SameSite = SameSiteMode.Strict // Adjust based on your needs
+            });
+
+
+
+            // Redirect based on role
+            var role = Newclaims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+            if (role == "SuperAdmin")
+            {
+                return RedirectToAction("Index", "Admin");
+            }
+
+            return RedirectToAction("Index", "Home");
         }
+
+
+
 
         private async Task<TokenResponse> GetTokenFromOtherAPI(string userName, string password)
         {
@@ -145,35 +125,41 @@ namespace ServicePlusDashBoard.Controllers
 
             var response = await _httpClient.PostAsync(ApiAccountEndPoints.LoginEndPoint, requestContent);
 
+
             if (response.IsSuccessStatusCode)
             {
                 var jsonString = await response.Content.ReadAsStringAsync();
                 var tokenResponse = JsonConvert.DeserializeObject<TokenResponse>(jsonString);
+
                 return tokenResponse; // Assuming the token is returned in the response
             }
             else
             {
                 var errorString = await response.Content.ReadAsStringAsync();
-                throw new Exception($"Error fetching token: {errorString}");
+                var tokenResponse = JsonConvert.DeserializeObject<TokenResponse>(errorString);
+                return tokenResponse;
             }
         }
 
-        public IActionResult LogOut()
+        public async Task<IActionResult> Logout()
         {
-            Response.Cookies.Delete("jwtToken");
+            // Clear cookies
+            Response.Cookies.Delete("CRSPortal");
+            Response.Cookies.Delete("jwtToken"); // Delete invalid token 
+            // Sign out of cookie authentication
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-            HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
-            // Redirect to a page after logout (e.g., home page)
+            // Redirect to login page or home
             return RedirectToAction("Login", "Account");
-
         }
+
+
 
 
         [HttpGet]
         public async Task<IActionResult> CreateUser()
         {
-            var jwtToken = Request.Cookies["jwtToken"];
+            var jwtToken = Request.Cookies["Token"];
             List<RolesViewModel> dataList = await SendHttpGetRequestAsync<RolesViewModel>(ApiAccountEndPoints.GetRoleEndPoint);
             SelectList roleSelectList = new SelectList(dataList, "Name", "Name");
             SelectList checkRoleSelectList = new SelectList(dataList, "Id", "Name");
@@ -219,74 +205,67 @@ namespace ServicePlusDashBoard.Controllers
         public async Task<IActionResult> CreateUser(CreateUser createUser)
         {
             var jwtToken = Request.Cookies["jwtToken"];
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                if (jwtToken != null)
+                return View(ModelState);
+            }
+            if (jwtToken != null)
+            {
+
+
+
+                //  _httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
+
+                // Convert the request object to JSON and send it in the request body
+                var jsonRequest = JsonConvert.SerializeObject(createUser);
+                var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
+
+                HttpResponseMessage response = await _httpClient.PostAsync(ApiAccountEndPoints.RegisterEndPoint, content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    string responseContent = await response.Content.ReadAsStringAsync();
+                    // Handle the response as needed
+                    var apiResponse = JsonConvert.DeserializeObject<ApiResponse>(responseContent);
+
+                    if (apiResponse.Status == "Success")
+                    {
+                        ModelState.Clear();
+                        ViewBag.SuccessMessage = apiResponse.Message;
+
+                    }
+                    else
+                    {
+                        ViewBag.ErrorMessage = apiResponse.Message;
+                    }
+                }
+                else
                 {
 
 
-                    using (var httpClientHandler = new HttpClientHandler())
+                    // Attempt to deserialize the response content into an ErrorResponse object
+                    try
                     {
-                        // Set TLS version 
-                        httpClientHandler.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
+                        var errorResponse = JsonConvert.DeserializeObject<ApiResponse>(await response.Content.ReadAsStringAsync());
 
-                        // Ignore SSL certificate validation (not recommended for production)
-                        httpClientHandler.ServerCertificateCustomValidationCallback =
-                            (sender, certificate, chain, sslPolicyErrors) => true;
-
-                        using (var httpClient = new HttpClient(httpClientHandler))
+                        if (errorResponse != null)
                         {
-                            httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
-
-                            // Convert the request object to JSON and send it in the request body
-                            var jsonRequest = JsonConvert.SerializeObject(createUser);
-                            var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
-
-                            HttpResponseMessage response = await httpClient.PostAsync(ApiAccountEndPoints.RegisterEndPoint, content);
-
-                            if (response.IsSuccessStatusCode)
-                            {
-                                string responseContent = await response.Content.ReadAsStringAsync();
-                                // Handle the response as needed
-                                var apiResponse = JsonConvert.DeserializeObject<ApiResponse>(responseContent);
-
-                                if (apiResponse.Status == "Success")
-                                {
-                                    ModelState.Clear();
-                                    ViewBag.SuccessMessage = apiResponse.Message;
-                                }
-                                else
-                                {
-                                    ViewBag.ErrorMessage = apiResponse.Message;
-                                }
-                            }
-                            else
-                            {
-
-
-                                // Attempt to deserialize the response content into an ErrorResponse object
-                                try
-                                {
-                                    var errorResponse = JsonConvert.DeserializeObject<ApiResponse>(await response.Content.ReadAsStringAsync());
-
-                                    if (errorResponse != null)
-                                    {
-                                        ViewBag.ErrorMessage = errorResponse.Message;
-                                    }
-                                }
-                                catch (JsonException)
-                                {
-                                    // Handle any JSON deserialization errors here
-                                    ViewBag.ErrorMessage = "An error occurred while processing the API response.";
-                                }
-
-                            }
-
+                            ViewBag.ErrorMessage = errorResponse.Message;
                         }
                     }
+                    catch (JsonException)
+                    {
+                        // Handle any JSON deserialization errors here
+                        ViewBag.ErrorMessage = "An error occurred while processing the API response.";
+                    }
+
+
 
                 }
+
+
             }
+
 
             List<RolesViewModel> dataList = await SendHttpGetRequestAsync<RolesViewModel>(ApiAccountEndPoints.GetRoleEndPoint);
             SelectList roleSelectList = new SelectList(dataList, "Name", "Name");
@@ -319,104 +298,63 @@ namespace ServicePlusDashBoard.Controllers
 
         private async Task<List<T>> SendHttpGetRequestAsync<T>(string url)
         {
-            var jwtToken = Request.Cookies["jwtToken"];
-            var httpClientHandler = new HttpClientHandler
-            {
-                // Set TLS version 
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
 
-                // Ignore SSL certificate validation (not recommended for production)
-                ServerCertificateCustomValidationCallback =
-                    (sender, certificate, chain, sslPolicyErrors) => true
-            };
-
-            using (var httpClient = new HttpClient(httpClientHandler))
+            HttpResponseMessage response = await _httpClient.GetAsync(url);
+            if (response.IsSuccessStatusCode)
             {
-                httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
-                HttpResponseMessage response = await httpClient.GetAsync(url);
-                if (response.IsSuccessStatusCode)
-                {
-                    string content = await response.Content.ReadAsStringAsync();
-                    return JsonConvert.DeserializeObject<List<T>>(content);
-                }
-                else
-                {
-                    // Handle the error here if needed
-                    return null;
-                }
+                string content = await response.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<List<T>>(content);
             }
+            else
+            {
+                // Handle the error here if needed
+                return null;
+            }
+
         }
         private async Task<List<string>> SendHttpGetRequest<T>(string url)
         {
 
-            var jwtToken = Request.Cookies["jwtToken"];
-            var httpClientHandler = new HttpClientHandler
+            HttpResponseMessage response = await _httpClient.GetAsync(url);
+            if (response.IsSuccessStatusCode)
             {
-                // Set TLS version 
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
-
-                // Ignore SSL certificate validation (not recommended for production)
-                ServerCertificateCustomValidationCallback =
-                    (sender, certificate, chain, sslPolicyErrors) => true
-            };
-
-            using (var httpClient = new HttpClient(httpClientHandler))
-            {
-                httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
-                HttpResponseMessage response = await httpClient.GetAsync(url);
-                if (response.IsSuccessStatusCode)
-                {
-                    string content = await response.Content.ReadAsStringAsync();
-                    return JsonConvert.DeserializeObject<List<string>>(content);
-                }
-                else
-                {
-                    // Handle the error here if needed
-                    return null;
-                }
+                string content = await response.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<List<string>>(content);
             }
+            else
+            {
+                // Handle the error here if needed
+                return null;
+            }
+
         }
         private async Task<ApiResponse> SendHttpPostRequest<T>(string url, object data)
         {
-            var jwtToken = Request.Cookies["jwtToken"];
-            var httpClientHandler = new HttpClientHandler
+
+            // Serialize the data object to JSON and create a StringContent
+            var jsonContent = JsonConvert.SerializeObject(data);
+            var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+            HttpResponseMessage response = await _httpClient.PostAsync(url, content);
+
+            if (response.IsSuccessStatusCode)
             {
-                // Set TLS version
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                string responseContent = await response.Content.ReadAsStringAsync();
+                // Handle the response as needed
+                var apiResponse = JsonConvert.DeserializeObject<ApiResponse>(responseContent);
 
-                // Ignore SSL certificate validation (not recommended for production)
-                ServerCertificateCustomValidationCallback =
-                    (sender, certificate, chain, sslPolicyErrors) => true
-            };
-
-            using (var httpClient = new HttpClient(httpClientHandler))
-            {
-                httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
-
-                // Serialize the data object to JSON and create a StringContent
-                var jsonContent = JsonConvert.SerializeObject(data);
-                var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-
-                HttpResponseMessage response = await httpClient.PostAsync(url, content);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    string responseContent = await response.Content.ReadAsStringAsync();
-                    // Handle the response as needed
-                    var apiResponse = JsonConvert.DeserializeObject<ApiResponse>(responseContent);
-
-                    return apiResponse;
-                }
-                else
-                {
-                    // Handle the error here if needed
-                    string responseContent = await response.Content.ReadAsStringAsync();
-                    // Handle the response as needed
-                    var apiResponse = JsonConvert.DeserializeObject<ApiResponse>(responseContent);
-
-                    return apiResponse;
-                }
+                return apiResponse;
             }
+            else
+            {
+                // Handle the error here if needed
+                string responseContent = await response.Content.ReadAsStringAsync();
+                // Handle the response as needed
+                var apiResponse = JsonConvert.DeserializeObject<ApiResponse>(responseContent);
+
+                return apiResponse;
+            }
+
         }
 
         public async Task<IActionResult> CreateRole()
@@ -441,7 +379,7 @@ namespace ServicePlusDashBoard.Controllers
                     using (var httpClient = new HttpClient(httpClientHandler))
                     {
                         httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
-                        HttpResponseMessage response = await httpClient.GetAsync(ApiEndPoints.GetApiNamesEndPoint);
+                        HttpResponseMessage response = await _httpClient.GetAsync(ApiEndPoints.GetApiNamesEndPoint);
 
                         if (response.IsSuccessStatusCode)
                         {
@@ -489,7 +427,7 @@ namespace ServicePlusDashBoard.Controllers
                         var jsonRequest = JsonConvert.SerializeObject(createRole);
                         var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
 
-                        HttpResponseMessage response = await httpClient.PostAsync(ApiAccountEndPoints.CreateDynamicRolesEndPoint, content);
+                        HttpResponseMessage response = await _httpClient.PostAsync(ApiAccountEndPoints.CreateDynamicRolesEndPoint, content);
 
                         if (response.IsSuccessStatusCode)
                         {
@@ -549,7 +487,7 @@ namespace ServicePlusDashBoard.Controllers
                 page = 1;
                 pageSize = 10;
             }
-             
+
             using (var httpClientHandler = new HttpClientHandler())
             {
                 // Set TLS version 
@@ -565,7 +503,7 @@ namespace ServicePlusDashBoard.Controllers
 
                     httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + jwtToken);
 
-                    HttpResponseMessage response = await httpClient.GetAsync($"{ApiAccountEndPoints.GetUserEndPoint}?page={page}&pageSize={pageSize}");
+                    HttpResponseMessage response = await _httpClient.GetAsync($"{ApiAccountEndPoints.GetUserEndPoint}?page={page}&pageSize={pageSize}");
                     if (response.IsSuccessStatusCode)
                     {
                         var content = await response.Content.ReadAsStringAsync();
@@ -589,7 +527,7 @@ namespace ServicePlusDashBoard.Controllers
 
         [HttpGet]
         public async Task<IActionResult> AddApiDescription()
-        { 
+        {
             List<ApiDescriptions> apiNames = await SendHttpGetRequestAsync<ApiDescriptions>(ApiAccountEndPoints.GetAccountApiNamesEndPoint);
 
             // Filter the list to include only items with empty descriptions
@@ -611,7 +549,7 @@ namespace ServicePlusDashBoard.Controllers
         {
             if (ModelState.IsValid)
             {
-                 
+
                 ApiResponse response = await SendHttpPostRequest<string>(ApiAccountEndPoints.AddEditApiDescriptionEndPoint, apiDescription);
 
                 TempData["Response"] = response.Message;
@@ -621,19 +559,28 @@ namespace ServicePlusDashBoard.Controllers
 
         [HttpGet]
         public async Task<IActionResult> UpdateApiName()
-        { 
+        {
             ApiResponse response = await SendHttpPostRequest<string>(ApiAccountEndPoints.UpdateApiNamesEndPoint, "");
 
-            TempData["Response"] = response.Message;
+            if (response != null && response.Message != null)
+            {
+                TempData["Response"] = response.Message;
+            }
+            else
+            {
+                TempData["Response"] = "No response received.";
+            }
+
             return RedirectToAction("AddApiDescription");
         }
+
 
         [HttpGet]
         public async Task<IActionResult> DisableUserAccountByUserName(string userName)
         {
             if (!string.IsNullOrWhiteSpace(userName))
             {
-                
+
                 ApiResponse response = await SendHttpPostRequest<string>($"{ApiAccountEndPoints.DisableUserAccountByUserNameEndPoint}?username={userName}", userName);
 
                 TempData["Response"] = response.Message;
@@ -646,7 +593,7 @@ namespace ServicePlusDashBoard.Controllers
         {
             if (!string.IsNullOrWhiteSpace(userName))
             {
-                 
+
                 ApiResponse response = await SendHttpPostRequest<string>($"{ApiAccountEndPoints.EnableUserAccountByUserNameEndPoint}?username={userName}", userName);
 
                 TempData["Response"] = response.Message;

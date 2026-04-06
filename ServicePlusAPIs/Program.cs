@@ -1,7 +1,9 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
@@ -55,19 +57,18 @@ builder.Services.AddDbContext<ServicePlusContext>(options =>
             // Adjust maxRetryCount and maxRetryDelay as needed.
         });
 });
-builder.Services.AddIdentity<RegisterUser, IdentityRole>(options => options.SignIn.RequireConfirmedAccount = true)
-                .AddEntityFrameworkStores<ServicePlusContext>(); 
+builder.Services.AddIdentity<RegisterUser, IdentityRole> ()
+                .AddEntityFrameworkStores<ServicePlusContext>().AddDefaultTokenProviders();
 
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-// Adding Jwt Bearer
+}) 
 .AddJwtBearer(options =>
  {
-   //  options.SaveToken = true;
+     options.SaveToken = true;
      options.RequireHttpsMetadata = false;
      options.TokenValidationParameters = new TokenValidationParameters()
      {
@@ -81,9 +82,10 @@ builder.Services.AddAuthentication(options =>
      };
  });
 
+builder.Services.AddAuthorization();
 builder.Services.AddSwaggerGen(opt =>
 {
-    opt.SwaggerDoc("v1", new OpenApiInfo { Title = "MyAPI", Version = "v1" });
+    opt.SwaggerDoc("v1", new OpenApiInfo { Title = "ServicePlusAPI's", Version = "v1" });
     opt.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
@@ -108,17 +110,20 @@ builder.Services.AddSwaggerGen(opt =>
             new string[]{}
         }
     });
+    // ✅ Include XML comments for API documentation
+    var xmlFilename = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    opt.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
 });
 builder.Services.AddAutoMapper(typeof(MapperProfile));
 
+// Add CORS
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(builder =>
     {
-        builder.AllowAnyOrigin()                 
-               .AllowAnyMethod()
-               .AllowAnyHeader()
-               .WithOrigins("*");
+        builder.AllowAnyOrigin()
+             .AllowAnyHeader()
+               .AllowAnyMethod();
     });
 });
 
@@ -130,25 +135,36 @@ var _logger = new LoggerConfiguration()
 builder.Logging.AddSerilog(_logger);
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(); 
-
+builder.Services.AddSwaggerGen();
+builder.Services.AddResponseCompression(o =>
+{
+    o.EnableForHttps = true;
+    o.Providers.Add<BrotliCompressionProvider>();
+    o.Providers.Add<GzipCompressionProvider>();
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(o =>
+{
+    o.Level = System.IO.Compression.CompressionLevel.Fastest;
+});
+builder.Services.Configure<GzipCompressionProviderOptions>(o =>
+{
+    o.Level = System.IO.Compression.CompressionLevel.Fastest;
+});
 var app = builder.Build();
+app.UseResponseCompression();
+ 
+    app.UseSwagger();
+    app.UseSwaggerUI();
+ 
+
+
 app.UseCors();
-// Configure the HTTP request pipeline.
-//app.UseMiddleware<FirstMiddleware>();
-app.UseSwagger();
-app.UseSwaggerUI();
+app.UseWebSockets();
 
-app.UseHttpsRedirection();
-app.UseRouting();
-// Authentication & Authorization
-app.UseAuthentication();
+app.UseAuthentication();  
+app.UseStaticFiles();
 app.UseAuthorization();
-
+app.UseHttpsRedirection(); 
 app.MapControllers();
-
-//app.MapControllerRoute(
-//    name: "default",
-//    pattern: "{controller=swagger}/{action=Index}/{id?}");
 
 app.Run();

@@ -1,0 +1,6 @@
+@ServicePlusEXT_HostAddress = http://localhost:5202
+
+GET {{ServicePlusEXT_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
